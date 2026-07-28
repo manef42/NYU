@@ -1,55 +1,38 @@
 #!/bin/bash
-#SBATCH --job-name=ignition-classifiers
+#SBATCH --job-name=ignition-splits
+#SBATCH --account=torch_pr_1163_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
-#SBATCH --gres=gpu:4
-#SBATCH --time=02:00:00
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+#SBATCH --time=00:30:00
+#SBATCH --output=logs/%j_splits_output.log
+#SBATCH --error=logs/%j_splits_error.log
 
 set -euo pipefail
 
-CONTAINER="/share/apps/images/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif"
-OVERLAY="/scratch/me3144/pytorch-example/my_pytorch.ext3"
-CLASSIFIER_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_DIR="$(dirname "$CLASSIFIER_DIR")"
+CLASSIFIER_DIR="${SLURM_SUBMIT_DIR}"
+OVERLAY="/scratch/me3144/ignition_hpc/ignition_python.ext3"
+IMAGE="/share/apps/images/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif"
 
-module purge
-srun singularity exec --nv \
+mkdir -p "${CLASSIFIER_DIR}/results" "${CLASSIFIER_DIR}/logs"
+cd "${CLASSIFIER_DIR}"
+
+unset PYTHONHOME
+unset PYTHONPATH
+unset VIRTUAL_ENV
+
+singularity exec --nv \
   --overlay "${OVERLAY}:ro" \
-  --bind "${REPO_DIR}:${REPO_DIR}" \
-  "$CONTAINER" \
-  /bin/bash -lc "source /ext3/env.sh && cd \"${CLASSIFIER_DIR}\" && \
-python fable_splits.py \
-  --data ../Microgravity_Database_reduced.csv \
-  --out results/splits \
-  --n-seeds 3 \
-  --n-group-folds 5 \
-  --n-row-folds 5 && \
-python fable_evaluate.py \
-  --data ../Microgravity_Database_reduced.csv \
-  --splits results/splits \
-  --config configs/candidates.yaml \
-  --out results/evaluation \
-  --search-iterations 40 \
-  --inner-group-folds 3 && \
-python fable_select.py \
-  --evaluation results/evaluation \
-  --policy configs/selection_policy.yaml \
-  --out results/selection.json && \
-python fable_refit.py \
-  --data ../Microgravity_Database_reduced.csv \
-  --selection results/selection.json \
-  --champion interpolation \
-  --out artifacts/interpolation_champion && \
-python fable_refit.py \
-  --data ../Microgravity_Database_reduced.csv \
-  --selection results/selection.json \
-  --champion extrapolation \
-  --out artifacts/extrapolation_champion && \
-python fable_report.py \
-  --data ../Microgravity_Database_reduced.csv \
-  --evaluation results/evaluation \
-  --selection results/selection.json \
-  --artifacts artifacts \
-  --out results/report"
+  --bind "${CLASSIFIER_DIR}:${CLASSIFIER_DIR}" \
+  "${IMAGE}" \
+  /bin/bash -lc '
+    source /ext3/env.sh
+    cd "'"${CLASSIFIER_DIR}"'"
+    python fable_splits.py \
+      --data "'"${CLASSIFIER_DIR}"'/Microgravity_Database_reduced.csv" \
+      --out results/splits \
+      --n-seeds 3 \
+      --n-group-folds 5 \
+      --n-row-folds 5
+  '
