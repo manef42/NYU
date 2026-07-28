@@ -25,7 +25,6 @@ from fsr_common import RANDOM_STATE, load_data, regression_metrics, slug
 sns.set_theme(style="whitegrid", context="paper")
 PROTOCOL_COLORS = {"interpolation_random": "#0072B2", "extrapolation_grouped": "#D55E00"}
 CONDITION_COLORS = {"rd": "#0072B2", "rd_bt": "#E69F00"}
-FAMILY_ORDER = ("decision_tree", "xgboost", "knn", "mlp")
 
 
 def _shorten(label: str, limit: int = 46) -> str:
