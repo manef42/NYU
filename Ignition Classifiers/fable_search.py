@@ -135,39 +135,53 @@ def _fit_inner_fold(candidate: dict[str, Any], params: dict[str, Any],
 
 
 def nested_search(candidate: dict[str, Any], X: pd.DataFrame, y: np.ndarray,
-                  papers: pd.Series, protocol: str, iterations: int,
-                  inner_folds: int, seed: int, n_jobs: int = -1) -> SearchResult:
+                   papers: pd.Series, protocol: str, iterations: int,
+                   inner_folds: int, seed: int, n_jobs: int = -1) -> SearchResult:
     """Tune only on an outer training partition and freeze validation thresholds."""
     splits = _inner_splits(X, y, papers, protocol, inner_folds, seed)
     configs = _sample_configs(candidate, iterations, seed)
+    family = candidate["model_family"]
+    parallel_jobs = n_jobs if family in {"knn", "decision_tree", "mlp"} else 1
+    backend = "loky" if family == "mlp" else "threading"
+
+    jobs = [
+        (config_number, fold, params, train, validation)
+        for config_number, params in enumerate(configs)
+        for fold, (train, validation) in enumerate(splits)
+    ]
+    results = Parallel(n_jobs=parallel_jobs, backend=backend)(
+        delayed(_fit_inner_fold)(
+            candidate, params, X, y, papers, protocol, seed, config_number, fold, train, validation)
+        for config_number, fold, params, train, validation in jobs
+    )
+
+    oof_by_config = {i: np.full(len(y), np.nan) for i in range(len(configs))}
+    fold_results_by_config: dict[int, list[tuple[int, dict[str, float]]]] = {
+        i: [] for i in range(len(configs))}
+    for (config_number, _fold, _params, _train, _validation), (fold, probability, metrics) in zip(jobs, results):
+        validation_idx = splits[fold][1]
+        oof_by_config[config_number][validation_idx] = probability
+        fold_results_by_config[config_number].append((fold, metrics))
+
     histories, predictions_by_config = [], {}
-    # CPU families parallelize folds; GPU families already saturate their assigned device(s).
-    parallel_jobs = n_jobs if candidate["model_family"] in {"knn", "decision_tree"} else 1
     for config_number, params in enumerate(configs):
-        oof = np.full(len(y), np.nan)
+        oof = oof_by_config[config_number]
+        if np.isnan(oof).any():
+            raise ValueError("Inner OOF predictions are incomplete")
+        predictions_by_config[config_number] = oof
         fold_records = []
-        results = Parallel(n_jobs=parallel_jobs, prefer="threads")(
-            delayed(_fit_inner_fold)(
-                candidate, params, X, y, papers, protocol, seed, config_number,
-                fold, train, validation)
-            for fold, (train, validation) in enumerate(splits)
-        )
-        for fold, probability, metrics in results:
-            validation = splits[fold][1]
-            oof[validation] = probability
+        for fold, metrics in sorted(fold_results_by_config[config_number], key=lambda item: item[0]):
             fold_records.append(metrics)
             histories.append({
                 "configuration_id": config_number, "inner_fold": fold,
                 "parameters": json.dumps(params, sort_keys=True), **metrics,
             })
-        if np.isnan(oof).any():
-            raise ValueError("Inner OOF predictions are incomplete")
-        predictions_by_config[config_number] = oof
         means = pd.DataFrame(fold_records).mean(numeric_only=True)
         histories.append({
             "configuration_id": config_number, "inner_fold": "mean",
             "parameters": json.dumps(params, sort_keys=True), **means.to_dict(),
         })
+
     history = pd.DataFrame(histories)
     means = history[history["inner_fold"] == "mean"].copy()
     means = means.sort_values(

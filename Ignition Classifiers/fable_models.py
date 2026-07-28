@@ -325,10 +325,11 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
         True, False, False, "Random state fixed at 42 for tie resolution."
     ),
     "mlp": ModelSpec(
-        "mlp", _mlp, {"hidden_layer_sizes": [(32,), (64,), (64, 32), (128, 64)],
-                      "alpha": [1e-5, 1e-4, 1e-3, 1e-2],
-                      "learning_rate_init": [1e-4, 3e-4, 1e-3, 3e-3],
-                      "activation": ["relu", "tanh"], "batch_size": [32, 64, 128]},
+        "mlp", _mlp, {"hidden_layer_sizes": [(16,), (32,), (64,), (128,),
+                                              (32, 16), (64, 32), (128, 64), (128, 64, 32)],
+                      "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+                      "learning_rate_init": [1e-4, 3e-4, 1e-3, 3e-3, 1e-2],
+                      "activation": ["relu", "tanh"], "batch_size": [16, 32, 64, 128]},
         False, True, False, "PyTorch seed 42; one GPU or NCCL DDP on multiple GPUs."
     ),
     "svm": ModelSpec(
