@@ -276,7 +276,7 @@ def _xgb(params: dict[str, Any], seed: int) -> XGBClassifier:
     objective = params.pop("objective_variant", "logistic")
     focal_gamma = float(params.pop("focal_gamma", 2.0))
     kwargs = {
-        "tree_method": "gpu_hist", "device": "cuda", "eval_metric": "logloss",
+        "tree_method": "hist", "device": "cuda", "eval_metric": "logloss",
         "n_jobs": -1, "random_state": RANDOM_STATE, **params,
     }
     if objective == "focal":
