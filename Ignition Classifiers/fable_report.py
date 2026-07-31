@@ -22,6 +22,62 @@ COLORS = {"interpolation_stratified": "#0072B2", "extrapolation_grouped": "#D55E
 FAMILIES = ["xgboost", "knn", "decision_tree", "mlp", "svm"]
 
 
+def _load_and_concat_csv(evaluation: Path, filename: str) -> pd.DataFrame:
+    frames = []
+    for model_dir in sorted(evaluation.glob("model_*")):
+        path = model_dir / filename
+        if not path.exists():
+            continue
+        try:
+            frame = pd.read_csv(path)
+        except pd.errors.EmptyDataError:
+            continue
+        if frame.empty:
+            continue
+        frame["_model_dir"] = model_dir.name
+        frames.append(frame)
+    if not frames:
+        raise FileNotFoundError(f"No {filename} found under any model_* directory in {evaluation}")
+    return pd.concat(frames, ignore_index=True)
+
+
+def _load_and_concat_parquet(evaluation: Path, filename: str) -> pd.DataFrame:
+    frames = []
+    for model_dir in sorted(evaluation.glob("model_*")):
+        path = model_dir / filename
+        if not path.exists():
+            continue
+        try:
+            frame = pd.read_parquet(path)
+        except Exception:
+            continue
+        if frame.empty:
+            continue
+        frame["_model_dir"] = model_dir.name
+        frames.append(frame)
+    if not frames:
+        raise FileNotFoundError(f"No {filename} found under any model_* directory in {evaluation}")
+    return pd.concat(frames, ignore_index=True)
+
+
+def _load_and_merge_integrity(evaluation: Path) -> dict:
+    protocol_status = []
+    all_passed = True
+    for model_dir in sorted(evaluation.glob("model_*")):
+        path = model_dir / "integrity_checks.json"
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            continue
+        protocol_status.extend(data.get("protocol_status", []))
+        all_passed = all_passed and data.get("passed", True)
+    if not protocol_status:
+        raise FileNotFoundError(f"No integrity_checks.json found under any model_* directory in {evaluation}")
+    return {"protocol_status": protocol_status, "passed": all_passed}
+
+
 def _save_table(frame: pd.DataFrame, name: str, out: Path) -> None:
     frame.to_csv(out / f"{name}.csv", index=False)
     (out / f"{name}.md").write_text(frame.to_markdown(index=False) + "\n", encoding="utf-8")
@@ -44,7 +100,7 @@ def _metric_plot(leaderboards: pd.DataFrame, metric: str, path: Path) -> None:
                     xerr=aligned[f"{metric}_std"], fmt="o", capsize=2,
                     label=protocol.replace("_", " "), color=COLORS[protocol])
     ax.set_yticks(np.arange(len(order)), order, fontsize=7)
-    ax.set_xlabel(metric.upper().replace("_", "-") + " (fold mean ± SD)")
+    ax.set_xlabel(metric.upper().replace("_", "-") + " (fold mean \u00b1 SD)")
     ax.legend(title="Protocol")
     fig.tight_layout()
     fig.savefig(path, dpi=300)
@@ -63,7 +119,7 @@ def _family_plot(summary: pd.DataFrame, path: Path) -> None:
         axis.set_xticks([0, 1], ["Interpolation", "Extrapolation"], rotation=30, ha="right")
         axis.set_title(family.replace("_", " ").title())
         axis.set_ylim(0, 1)
-    axes[0].set_ylabel("Best candidate ROC-AUC (mean ± SD)")
+    axes[0].set_ylabel("Best candidate ROC-AUC (mean \u00b1 SD)")
     fig.tight_layout()
     fig.savefig(path, dpi=300)
     plt.close(fig)
@@ -168,12 +224,13 @@ def _threshold_plot(table: pd.DataFrame, path: Path) -> None:
 
 def _explainability(data: pd.DataFrame, evaluation: Path, xgb_id: str, out: Path,
                     random_state: int = 42) -> None:
-    index = pd.read_csv(evaluation / "explainability_index.csv")
+    index = _load_and_concat_csv(evaluation, "explainability_index.csv")
     row = index[index["model_id"] == xgb_id]
     if row.empty:
         raise RuntimeError(f"No persisted held-out-paper XGBoost model for {xgb_id}")
     row = row.iloc[0]
-    model = joblib.load(evaluation / row["model_path"])
+    model_dir = evaluation / row["_model_dir"]
+    model = joblib.load(model_dir / row["model_path"])
     held_out_ids = set(json.loads(row["held_out_row_ids"]))
     held_out = data[data["row_id"].isin(held_out_ids)].copy()
     y = held_out["ignition_binary"].to_numpy()
@@ -251,11 +308,11 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     data, data_report = load_data(args.data, require_target=True)
     selection = json.loads(Path(args.selection).read_text(encoding="utf-8"))
-    summary = pd.read_csv(evaluation / "summary_metrics.csv")
-    predictions = pd.read_parquet(evaluation / "outer_fold_predictions.parquet")
-    paired = pd.read_csv(evaluation / "paired_model_comparisons.csv")
-    per_paper = pd.read_csv(evaluation / "per_paper_metrics.csv")
-    integrity = json.loads((evaluation / "integrity_checks.json").read_text())
+    summary = _load_and_concat_csv(evaluation, "summary_metrics.csv")
+    predictions = _load_and_concat_parquet(evaluation, "outer_fold_predictions.parquet")
+    paired = _load_and_concat_csv(evaluation, "paired_model_comparisons.csv")
+    per_paper = _load_and_concat_csv(evaluation, "per_paper_metrics.csv")
+    integrity = _load_and_merge_integrity(evaluation)
     cards = {
         name: json.loads((artifacts / f"{name}_champion" / "model_card.json").read_text())
         for name in ("interpolation", "extrapolation")
@@ -343,7 +400,7 @@ and observational sampling limit causal or universal claims.
 ## Integrity
 
 Evaluation integrity overall: `{integrity['passed']}`. Failed candidate/protocol combinations are
-excluded and documented in `../evaluation/integrity_checks.json`.
+excluded and documented across each `../evaluation/model_*/integrity_checks.json`.
 
 ## Exact commands
 

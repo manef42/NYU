@@ -1,0 +1,88 @@
+{
+  "passed": true,
+  "dataset_hash_matches_splits": true,
+  "protocol_status": [
+    {
+      "candidate_id": "mlp_all",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_all",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_all",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_all",
+      "protocol": "lopo",
+      "expected_folds": 86,
+      "completed_folds": 86,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_physics",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_physics",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_physics",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_physics",
+      "protocol": "lopo",
+      "expected_folds": 86,
+      "completed_folds": 86,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    }
+  ],
+  "failures": [],
+  "failed_result_policy": "Failed candidate/protocol results are excluded from result tables."
+}

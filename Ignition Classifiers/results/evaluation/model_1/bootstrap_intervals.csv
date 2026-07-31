@@ -1,0 +1,25 @@
+model_id,protocol,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+svm_all,extrapolation_grouped,roc_auc,0.6816824691279066,0.6251564810234692,0.7405016423230818,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_all,extrapolation_grouped,pr_auc,0.8676222046895113,0.8085980527690894,0.9236353265098648,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_all,extrapolation_grouped,brier,0.20378492932840409,0.1863438770510685,0.21669047054419122,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_all,interpolation_holdout,roc_auc,0.8751322574164602,0.8598840916636404,0.88943875065939,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_all,interpolation_holdout,pr_auc,0.9561298400089846,0.9480526973198165,0.9629719430504077,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_all,interpolation_holdout,brier,0.149396281209109,0.14085477310199904,0.15777420461407315,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_all,interpolation_stratified,roc_auc,0.8675583198759254,0.8565071552985388,0.878474581792966,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_all,interpolation_stratified,pr_auc,0.9537895991117404,0.9478117564071555,0.9593891650762882,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_all,interpolation_stratified,brier,0.1762809607961318,0.17362032768141217,0.1790419777802601,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_all,lopo,roc_auc,0.6857948398168727,0.6187249954231113,0.7482076847200884,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_all,lopo,pr_auc,0.8768581477555232,0.8257086941861951,0.9222473737427338,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_all,lopo,brier,0.2005743799329739,0.1809026846306067,0.21557780363161996,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_physics,extrapolation_grouped,roc_auc,0.7044738553208725,0.6531317127654739,0.7512635369404532,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_physics,extrapolation_grouped,pr_auc,0.8714778496609737,0.8193999957677764,0.917191680527929,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_physics,extrapolation_grouped,brier,0.19977519464331656,0.17923322512537068,0.21632069995148107,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_physics,interpolation_holdout,roc_auc,0.8428720507154177,0.8250097104151703,0.858696279355329,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_physics,interpolation_holdout,pr_auc,0.943433408692123,0.934847138798617,0.9518450007803491,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_physics,interpolation_holdout,brier,0.1657612344169202,0.15693187119868418,0.1744536936510604,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_physics,interpolation_stratified,roc_auc,0.846774086095433,0.8351833826209196,0.8581659136421339,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_physics,interpolation_stratified,pr_auc,0.9460867168221525,0.9400226171055407,0.9518569860596919,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_physics,interpolation_stratified,brier,0.1811298681554317,0.1783572464045146,0.18388217225103273,0.95,2000,unique_row_id,mean probability per row_id before resampling
+svm_physics,lopo,roc_auc,0.7019148159399666,0.6479110414625545,0.7516149965523201,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_physics,lopo,pr_auc,0.870539168936334,0.8180206525883299,0.9198028219026326,0.95,2000,canonical_paper,mean probability per row_id before resampling
+svm_physics,lopo,brier,0.19949361256316964,0.17423477104369336,0.21903942720687422,0.95,2000,canonical_paper,mean probability per row_id before resampling

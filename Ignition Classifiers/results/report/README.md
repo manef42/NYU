@@ -8,7 +8,7 @@ protect the distinction.
 ## Selected models
 
 - Interpolation: `xgb_all_unweighted`
-- Extrapolation: `xgb_physics_unweighted`
+- Extrapolation: `xgb_all_unweighted`
 
 These champions answer different scientific questions. Fold uncertainty, paired deltas, per-paper
 variation, and calibration figures must be considered with point estimates. LOPO is a robustness
@@ -18,7 +18,7 @@ and observational sampling limit causal or universal claims.
 ## Integrity
 
 Evaluation integrity overall: `True`. Failed candidate/protocol combinations are
-excluded and documented in `../evaluation/integrity_checks.json`.
+excluded and documented across each `../evaluation/model_*/integrity_checks.json`.
 
 ## Exact commands
 

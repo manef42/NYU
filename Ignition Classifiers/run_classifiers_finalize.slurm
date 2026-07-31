@@ -3,9 +3,8 @@
 #SBATCH --account=torch_pr_1163_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
-#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=64G
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/%j_finalize_output.log
 #SBATCH --error=logs/%j_finalize_error.log
@@ -23,7 +22,7 @@ unset PYTHONHOME
 unset PYTHONPATH
 unset VIRTUAL_ENV
 
-singularity exec --nv \
+singularity exec \
 --overlay "${OVERLAY}:ro" \
 --bind "${CLASSIFIER_DIR}:${CLASSIFIER_DIR}" \
 "${IMAGE}" \

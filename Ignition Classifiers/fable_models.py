@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import os
-import socket
-import tempfile
 import warnings
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -11,8 +9,6 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 import torch
-import torch.distributed as dist
-import torch.multiprocessing as mp
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -21,11 +17,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from torch.nn.parallel import DistributedDataParallel
-from torch.utils.data import DataLoader, DistributedSampler, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 from xgboost import XGBClassifier
 
-from fable_common import (combined_weights, configure_torch, empty_cuda_cache,
+from fable_common import (combined_weights, configure_torch,
                           feature_lists, slurm_num_workers, torch_device)
 
 RANDOM_STATE = 42
@@ -75,15 +70,12 @@ class _TorchNetwork(torch.nn.Module):
 
 
 def _train_network(model: torch.nn.Module, loader: DataLoader, device: torch.device,
-                   learning_rate: float, weight_decay: float, max_iter: int,
-                   sampler: DistributedSampler | None = None) -> None:
+                    learning_rate: float, weight_decay: float, max_iter: int) -> None:
     optimizer = torch.optim.Adam(
         model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = torch.nn.BCEWithLogitsLoss()
     best_loss, stale_epochs = float("inf"), 0
     for epoch in range(max_iter):
-        if sampler is not None:
-            sampler.set_epoch(epoch)
         model.train()
         total_loss = torch.zeros(2, device=device)
         for features, targets in loader:
@@ -95,43 +87,14 @@ def _train_network(model: torch.nn.Module, loader: DataLoader, device: torch.dev
             optimizer.step()
             total_loss[0] += loss.detach() * len(targets)
             total_loss[1] += len(targets)
-        if dist.is_initialized():
-            dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
         epoch_loss = float((total_loss[0] / total_loss[1].clamp_min(1)).item())
         if epoch_loss < best_loss - 1e-6:
             best_loss, stale_epochs = epoch_loss, 0
         else:
             stale_epochs += 1
-            if stale_epochs >= 25:
-                break
+        if stale_epochs >= 25:
+            break
 
-
-def _ddp_worker(rank: int, world_size: int, port: int, features: np.ndarray,
-                targets: np.ndarray, settings: dict[str, Any], state_path: str) -> None:
-    os.environ["MASTER_ADDR"] = "127.0.0.1"
-    os.environ["MASTER_PORT"] = str(port)
-    dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
-    try:
-        device = configure_torch(rank)
-        dataset = TensorDataset(torch.from_numpy(features), torch.from_numpy(targets))
-        sampler = DistributedSampler(
-            dataset, num_replicas=world_size, rank=rank, shuffle=True, seed=RANDOM_STATE)
-        loader = DataLoader(
-            dataset, batch_size=settings["batch_size"], sampler=sampler,
-            pin_memory=True, num_workers=slurm_num_workers())
-        network = _TorchNetwork(
-            features.shape[1], settings["hidden_layer_sizes"], settings["activation"]).to(device)
-        model = DistributedDataParallel(network, device_ids=[rank], output_device=rank)
-        _train_network(
-            model, loader, device, settings["learning_rate_init"], settings["alpha"],
-            settings["max_iter"], sampler)
-        if rank == 0:
-            torch.save({key: value.detach().cpu()
-                        for key, value in model.module.state_dict().items()}, state_path)
-        dist.barrier()
-    finally:
-        dist.destroy_process_group()
-        empty_cuda_cache()
 
 
 class TorchMLPClassifier:
@@ -159,41 +122,22 @@ class TorchMLPClassifier:
             "batch_size": self.batch_size, "max_iter": self.max_iter,
         }
 
-    @staticmethod
-    def _open_port() -> int:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.bind(("127.0.0.1", 0))
-            return int(sock.getsockname()[1])
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "TorchMLPClassifier":
         torch.manual_seed(42)
         features = np.ascontiguousarray(X, dtype=np.float32)
         targets = np.ascontiguousarray(y, dtype=np.float32)
         self.input_size_ = features.shape[1]
-        gpu_count = torch.cuda.device_count() if torch.cuda.is_available() else 0
-        if gpu_count > 1:
-            with tempfile.TemporaryDirectory(prefix="fable-ddp-") as directory:
-                state_path = os.path.join(directory, "state.pt")
-                mp.spawn(
-                    _ddp_worker,
-                    args=(gpu_count, self._open_port(), features, targets,
-                          self._settings(), state_path),
-                    nprocs=gpu_count,
-                    join=True,
-                )
-                self.state_dict_ = torch.load(state_path, map_location="cpu", weights_only=True)
-        else:
-            device = configure_torch()
-            dataset = TensorDataset(torch.from_numpy(features), torch.from_numpy(targets))
-            loader = DataLoader(
-                dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True,
-                num_workers=slurm_num_workers())
-            model = _TorchNetwork(
-                self.input_size_, self.hidden_layer_sizes, self.activation).to(device)
-            _train_network(
-                model, loader, device, self.learning_rate_init, self.alpha, self.max_iter)
-            self.state_dict_ = {key: value.detach().cpu() for key, value in model.state_dict().items()}
-            empty_cuda_cache()
+        device = torch.device("cpu")
+        dataset = TensorDataset(torch.from_numpy(features), torch.from_numpy(targets))
+        loader = DataLoader(
+            dataset, batch_size=self.batch_size, shuffle=True,
+            num_workers=0)
+        model = _TorchNetwork(
+            self.input_size_, self.hidden_layer_sizes, self.activation).to(device)
+        _train_network(
+            model, loader, device, self.learning_rate_init, self.alpha, self.max_iter)
+        self.state_dict_ = {key: value.detach().cpu() for key, value in model.state_dict().items()}
         return self
 
     def _model(self, device: torch.device) -> _TorchNetwork:
@@ -204,19 +148,18 @@ class TorchMLPClassifier:
         return model.to(device).eval()
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        device = torch_device()
+        device = torch.device("cpu")
         features = torch.as_tensor(np.asarray(X, dtype=np.float32))
         loader = DataLoader(
             TensorDataset(features), batch_size=self.batch_size, shuffle=False,
-            pin_memory=True, num_workers=slurm_num_workers())
+            num_workers=0)
         model = self._model(device)
         probabilities = []
         with torch.no_grad():
             for (batch,) in loader:
-                logits = model(batch.to(device, non_blocking=True))
+                logits = model(batch.to(device))
                 probabilities.append(torch.sigmoid(logits).cpu().numpy())
         positive = np.concatenate(probabilities)
-        empty_cuda_cache()
         return np.column_stack((1 - positive, positive))
 
 
@@ -231,18 +174,6 @@ class CuMLSVCWithFallback:
 
     def fit(self, X: np.ndarray, y: np.ndarray,
             sample_weight: np.ndarray | None = None) -> "CuMLSVCWithFallback":
-        if torch.cuda.is_available():
-            try:
-                from cuml.svm import SVC as CuMLSVC
-                gpu_params = {key: value for key, value in self.params.items()
-                              if key != "shrinking"}
-                estimator = CuMLSVC(
-                    kernel="rbf", probability=True, random_state=RANDOM_STATE, **gpu_params)
-                estimator.fit(X, y, sample_weight=sample_weight)
-                self.estimator_, self.using_cuml_ = estimator, True
-                return self
-            except (ImportError, ModuleNotFoundError, TypeError, ValueError, RuntimeError) as exc:
-                warnings.warn(f"cuML SVC unavailable; using sklearn SVC: {exc}", RuntimeWarning)
         estimator = CalibratedClassifierCV(
             SVC(kernel="rbf", cache_size=1000, random_state=RANDOM_STATE, **self.params),
             method="sigmoid", cv=3, n_jobs=-1)
@@ -276,7 +207,7 @@ def _xgb(params: dict[str, Any], seed: int) -> XGBClassifier:
     objective = params.pop("objective_variant", "logistic")
     focal_gamma = float(params.pop("focal_gamma", 2.0))
     kwargs = {
-        "tree_method": "hist", "device": "cuda", "eval_metric": "logloss",
+        "tree_method": "hist", "device": "cpu", "eval_metric": "logloss",
         "n_jobs": -1, "random_state": RANDOM_STATE, **params,
     }
     if objective == "focal":
@@ -295,7 +226,7 @@ def _tree(params: dict[str, Any], seed: int) -> DecisionTreeClassifier:
 
 
 def _mlp(params: dict[str, Any], seed: int) -> TorchMLPClassifier:
-    return TorchMLPClassifier(max_iter=600, random_state=RANDOM_STATE, **params)
+    return TorchMLPClassifier(max_iter=150, random_state=RANDOM_STATE, **params)
 
 
 def _svm(params: dict[str, Any], seed: int) -> CuMLSVCWithFallback:
@@ -422,7 +353,6 @@ class FableModel:
                 sampled = self._resample(y[indices], weights[indices], RANDOM_STATE)
                 estimator.fit(transformed[indices][sampled], y[indices][sampled])
             self.estimators_.append(estimator)
-            empty_cuda_cache()
         if not self.estimators_:
             raise RuntimeError("No estimator was fitted")
         return self
@@ -440,7 +370,6 @@ class FableModel:
                 probability = estimator.predict_proba(transformed)[:, 1]
             predictions.append(probability)
         result = np.mean(predictions, axis=0)
-        empty_cuda_cache()
         if not np.all(np.isfinite(result)) or np.any((result < 0) | (result > 1)):
             raise ValueError("Estimator produced invalid class-1 probabilities")
         return result

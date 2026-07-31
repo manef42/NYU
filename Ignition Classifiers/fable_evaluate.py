@@ -43,7 +43,7 @@ def _split_indices(split: pd.DataFrame, row_lookup: dict[str, int]) -> tuple[np.
 
 
 def _fold_metrics(y: np.ndarray, probability: np.ndarray,
-                  thresholds: dict[str, float]) -> dict[str, float]:
+                   thresholds: dict[str, float]) -> dict[str, float]:
     two_classes = len(np.unique(y)) == 2
     record = {
         "roc_auc": float(roc_auc_score(y, probability)) if two_classes else np.nan,
@@ -59,7 +59,7 @@ def _fold_metrics(y: np.ndarray, probability: np.ndarray,
 
 
 def _bootstrap(predictions: pd.DataFrame, grouped: bool, iterations: int,
-               seed: int) -> list[dict[str, Any]]:
+                seed: int) -> list[dict[str, Any]]:
     collapsed = (predictions.groupby(["row_id", "paper_id", "true_label"], as_index=False)
                  ["predicted_probability"].mean())
     rng = np.random.default_rng(seed)
@@ -134,7 +134,7 @@ def _paired(fold_metrics: pd.DataFrame) -> pd.DataFrame:
                       "paired_fold_count": len(common)}
             for metric in metrics:
                 differences = (indexed[left].loc[common, metric] -
-                               indexed[right].loc[common, metric]).to_numpy()
+                              indexed[right].loc[common, metric]).to_numpy()
                 differences = differences[np.isfinite(differences)]
                 record[f"delta_{metric}"] = float(np.mean(differences)) if len(differences) else np.nan
                 try:
@@ -191,6 +191,7 @@ def main() -> None:
         ]
         if not indexed_candidates:
             raise ValueError(f"No configured candidates found for {selected_family}")
+
     df, data_report = load_data(args.data, require_target=True)
     split_dir = Path(args.splits)
     assignments = pd.read_parquet(split_dir / "split_assignments.parquet")
@@ -227,7 +228,7 @@ def main() -> None:
             protocol_status.setdefault(status_key, {
                 "candidate_id": candidate_id, "protocol": protocol,
                 "expected_folds": int(assignments[assignments["protocol"] == protocol]
-                                      ["split_id"].nunique()),
+                                       ["split_id"].nunique()),
                 "completed_folds": 0, "valid_probabilities": True, "passed": True,
                 "errors": [],
             })
@@ -355,15 +356,13 @@ def main() -> None:
                     f"[{split_number + 1}/{len(split_groups)}] {split_id}: FAILED: {exc}",
                     flush=True,
                 )
-            finally:
-                empty_cuda_cache()
 
     predictions = pd.DataFrame(prediction_rows)
     fold_metrics = pd.DataFrame(metric_rows)
     for status in protocol_status.values():
         status["complete"] = status["completed_folds"] == status["expected_folds"]
         status["passed"] = bool(status["passed"] and status["complete"] and
-                                status["valid_probabilities"])
+                                 status["valid_probabilities"])
     eligible = {(x["candidate_id"], x["protocol"]) for x in protocol_status.values() if x["passed"]}
     if len(predictions):
         mask = predictions.apply(lambda x: (x["model_id"], x["protocol"]) in eligible, axis=1)
@@ -393,7 +392,7 @@ def main() -> None:
             lambda x: (x["model_id"], x["protocol"]) in eligible, axis=1)]
     history_frame.to_csv(out / "search_history.csv", index=False)
     inner_predictions = (pd.concat(inner_prediction_frames, ignore_index=True)
-                         if inner_prediction_frames else pd.DataFrame())
+                          if inner_prediction_frames else pd.DataFrame())
     if len(inner_predictions):
         inner_predictions = inner_predictions[inner_predictions.apply(
             lambda x: (x["model_id"], x["protocol"]) in eligible, axis=1)]
@@ -424,7 +423,7 @@ def main() -> None:
         "candidate_count": len(indexed_candidates), "search_iterations": args.search_iterations,
         "model_id": args.model_id,
         "model_family_filter": (MODEL_ID_TO_FAMILY[args.model_id]
-                                if args.model_id is not None else None),
+                                 if args.model_id is not None else None),
         "inner_folds": args.inner_group_folds,
         "threshold_policy": {
             name: "selected exclusively from inner OOF predictions" for name in THRESHOLD_NAMES},
@@ -444,7 +443,7 @@ def main() -> None:
     (out / "evaluation_metadata.json").write_text(
         json.dumps(metadata, indent=2), encoding="utf-8")
     print(json.dumps({"output": str(out), "integrity_passed": not failures,
-                      "eligible_candidate_protocols": len(eligible)}, indent=2))
+                       "eligible_candidate_protocols": len(eligible)}, indent=2))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,22 @@
+{
+  "data_version": "fable-data-v4",
+  "dataset_sha256": "aa3aa03fab497e2355df315075df9e39d8d72428118cab7d8900cc17c8314032",
+  "candidate_count": 2,
+  "search_iterations": 40,
+  "model_id": 2,
+  "model_family_filter": "knn",
+  "inner_folds": 3,
+  "threshold_policy": {
+    "mcc": "selected exclusively from inner OOF predictions",
+    "f1": "selected exclusively from inner OOF predictions",
+    "balanced_accuracy": "selected exclusively from inner OOF predictions",
+    "youden_j": "selected exclusively from inner OOF predictions"
+  },
+  "lopo_hyperparameter_policy": "For each held-out paper, freeze the modal selected hyperparameters from repeated grouped outer folds whose training partitions excluded that paper; resolve modal ties lexically. LOPO thresholds remain fitted from grouped inner OOF predictions using only the LOPO training partition.",
+  "bootstrap": {
+    "iterations": 2000,
+    "interpolation_unit": "unique row_id",
+    "extrapolation_unit": "canonical paper cluster",
+    "note": "Repeated outer predictions are averaged per row before bootstrap; grouped protocols resample complete canonical-paper clusters."
+  }
+}

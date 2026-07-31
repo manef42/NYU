@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import multiprocessing as std_mp
 from dataclasses import dataclass
 from typing import Any
 
@@ -9,8 +10,8 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.metrics import (average_precision_score, balanced_accuracy_score,
-                             brier_score_loss, f1_score, matthews_corrcoef,
-                             roc_auc_score)
+                              brier_score_loss, f1_score, matthews_corrcoef,
+                              roc_auc_score)
 from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
 
 from fable_models import MODEL_REGISTRY, make_model
@@ -27,7 +28,7 @@ class SearchResult:
 
 
 def classification_metrics(y: np.ndarray, probability: np.ndarray,
-                           threshold: float) -> dict[str, float]:
+                            threshold: float) -> dict[str, float]:
     prediction = (probability >= threshold).astype(int)
     tn, fp, fn, tp = _confusion(y, prediction)
     two_classes = len(np.unique(y)) == 2
@@ -71,7 +72,7 @@ def optimize_thresholds(y: np.ndarray, probability: np.ndarray) -> dict[str, flo
         }
         for name, score in scores.items():
             if score > best[name][0] or (score == best[name][0] and abs(threshold - .5) <
-                                         abs(best[name][1] - .5)):
+                                          abs(best[name][1] - .5)):
                 best[name] = (float(score), float(threshold))
     return {name: value[1] for name, value in best.items()}
 
@@ -87,7 +88,7 @@ def _sample_configs(candidate: dict[str, Any], iterations: int, seed: int) -> li
     attempts = 0
     while len(configurations) < iterations and attempts < iterations * 100:
         configuration = {key: values[int(rng.integers(len(values)))]
-                         for key, values in sorted(space.items())}
+                          for key, values in sorted(space.items())}
         token = json.dumps(configuration, sort_keys=True)
         if token not in seen:
             seen.add(token)
@@ -99,7 +100,7 @@ def _sample_configs(candidate: dict[str, Any], iterations: int, seed: int) -> li
 
 
 def _inner_splits(X: pd.DataFrame, y: np.ndarray, papers: pd.Series,
-                  protocol: str, folds: int, seed: int) -> list[tuple[np.ndarray, np.ndarray]]:
+                   protocol: str, folds: int, seed: int) -> list[tuple[np.ndarray, np.ndarray]]:
     if protocol in {"extrapolation_grouped", "lopo"}:
         maximum = min(folds, int(papers.nunique()))
         for n_splits in range(maximum, 1, -1):
@@ -122,10 +123,10 @@ def _inner_splits(X: pd.DataFrame, y: np.ndarray, papers: pd.Series,
 
 
 def _fit_inner_fold(candidate: dict[str, Any], params: dict[str, Any],
-                    X: pd.DataFrame, y: np.ndarray, papers: pd.Series,
-                    protocol: str, seed: int, config_number: int, fold: int,
-                    train: np.ndarray, validation: np.ndarray
-                    ) -> tuple[int, np.ndarray, dict[str, float]]:
+                     X: pd.DataFrame, y: np.ndarray, papers: pd.Series,
+                     protocol: str, seed: int, config_number: int, fold: int,
+                     train: np.ndarray, validation: np.ndarray
+                     ) -> tuple[int, np.ndarray, dict[str, float]]:
     model = make_model(candidate, params, seed + config_number * 1000 + fold)
     model.fit(X.iloc[train], y[train], papers.iloc[train])
     probability = model.predict_proba(X.iloc[validation])
@@ -141,15 +142,15 @@ def nested_search(candidate: dict[str, Any], X: pd.DataFrame, y: np.ndarray,
     splits = _inner_splits(X, y, papers, protocol, inner_folds, seed)
     configs = _sample_configs(candidate, iterations, seed)
     family = candidate["model_family"]
-    parallel_jobs = n_jobs if family in {"knn", "decision_tree", "mlp"} else 1
-    backend = "loky" if family == "mlp" else "threading"
+    parallel_jobs = n_jobs if family in {"knn", "decision_tree", "mlp", "xgboost"} else 1
 
     jobs = [
         (config_number, fold, params, train, validation)
         for config_number, params in enumerate(configs)
         for fold, (train, validation) in enumerate(splits)
     ]
-    results = Parallel(n_jobs=parallel_jobs, backend=backend)(
+
+    results = Parallel(n_jobs=parallel_jobs, backend="threading", max_nbytes=None)(
         delayed(_fit_inner_fold)(
             candidate, params, X, y, papers, protocol, seed, config_number, fold, train, validation)
         for config_number, fold, params, train, validation in jobs

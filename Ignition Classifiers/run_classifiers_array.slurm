@@ -4,9 +4,8 @@
 #SBATCH --array=0-4
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
-#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=48
+#SBATCH --mem=128G
 #SBATCH --time=2-00:00:00
 #SBATCH --output=logs/%A_%a_eval_output.log
 #SBATCH --error=logs/%A_%a_eval_error.log
@@ -29,11 +28,7 @@ cd "${CLASSIFIER_DIR}"
 unset PYTHONHOME
 unset PYTHONPATH
 unset VIRTUAL_ENV
-export CUDA_MPS_PIPE_DIRECTORY="/tmp/nvidia-mps-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID}"
-export CUDA_MPS_LOG_DIRECTORY="/tmp/nvidia-log-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID}"
-mkdir -p "${CUDA_MPS_PIPE_DIRECTORY}" "${CUDA_MPS_LOG_DIRECTORY}"
-nvidia-cuda-mps-control -d
-singularity exec --nv \
+singularity exec \
     --overlay "${OVERLAY}:ro" \
     --bind "${CLASSIFIER_DIR}:${CLASSIFIER_DIR}" \
     "${IMAGE}" \
@@ -45,9 +40,7 @@ singularity exec --nv \
             --splits results/splits \
             --config configs/candidates.yaml \
             --out "'"${OUT_DIR}"'" \
-            --search-iterations 40 \
+            --search-iterations 15 \
             --inner-group-folds 3 \
             --bootstrap-iterations 2000 \
             --model-id '"${SLURM_ARRAY_TASK_ID}"''
-
-echo quit | nvidia-cuda-mps-control

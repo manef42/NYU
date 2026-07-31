@@ -20,6 +20,29 @@ def _clean_json(value: Any) -> Any:
     return value.item() if hasattr(value, "item") else value
 
 
+def _load_and_concat(evaluation: Path, filename: str) -> pd.DataFrame:
+    frames = []
+    for model_dir in sorted(evaluation.glob("model_*")):
+        path = model_dir / filename
+        if path.exists():
+            frames.append(pd.read_csv(path))
+    if not frames:
+        raise FileNotFoundError(f"No {filename} found under any model_* directory in {evaluation}")
+    return pd.concat(frames, ignore_index=True)
+
+
+def _load_and_merge_integrity(evaluation: Path) -> dict:
+    protocol_status = []
+    for model_dir in sorted(evaluation.glob("model_*")):
+        path = model_dir / "integrity_checks.json"
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            protocol_status.extend(data.get("protocol_status", []))
+    if not protocol_status:
+        raise FileNotFoundError(f"No integrity_checks.json found under any model_* directory in {evaluation}")
+    return {"protocol_status": protocol_status}
+
+
 def _rank(summary: pd.DataFrame, intervals: pd.DataFrame, manifest: pd.DataFrame,
           status: dict[tuple[str, str], dict], policy: dict[str, Any],
           selection: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
@@ -92,7 +115,7 @@ def _rank(summary: pd.DataFrame, intervals: pd.DataFrame, manifest: pd.DataFrame
 
 def _modal_parameters(parameters: pd.DataFrame, model_id: str, protocol: str) -> dict:
     values = parameters[(parameters["model_id"] == model_id) &
-                        (parameters["protocol"] == protocol)]["selected_hyperparameters"]
+                         (parameters["protocol"] == protocol)]["selected_hyperparameters"]
     if values.empty:
         raise RuntimeError(f"No selected hyperparameters for {model_id}/{protocol}")
     return json.loads(values.value_counts().sort_index().idxmax())
@@ -106,12 +129,14 @@ def main() -> None:
     args = parser.parse_args()
     evaluation, out = Path(args.evaluation), Path(args.out)
     policy = yaml.safe_load(Path(args.policy).read_text(encoding="utf-8"))
-    summary = pd.read_csv(evaluation / "summary_metrics.csv")
-    intervals = pd.read_csv(evaluation / "bootstrap_intervals.csv")
-    paired = pd.read_csv(evaluation / "paired_model_comparisons.csv")
-    manifest = pd.read_csv(evaluation / "candidate_manifest.csv")
-    parameters = pd.read_csv(evaluation / "selected_hyperparameters.csv")
-    integrity = json.loads((evaluation / "integrity_checks.json").read_text(encoding="utf-8"))
+
+    summary = _load_and_concat(evaluation, "summary_metrics.csv")
+    intervals = _load_and_concat(evaluation, "bootstrap_intervals.csv")
+    paired = _load_and_concat(evaluation, "paired_model_comparisons.csv")
+    manifest = _load_and_concat(evaluation, "candidate_manifest.csv")
+    parameters = _load_and_concat(evaluation, "selected_hyperparameters.csv")
+    integrity = _load_and_merge_integrity(evaluation)
+
     status = {(item["candidate_id"], item["protocol"]): item
               for item in integrity["protocol_status"]}
     selections = {}
@@ -129,8 +154,8 @@ def main() -> None:
         fixed = json.loads(manifest_row.get("fixed_params") or "{}")
         exact_params = {**fixed, **selected_params}
         pair_rows = paired[(paired["protocol"] == rule["primary_protocol"]) &
-                           ((paired["model_a"] == winner["model_id"]) |
-                            (paired["model_b"] == winner["model_id"]))]
+                            ((paired["model_a"] == winner["model_id"]) |
+                             (paired["model_b"] == winner["model_id"]))]
         reason = (
             f"Highest eligible {rule['primary_metric']} within tolerance "
             f"{policy['tie_tolerance']}; tie-breakers applied in declared order: "
@@ -162,6 +187,7 @@ def main() -> None:
         if rejected:
             markdown += ["", "Rejected:"] + [f"- {reason}" for reason in rejected]
         markdown.append("")
+
     payload = _clean_json({
         "policy": policy, **selections,
         "operational_threshold_policy": policy["operational_threshold_policy"],
