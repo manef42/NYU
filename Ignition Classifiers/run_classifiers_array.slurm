@@ -21,7 +21,11 @@ CLASSIFIER_DIR="${SLURM_SUBMIT_DIR}"
 OVERLAY="/scratch/me3144/ignition_hpc/ignition_python.ext3"
 IMAGE="/share/apps/images/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif"
 
-OUT_DIR="${CLASSIFIER_DIR}/results/evaluation/model_${SLURM_ARRAY_TASK_ID}"
+# Array index -> model family, matching MODEL_FAMILIES order in fable_common.py.
+MODELS=(xgb svm knn dt mlp)
+MODEL="${MODELS[${SLURM_ARRAY_TASK_ID}]}"
+
+OUT_DIR="${CLASSIFIER_DIR}/results/evaluation/${MODEL}"
 mkdir -p "${CLASSIFIER_DIR}/logs" "${OUT_DIR}"
 cd "${CLASSIFIER_DIR}"
 
@@ -43,4 +47,4 @@ singularity exec \
             --search-iterations 15 \
             --inner-group-folds 3 \
             --bootstrap-iterations 2000 \
-            --model-id '"${SLURM_ARRAY_TASK_ID}"''
+            --model '"${MODEL}"''

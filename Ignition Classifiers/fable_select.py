@@ -9,6 +9,12 @@ from typing import Any
 import pandas as pd
 import yaml
 
+from fable_common import MODEL_FAMILIES
+
+
+def _model_directories(evaluation: Path) -> list[Path]:
+    return [evaluation / name for name in MODEL_FAMILIES if (evaluation / name).is_dir()]
+
 
 def _clean_json(value: Any) -> Any:
     if isinstance(value, dict):
@@ -22,24 +28,26 @@ def _clean_json(value: Any) -> Any:
 
 def _load_and_concat(evaluation: Path, filename: str) -> pd.DataFrame:
     frames = []
-    for model_dir in sorted(evaluation.glob("model_*")):
+    for model_dir in _model_directories(evaluation):
         path = model_dir / filename
         if path.exists():
             frames.append(pd.read_csv(path))
     if not frames:
-        raise FileNotFoundError(f"No {filename} found under any model_* directory in {evaluation}")
+        raise FileNotFoundError(
+            f"No {filename} found under any model-family directory in {evaluation}")
     return pd.concat(frames, ignore_index=True)
 
 
 def _load_and_merge_integrity(evaluation: Path) -> dict:
     protocol_status = []
-    for model_dir in sorted(evaluation.glob("model_*")):
+    for model_dir in _model_directories(evaluation):
         path = model_dir / "integrity_checks.json"
         if path.exists():
             data = json.loads(path.read_text(encoding="utf-8"))
             protocol_status.extend(data.get("protocol_status", []))
     if not protocol_status:
-        raise FileNotFoundError(f"No integrity_checks.json found under any model_* directory in {evaluation}")
+        raise FileNotFoundError(
+            f"No integrity_checks.json found under any model-family directory in {evaluation}")
     return {"protocol_status": protocol_status}
 
 
@@ -89,7 +97,6 @@ def _rank(summary: pd.DataFrame, intervals: pd.DataFrame, manifest: pd.DataFrame
         .rename(columns={"candidate_id": "model_id"}), on="model_id", how="left")
     simplicity = {name: index for index, name in enumerate(policy["simplicity_order"])}
     table["simplicity_rank"] = table["model_family"].map(simplicity).fillna(999)
-    table["feature_rank"] = table["feature_set"].map({"physics": 0, "all": 1})
     best_auc = table["roc_auc_mean"].max()
     table["within_primary_tie"] = table["roc_auc_mean"] >= best_auc - policy["tie_tolerance"]
     tied = table[table["within_primary_tie"]].copy()
@@ -97,8 +104,6 @@ def _rank(summary: pd.DataFrame, intervals: pd.DataFrame, manifest: pd.DataFrame
         "higher_pr_auc": ("pr_auc_mean", False),
         "lower_uncertainty": ("uncertainty", True),
         "simpler_model": ("simplicity_rank", True),
-        "fewer_features": ("feature_rank", True),
-        "physics_only": ("feature_rank", True),
     }
     unknown = set(selection["tie_breakers"]) - set(tie_columns)
     if unknown:
@@ -163,7 +168,7 @@ def main() -> None:
             f"{policy['refit_hyperparameter_rule']}.")
         selections[name] = {
             "candidate_id": winner["model_id"], "model_family": winner["model_family"],
-            "feature_set": winner["feature_set"], "primary_protocol": rule["primary_protocol"],
+            "primary_protocol": rule["primary_protocol"],
             "metrics": winner, "exact_hyperparameters": exact_params,
             "candidate_configuration": manifest_row, "reason": reason,
             "ranking": ranking, "rejected_candidates": rejected,
@@ -176,14 +181,14 @@ def main() -> None:
             f"- PR-AUC: {winner['pr_auc_mean']:.4f} ± {winner['pr_auc_std']:.4f}",
             f"- Protocol: `{rule['primary_protocol']}`",
             f"- Exact hyperparameters: `{json.dumps(exact_params, sort_keys=True)}`", "",
-            "| Rank | Candidate | ROC-AUC | PR-AUC | SD | Features |",
-            "|---:|---|---:|---:|---:|---|",
+            "| Rank | Candidate | Family | ROC-AUC | PR-AUC | SD |",
+            "|---:|---|---|---:|---:|---:|",
         ]
         for rank, row in enumerate(ranking, 1):
             markdown.append(
-                f"| {rank} | {row['model_id']} | {row['roc_auc_mean']:.4f} | "
-                f"{row['pr_auc_mean']:.4f} | {row['roc_auc_std']:.4f} | "
-                f"{row['feature_set']} |")
+                f"| {rank} | {row['model_id']} | {row['model_family']} | "
+                f"{row['roc_auc_mean']:.4f} | {row['pr_auc_mean']:.4f} | "
+                f"{row['roc_auc_std']:.4f} |")
         if rejected:
             markdown += ["", "Rejected:"] + [f"- {reason}" for reason in rejected]
         markdown.append("")

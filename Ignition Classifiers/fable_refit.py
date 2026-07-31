@@ -25,7 +25,6 @@ def _candidate(selection: dict, champion: str) -> tuple[dict, dict]:
     candidate = {
         "candidate_id": chosen["candidate_id"],
         "model_family": chosen["model_family"],
-        "feature_set": chosen["feature_set"],
         "paper_weight": config.get("paper_weight", "none"),
         "class_weight": bool(config.get("class_weight", False)),
         "monotone_oxygen": bool(config.get("monotone_oxygen", False)),
@@ -96,8 +95,8 @@ def main() -> None:
     joblib.dump(final_model, out / "model.joblib", compress=3)
     empty_cuda_cache()
     (out / "feature_manifest.json").write_text(
-        json.dumps({"data_version": DATA_VERSION, "features": feature_manifest(),
-                    "selected_feature_set": candidate["feature_set"]}, indent=2), encoding="utf-8")
+        json.dumps({"data_version": DATA_VERSION, "features": feature_manifest()},
+                   indent=2), encoding="utf-8")
     (out / "thresholds.json").write_text(
         json.dumps({
             "thresholds": thresholds,
@@ -115,7 +114,7 @@ def main() -> None:
     card = {
         "artifact_version": "fable-model-v1", "champion": args.champion,
         "model_id": chosen["candidate_id"], "model_family": chosen["model_family"],
-        "feature_set": chosen["feature_set"], "hyperparameters": params,
+        "hyperparameters": params,
         "weighting_policy": {
             "paper_weight": candidate["paper_weight"],
             "class_weight": candidate["class_weight"],

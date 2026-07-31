@@ -21,7 +21,6 @@ selections:
       - higher_pr_auc
       - lower_uncertainty
       - simpler_model
-      - fewer_features
   extrapolation_champion:
     primary_protocol: extrapolation_grouped
     primary_metric: roc_auc
@@ -29,7 +28,6 @@ selections:
     tie_breakers:
       - higher_pr_auc
       - lower_uncertainty
-      - physics_only
       - simpler_model
 operational_threshold_policy:
   thresholds:
