@@ -1,4 +1,4 @@
-# Candidate Design — Version 2
+# Candidate Design — Version 3
 
 ## Context
 
