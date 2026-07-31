@@ -15,16 +15,20 @@ import seaborn as sns
 from sklearn.calibration import calibration_curve
 from sklearn.metrics import roc_auc_score
 
-from fable_common import load_data
+from fable_common import MODEL_FAMILIES, load_data
 
 sns.set_theme(style="whitegrid", context="paper")
 COLORS = {"interpolation_stratified": "#0072B2", "extrapolation_grouped": "#D55E00"}
 FAMILIES = ["xgboost", "knn", "decision_tree", "mlp", "svm"]
 
 
+def _model_directories(evaluation: Path) -> list[Path]:
+    return [evaluation / name for name in MODEL_FAMILIES if (evaluation / name).is_dir()]
+
+
 def _load_and_concat_csv(evaluation: Path, filename: str) -> pd.DataFrame:
     frames = []
-    for model_dir in sorted(evaluation.glob("model_*")):
+    for model_dir in _model_directories(evaluation):
         path = model_dir / filename
         if not path.exists():
             continue
@@ -37,13 +41,13 @@ def _load_and_concat_csv(evaluation: Path, filename: str) -> pd.DataFrame:
         frame["_model_dir"] = model_dir.name
         frames.append(frame)
     if not frames:
-        raise FileNotFoundError(f"No {filename} found under any model_* directory in {evaluation}")
+        raise FileNotFoundError(f"No {filename} found under any model-family directory in {evaluation}")
     return pd.concat(frames, ignore_index=True)
 
 
 def _load_and_concat_parquet(evaluation: Path, filename: str) -> pd.DataFrame:
     frames = []
-    for model_dir in sorted(evaluation.glob("model_*")):
+    for model_dir in _model_directories(evaluation):
         path = model_dir / filename
         if not path.exists():
             continue
@@ -56,14 +60,14 @@ def _load_and_concat_parquet(evaluation: Path, filename: str) -> pd.DataFrame:
         frame["_model_dir"] = model_dir.name
         frames.append(frame)
     if not frames:
-        raise FileNotFoundError(f"No {filename} found under any model_* directory in {evaluation}")
+        raise FileNotFoundError(f"No {filename} found under any model-family directory in {evaluation}")
     return pd.concat(frames, ignore_index=True)
 
 
 def _load_and_merge_integrity(evaluation: Path) -> dict:
     protocol_status = []
     all_passed = True
-    for model_dir in sorted(evaluation.glob("model_*")):
+    for model_dir in _model_directories(evaluation):
         path = model_dir / "integrity_checks.json"
         if not path.exists():
             continue
@@ -74,7 +78,7 @@ def _load_and_merge_integrity(evaluation: Path) -> dict:
         protocol_status.extend(data.get("protocol_status", []))
         all_passed = all_passed and data.get("passed", True)
     if not protocol_status:
-        raise FileNotFoundError(f"No integrity_checks.json found under any model_* directory in {evaluation}")
+        raise FileNotFoundError(f"No integrity_checks.json found under any model-family directory in {evaluation}")
     return {"protocol_status": protocol_status, "passed": all_passed}
 
 
@@ -84,7 +88,7 @@ def _save_table(frame: pd.DataFrame, name: str, out: Path) -> None:
 
 
 def _leaderboard(summary: pd.DataFrame, protocol: str) -> pd.DataFrame:
-    columns = ["model_id", "model_family", "feature_set", "roc_auc_mean", "roc_auc_std",
+    columns = ["model_id", "model_family", "roc_auc_mean", "roc_auc_std",
                "pr_auc_mean", "pr_auc_std", "brier_mean", "fold_count"]
     return summary[summary["protocol"] == protocol][columns].sort_values(
         ["roc_auc_mean", "pr_auc_mean"], ascending=False)
@@ -100,7 +104,7 @@ def _metric_plot(leaderboards: pd.DataFrame, metric: str, path: Path) -> None:
                     xerr=aligned[f"{metric}_std"], fmt="o", capsize=2,
                     label=protocol.replace("_", " "), color=COLORS[protocol])
     ax.set_yticks(np.arange(len(order)), order, fontsize=7)
-    ax.set_xlabel(metric.upper().replace("_", "-") + " (fold mean \u00b1 SD)")
+    ax.set_xlabel(metric.upper().replace("_", "-") + " (fold mean ± SD)")
     ax.legend(title="Protocol")
     fig.tight_layout()
     fig.savefig(path, dpi=300)
@@ -119,7 +123,7 @@ def _family_plot(summary: pd.DataFrame, path: Path) -> None:
         axis.set_xticks([0, 1], ["Interpolation", "Extrapolation"], rotation=30, ha="right")
         axis.set_title(family.replace("_", " ").title())
         axis.set_ylim(0, 1)
-    axes[0].set_ylabel("Best candidate ROC-AUC (mean \u00b1 SD)")
+    axes[0].set_ylabel("Best candidate ROC-AUC (mean ± SD)")
     fig.tight_layout()
     fig.savefig(path, dpi=300)
     plt.close(fig)
@@ -127,7 +131,7 @@ def _family_plot(summary: pd.DataFrame, path: Path) -> None:
 
 def _drop_plot(summary: pd.DataFrame, path: Path) -> pd.DataFrame:
     pivot = summary[summary["protocol"].isin(COLORS)].pivot(
-        index=["model_id", "model_family", "feature_set"], columns="protocol",
+        index=["model_id", "model_family"], columns="protocol",
         values="roc_auc_mean").dropna().reset_index()
     pivot["roc_auc_drop"] = (pivot["interpolation_stratified"] -
                              pivot["extrapolation_grouped"])
@@ -374,12 +378,12 @@ def main() -> None:
         xgb_id = eligible_xgb.iloc[0]["model_id"]
     _explainability(data, evaluation, xgb_id, out)
     commands = """cd "Ignition Classifiers"
-python fable_splits.py --data ../Microgravity_Database_reduced.csv --out results/splits --n-seeds 3 --n-group-folds 5 --n-row-folds 5
-python fable_evaluate.py --data ../Microgravity_Database_reduced.csv --splits results/splits --config configs/candidates.yaml --out results/evaluation --search-iterations 40 --inner-group-folds 3
+python fable_splits.py --data Microgravity_Database.csv --out results/splits --n-seeds 3 --n-group-folds 5 --n-row-folds 5
+python fable_evaluate.py --data Microgravity_Database.csv --splits results/splits --config configs/candidates.yaml --out results/evaluation --search-iterations 40 --inner-group-folds 3
 python fable_select.py --evaluation results/evaluation --policy configs/selection_policy.yaml --out results/selection.json
-python fable_refit.py --data ../Microgravity_Database_reduced.csv --selection results/selection.json --champion interpolation --out artifacts/interpolation_champion
-python fable_refit.py --data ../Microgravity_Database_reduced.csv --selection results/selection.json --champion extrapolation --out artifacts/extrapolation_champion
-python fable_report.py --data ../Microgravity_Database_reduced.csv --evaluation results/evaluation --selection results/selection.json --artifacts artifacts --out results/report"""
+python fable_refit.py --data Microgravity_Database.csv --selection results/selection.json --champion interpolation --out artifacts/interpolation_champion
+python fable_refit.py --data Microgravity_Database.csv --selection results/selection.json --champion extrapolation --out artifacts/extrapolation_champion
+python fable_report.py --data Microgravity_Database.csv --evaluation results/evaluation --selection results/selection.json --artifacts artifacts --out results/report"""
     readme = f"""# Ignition classification evaluation report
 
 Interpolation evaluates similar row-level conditions; extrapolation holds out entire canonical
@@ -400,7 +404,7 @@ and observational sampling limit causal or universal claims.
 ## Integrity
 
 Evaluation integrity overall: `{integrity['passed']}`. Failed candidate/protocol combinations are
-excluded and documented across each `../evaluation/model_*/integrity_checks.json`.
+excluded and documented across each `../evaluation/<family>/integrity_checks.json`.
 
 ## Exact commands
 

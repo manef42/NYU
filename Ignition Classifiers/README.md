@@ -15,17 +15,14 @@ fields are excluded from model features.
 
 ## Data assumptions
 
-The default dataset is `../Microgravity_Database_reduced.csv`, one directory above this project.
-The CSV has a category row followed by the real header row. The loader tries UTF-8, UTF-8 with BOM,
-CP1252, and Latin-1; validates all required source columns; converts units; engineers the declared
-feature manifest; reports missingness and target problems; and preserves stable source-based row
-IDs. Training and evaluation require `Ignition (Yes/No)`. Inference does not.
+The default dataset is `Microgravity_Database.csv`, in this project folder. The CSV has a
+category row followed by the real header row. The loader tries UTF-8, UTF-8 with BOM, CP1252, and
+Latin-1; validates all required source columns; converts units; engineers the declared feature
+manifest; reports missingness and target problems; and preserves stable source-based row IDs.
+Training and evaluation require `Ignition (Yes/No)`. Inference does not.
 
-The `all` feature set contains physical variables and apparatus descriptors. The `physics` feature
-set removes apparatus/campaign descriptors while retaining transferable thermophysical, flow,
-gravity, geometry, and gas-composition variables. Missing numeric values are median-imputed for
-scikit-learn models; XGBoost retains native numeric missing-value handling. Categoricals use constant
-imputation and unknown-safe one-hot encoding.
+Missing numeric values are median-imputed for scikit-learn models; XGBoost retains native numeric
+missing-value handling. Categoricals use constant imputation and unknown-safe one-hot encoding.
 
 ## Installation
 
@@ -46,14 +43,14 @@ Run these commands in order:
 cd "Ignition Classifiers"
 
 python fable_splits.py \
-  --data ../Microgravity_Database_reduced.csv \
+  --data Microgravity_Database.csv \
   --out results/splits \
   --n-seeds 3 \
   --n-group-folds 5 \
   --n-row-folds 5
 
 python fable_evaluate.py \
-  --data ../Microgravity_Database_reduced.csv \
+  --data Microgravity_Database.csv \
   --splits results/splits \
   --config configs/candidates.yaml \
   --out results/evaluation \
@@ -66,19 +63,19 @@ python fable_select.py \
   --out results/selection.json
 
 python fable_refit.py \
-  --data ../Microgravity_Database_reduced.csv \
+  --data Microgravity_Database.csv \
   --selection results/selection.json \
   --champion interpolation \
   --out artifacts/interpolation_champion
 
 python fable_refit.py \
-  --data ../Microgravity_Database_reduced.csv \
+  --data Microgravity_Database.csv \
   --selection results/selection.json \
   --champion extrapolation \
   --out artifacts/extrapolation_champion
 
 python fable_report.py \
-  --data ../Microgravity_Database_reduced.csv \
+  --data Microgravity_Database.csv \
   --evaluation results/evaluation \
   --selection results/selection.json \
   --artifacts artifacts \
@@ -106,9 +103,8 @@ are retained.
 
 For each LOPO fold, hyperparameters are frozen to the modal configuration selected by repeated
 grouped outer folds whose training partitions excluded that same held-out paper. Modal ties resolve
-lexically. This avoids both LOPO-paper leakage and redundant 40-configuration retuning. LOPO
-thresholds are still derived from grouped inner OOF predictions using only that fold's training
-papers.
+lexically. This avoids both LOPO-paper leakage and redundant retuning. LOPO thresholds are still
+derived from grouped inner OOF predictions using only that fold's training papers.
 
 Four decision thresholds remain separate: MCC, F1, balanced accuracy, and Youden J. Each is frozen
 from inner out-of-fold predictions before scoring the outer test fold. None is called universally

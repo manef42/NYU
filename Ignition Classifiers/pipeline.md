@@ -1,523 +1,277 @@
-# 🔥 How the Ignition Classifier Pipeline Works
+# How the Ignition Classifier Pipeline Works
 ### A plain-English guide for ML beginners
 
 ---
 
-## 🧠 The Big Picture
+## The big picture
 
-The goal is simple: **given a set of experimental conditions
-(oxygen level, pressure, material, gravity, etc.), predict whether
-a material will ignite — Yes or No.**
+The goal is simple: given a set of experimental conditions such as oxygen level, pressure,
+material, gravity, and geometry, predict whether a material will ignite. This is a binary
+classification problem.
 
-This is a **binary classification** problem. The twist is that the
-data comes from ~93 scientific papers, and we want our model to
-work on *brand-new papers it has never seen before* — not just
-shuffle the same papers around.
-
-The pipeline is split across several Python files ("modules"), each
-doing one job:
-
-| File | Job |
-|---|---|
-| `fable_common.py` | Load & clean the database, engineer features |
-| `fable_splits.py` | Generate all train/test splits (frozen, never touched again) |
-| `fable_models.py` | Define all model families and their wrappers |
-| `fable_search.py` | Tune hyperparameters *inside* each training fold |
-| `fable_evaluate.py` | Run the full benchmark and save all results |
-| `fable_refit.py` | Re-train the winning model on all data |
-| `fable_report.py` | Generate tables, plots, and the final report |
-| `fable_select.py` | Apply the selection policy to pick the champion model |
-| `fable_predict.py` | Use the final model to predict on new data |
+The dataset is organized by paper, so the key challenge is to evaluate whether a model generalizes
+to new papers rather than memorizing familiar experimental campaigns. The pipeline keeps the workflow
+reproducible by freezing the data splits, fixing the feature list, and persisting every evaluation
+artifact.
 
 ---
 
-## STEP 1 — Load and Clean the Data (`fable_common.py`)
+## Step 1 — Load and clean the data (`fable_common.py`)
 
-### What happens
-The raw database is an Excel/CSV file with ~5,000 rows. Each row is
-one combustion experiment from a published paper.
+The raw database is a CSV file with a category row followed by the real header row. The loader parses
+units, normalizes text, validates required source columns, and drops six columns that must never be
+used as features: Material of Sample, Rig Name, Internal Geometry, Internal Dimensions, Facility,
+and Info.
 
-### Feature Engineering
-The raw columns are messy (e.g. `"94 W"`, `"0.21 atm"`, `"3×2×1 mm"`).
-The code parses every cell into a clean number:
+Every model uses the same fixed physics feature list: 40 numeric features and 5 categorical features.
+There are no feature sets anymore, no `log10_gravity_g`, no `internal_dim_*` variables, and none of
+the six dropped columns above. The feature list covers fuel and gas properties, flow, pressure,
+oxygen, gravity, ignition conditions, geometry-derived measurements, and five categorical descriptors
+for geometry, diluent, flow direction, gravity regime, and ignition method.
 
-- **Pressure** → always converted to **kPa**
-  - `"1 atm"` → `101.325 kPa`
-  - `"0.5 MPa"` → `500 kPa`
-- **Flow velocity** → always **mm/s**
-  - `"5 cm/s"` → `50 mm/s`
-- **Gravity** → fraction of Earth gravity (**g**)
-  - `"9.81 m/s²"` → `1.0 g`
-  - `"microgravity"` → `0.000001 g`
-- **Dimensions** → split into up to 3 individual measurements in **mm**,
-  plus min, max, mean, count
-- **Oxygen** → converted to a fraction between 0 and 1
-  - `"21%"` → `0.21`
-- **Ignition energy** → computed as:
+The engineered feature count is therefore 45 total features: 40 numeric and 5 categorical.
+Missing numeric values are handled by the downstream models, and categorical values are encoded with
+unknown-safe one-hot pipelines.
 
-$$E_{\text{ignition}} = P_{\text{ignition}} \times t_{\text{ignition}}$$
+The target is ignition, recorded as yes or no. The loader also removes duplicates using the full
+feature list plus the paper identity, so repeated rows do not inflate the evidence count.
 
-- **Log gravity** → $\log_{10}(\text{gravity\_g})$ is added as a feature
-  because gravity spans many orders of magnitude and a log scale
-  makes it easier for models to learn from
+### A few feature examples
 
-### Post-ignition leakage columns are removed
-Flame Spread Rate, Flame Length, HRR, Smoke — these only exist
-*after* ignition happens, so including them would be cheating.
+Here are some of the engineered numeric variables used by every model:
 
-### The two feature sets
-Every model is run twice — once with **all features**, once with
-only **physics features** (no apparatus-specific columns like
-rig name or facility). This tests whether the model learned real
-physics or just memorized the lab setup.
+- `oxygen_fraction`
+- `pressure_kpa`
+- `flow_velocity_mm_s`
+- `gravity_g`
+- `ignition_energy_j`
+- `half_thickness_m`
+- `sample_dim_mean_mm`
+- `core_diameter_mm`
+- `insulation_thickness_mm`
 
-| Feature Set | Columns included |
-|---|---|
-| `physics` | O₂ fraction, pressure, flow, gravity, log-gravity, fuel/gas thermal properties, geometry, diluent, flow direction |
-| `all` | Everything above + ignition power/time/energy, sample dimensions, internal geometry, facility, rig |
+The categorical variables are:
 
-**Total engineered numeric features: 37**
-**Total categorical features: 7**
+- `geometry_cat`
+- `diluent_cat`
+- `flow_direction_cat`
+- `gravity_regime_cat`
+- `ignition_method_cat`
 
----
+### Example formula
 
-## STEP 2 — Generate Frozen Splits (`fable_splits.py`)
+Ignition energy is computed from ignition power and ignition time:
 
-### Why freeze the splits?
-If you re-generate splits every time you run, different runs are
-not comparable. Freezing them once means every model sees exactly
-the same train/test rows.
+\[
+E_{\text{ignition}} = P_{\text{ignition}} \times t_{\text{ignition}}
+\]
 
-### The 4 split protocols
-
-#### Protocol A: `interpolation_holdout`
-A standard 80/20 random train/test split, **stratified** (keeps
-the same ~76% ignition / 24% no-ignition ratio in both halves).
-This is the *easiest* protocol — the model will likely have seen
-similar experiments at training time.
-
-#### Protocol B: `interpolation_stratified`
-5-fold cross-validation with stratification. The data is split into
-5 equal chunks; in each fold, 4 chunks train and 1 tests.
-This is run with **3 different random seeds**, giving 15 outer folds.
-
-#### Protocol C: `extrapolation_grouped`
-**The scientifically important one.** All rows from the same paper
-are kept *together* — either all in train or all in test.
-This mimics the real question: *can the model predict ignition in
-a paper it has never read?*
-Uses `StratifiedGroupKFold` with 5 folds × 3 seeds = **15 outer folds**.
-
-#### Protocol D: `lopo` (Leave-One-Paper-Out)
-The strictest test. One paper is completely held out, the model
-trains on the other 92, then predicts on the held-out paper.
-This is repeated for every paper → **93 outer folds**.
-There is no randomness: fold `k` always holds out paper `k`.
-
-### Integrity checks
-After generation, every split is validated:
-- No row appears in both train and test
-- Every row appears in exactly one partition
-- For grouped/LOPO: no paper appears in both train and test
+This gives one derived feature that helps summarize how much energy was delivered during ignition.
 
 ---
 
-## STEP 3 — Define the Models (`fable_models.py`)
+## Step 2 — Generate frozen splits (`fable_splits.py`)
 
-There are **5 model families**, each run with 2–3 candidate
-configurations = **15 total candidates**.
+The split files are created once and then treated as fixed inputs for the rest of the pipeline. This
+is important because different random splits would make model comparisons unfair.
 
----
+There are four split protocols:
 
-### Model 1: Decision Tree 🌳
+- `interpolation_holdout`: a stratified holdout split for a quick interpolation check.
+- `interpolation_stratified`: repeated stratified row-level cross-validation.
+- `extrapolation_grouped`: repeated grouped cross-validation where whole papers stay together.
+- `lopo`: leave-one-paper-out, which holds out one paper at a time.
 
-A flowchart of yes/no questions on the features.
+Together these protocols cover both easy interpolation and the harder question of transfer to unseen
+papers. The grouped protocols ensure that the same paper never appears in both train and test.
 
-**Search space (hyperparameters to tune):**
+### Why grouped splits matter
 
-| Parameter | Values tried |
-|---|---|
-| `max_depth` | 3, 5, 7, 10, None (unlimited) |
-| `min_samples_leaf` | 1, 2, 5, 10, 20 |
-| `criterion` | `gini`, `entropy`, `log_loss` |
-
-**Criterion formulas:**
-
-Gini impurity for a node with class proportions $p_0, p_1$:
-
-$$\text{Gini} = 1 - p_0^2 - p_1^2$$
-
-Entropy (information gain):
-
-$$H = -p_0 \log_2 p_0 - p_1 \log_2 p_1$$
-
-**Candidates:** `decision_tree_all`, `decision_tree_physics`
+If rows from the same paper appear in both training and testing, the score can look unrealistically
+good because the model has already seen very similar experiments. Grouped splits make the benchmark
+much closer to the real scientific question: can the model handle a new paper?
 
 ---
 
-### Model 2: XGBoost 🚀
+## Step 3 — Define the candidates (`configs/candidates.yaml`)
 
-An ensemble of many shallow decision trees built *sequentially*,
-where each new tree tries to fix the mistakes of the previous ones.
+The pipeline evaluates 26 candidates across five model families: XGBoost, decision tree, KNN, MLP,
+and SVM. Each candidate is a fixed combination of family, weighting policy, and any family-specific
+settings.
 
-**Core idea:**
+The candidate IDs are:
 
-$$\hat{y}^{(t)} = \hat{y}^{(t-1)} + \eta \cdot f_t(x)$$
+- XGBoost: `xgb_baseline`, `xgb_paper_sqrt`, `xgb_paper_inverse`, `xgb_class_only`, `xgb_weighted_sqrt`, `xgb_weighted_inverse`, `xgb_focal_sqrt`, `xgb_focal_inverse`
+- Decision tree: `dt_baseline`, `dt_weighted_sqrt`, `dt_weighted_inverse`
+- KNN: `knn_baseline`, `knn_weighted_sqrt`, `knn_weighted_inverse`, `knn_distance_sqrt`, `knn_distance_inverse`
+- MLP: `mlp_baseline`, `mlp_weighted_sqrt`, `mlp_weighted_inverse`, `mlp_focal_sqrt`, `mlp_focal_inverse`
+- SVM: `svm_baseline`, `svm_weighted_sqrt`, `svm_weighted_inverse`, `svm_linear_sqrt`, `svm_linear_inverse`
 
-where $\eta$ is the learning rate and $f_t$ is the new tree.
+That fixed candidate list is what the evaluation step searches over. Older IDs such as
+`xgb_all_unweighted` and `knn_physics` do not belong to the current pipeline.
 
-**Search space:**
+### What “candidate” means
 
-| Parameter | Values tried | What it controls |
-|---|---|---|
-| `n_estimators` | 200, 400, 600, 800 | Number of trees |
-| `learning_rate` | 0.01, 0.03, 0.05, 0.1 | How big each step is |
-| `max_depth` | 2, 3, 4, 5, 6 | How deep each tree can be |
-| `min_child_weight` | 1, 2, 4, 8 | Min samples to split a node |
-| `subsample` | 0.6, 0.8, 1.0 | % of rows used per tree |
-| `colsample_bytree` | 0.6, 0.8, 1.0 | % of features used per tree |
-| `reg_lambda` | 0.5, 1.0, 2.0, 5.0 | L2 regularization (penalizes large weights) |
-| `reg_alpha` | 0.0, 0.1, 0.5 | L1 regularization (encourages sparse weights) |
-| `gamma` | 0.0, 0.1, 0.5 | Min gain required to make a split |
-
-**XGBoost has 7 candidate variants:**
-
-| Candidate ID | Feature set | Loss function | Weighting |
-|---|---|---|---|
-| `xgb_all_unweighted` | all | logistic | none |
-| `xgb_physics_unweighted` | physics | logistic | none |
-| `xgb_all_class_paper_weighted` | all | logistic | class + paper |
-| `xgb_physics_class_paper_weighted_monotone_o2` | physics | logistic | class + paper + O₂ monotone |
-| `xgb_all_focal_class_paper_weighted` | all | **focal loss** | class + paper |
-| `xgb_physics_focal_class_paper_weighted` | physics | **focal loss** | class + paper |
-| `xgb_physics_paper_bagging` | physics | logistic | class + paper + 10 bootstrap ensembles |
-
-**What is focal loss?**
-Standard logistic loss treats every sample equally. Focal loss
-down-weights easy examples so the model focuses on hard borderline cases:
-
-$$\mathcal{L}_{\text{focal}} = -(1 - p_t)^\gamma \log(p_t)$$
-
-where $p_t$ is the model's probability for the correct class and
-$\gamma = 2.0$. When the model is already confident ($p_t \approx 1$),
-$(1-p_t)^2 \approx 0$ and the loss is nearly zero — hard examples
-get all the gradient signal.
-
-**What is the monotone O₂ constraint?**
-For the physics candidate, we enforce that increasing oxygen
-concentration must never decrease $P(\text{ignition})$.
-This is physically obvious — more oxygen → easier to ignite.
-It is enforced by telling XGBoost: `monotone_constraints = +1`
-on the oxygen feature.
-
-**What is paper bagging?**
-Instead of training one XGBoost model, we train **10 models**,
-each on a different bootstrap resample of the *papers* (not rows).
-The final prediction is the average of all 10:
-
-$$\hat{p} = \frac{1}{10} \sum_{k=1}^{10} \hat{p}_k$$
-
-This reduces variance caused by the specific papers that happen
-to be in the training set.
+A candidate is not just a model family. It is a specific modeling recipe: for example, an XGBoost
+model with inverse paper weighting, or an SVM with a linear kernel and square-root paper weighting.
+This lets the benchmark compare not only algorithms, but also weighting choices and objective
+variants.
 
 ---
 
-### Model 3: K-Nearest Neighbors (KNN) 🗺️
+## Step 4 — Nested search and scoring (`fable_search.py`, `fable_evaluate.py`)
 
-To predict for a new experiment, find the K most similar
-experiments in the training set and take a majority vote.
+For every outer fold, the pipeline tunes hyperparameters only inside the training data for that fold.
+This is nested search: the outer test fold stays untouched until the very end.
 
-**Distance formula — Manhattan ($p=1$):**
+The main search objective is ROC-AUC, and the pipeline also records PR-AUC, Brier score, MCC, F1,
+balanced accuracy, sensitivity, specificity, and precision. Four separate decision thresholds are
+frozen from inner out-of-fold predictions: MCC, F1, balanced accuracy, and Youden J.
 
-$$d(a, b) = \sum_i |a_i - b_i|$$
+### Threshold rule
 
-**Distance formula — Euclidean ($p=2$):**
+A classifier produces a probability \(\hat{p}\). To convert it into a yes/no prediction, the pipeline
+uses a threshold \(\tau\):
 
-$$d(a, b) = \sqrt{\sum_i (a_i - b_i)^2}$$
+\[
+\hat{y} =
+\begin{cases}
+1 & \text{if } \hat{p} \ge \tau \\
+0 & \text{if } \hat{p} < \tau
+\end{cases}
+\]
 
-**Search space:**
+Instead of forcing one universal threshold such as 0.5, the pipeline keeps four different threshold
+policies because different scientific goals reward different trade-offs.
 
-| Parameter | Values tried | What it controls |
-|---|---|---|
-| `n_neighbors` | 5, 9, 15, 25, 40, 60 | How many neighbors to consult |
-| `weights` | `uniform`, `distance` | Uniform: all K neighbors vote equally. Distance: closer neighbors vote more |
-| `p` | 1, 2 | 1 = Manhattan distance, 2 = Euclidean |
-| `leaf_size` | 15, 30, 60 | Speed/memory trade-off for the KD-tree |
+### LOPO special handling
 
-**Candidates:** `knn_all`, `knn_physics`
-
----
-
-### Model 4: Multi-Layer Perceptron (MLP) 🧬
-
-A neural network with hidden layers. Each neuron computes:
-
-$$z = \text{activation}\!\left(\sum_j w_j x_j + b\right)$$
-
-**Search space:**
-
-| Parameter | Values tried | What it controls |
-|---|---|---|
-| `hidden_layer_sizes` | (32,), (64,), (64,32), (128,64) | Network architecture |
-| `alpha` | 1e-5, 1e-4, 1e-3, 1e-2 | L2 weight regularization |
-| `learning_rate_init` | 0.0001, 0.0003, 0.001, 0.003 | Step size for gradient descent |
-| `activation` | `relu`, `tanh` | Non-linearity applied at each neuron |
-| `batch_size` | 32, 64, 128 | Samples per gradient update |
-
-The network uses **early stopping** (stops training when validation
-loss doesn't improve for 25 consecutive epochs, max 600 epochs).
-
-**Candidates:** `mlp_all`, `mlp_physics`
+LOPO is treated specially. Instead of re-tuning everything from scratch for each held-out paper, the
+pipeline reuses the modal hyperparameters discovered by the grouped outer folds when the same paper
+was absent from training. This reduces redundancy while preserving the no-leakage rule.
 
 ---
 
-### Model 5: Support Vector Machine (SVM) 🗡️
+## Step 5 — Weighting and model behavior
 
-Finds the widest possible margin between igniting and
-non-igniting experiments in a high-dimensional feature space.
+The pipeline uses paper weighting to avoid letting large papers dominate the learning signal. The
+common paper strategies in the candidate registry are `none`, `sqrt`, and `inverse`, and class
+weighting can also be turned on for selected candidates.
 
-**Kernel trick (RBF):**
+If paper \(p\) contributes \(n_p\) rows, a typical square-root paper weighting rule is:
 
-$$K(x, x') = \exp\!\left(-\gamma \|x - x'\|^2\right)$$
+\[
+w_p = \frac{1}{\sqrt{n_p}}
+\]
 
-This maps data into a space where it is linearly separable
-without ever computing the high-dimensional coordinates explicitly.
+This reduces the influence of very large papers without making every paper contribute exactly the
+same amount.
 
-Since SVM doesn't naturally output probabilities, a
-**Platt sigmoid calibration** is wrapped around it (3-fold CV):
+### Family differences
 
-$$P(\text{ignition}) = \frac{1}{1 + e^{A \cdot f(x) + B}}$$
+Different model families handle weighting differently:
 
-**Search space:**
+- XGBoost and decision trees can consume sample weights directly.
+- Calibrated SVM can use supported fit-time weighting.
+- KNN and MLP cannot use sample weights in the same way, so the pipeline uses deterministic weighted resampling for them.
 
-| Parameter | Values tried | What it controls |
-|---|---|---|
-| `C` | 0.1, 0.3, 1.0, 3.0, 10.0, 30.0 | Penalty for misclassification (larger = tighter fit) |
-| `gamma` | `scale`, 0.01, 0.03, 0.1, 0.3 | Width of the RBF kernel |
-| `shrinking` | True, False | Optimization speed heuristic |
-
-**Candidates:** `svm_all`, `svm_physics`
-
----
-
-## STEP 4 — Sample Weighting (`fable_common.py`)
-
-### The problem
-Some papers contribute 300 rows, others only 4. Without
-correction, models effectively memorize the large papers.
-
-### Paper weighting strategies
-Each row gets a weight based on how many rows its paper contributes.
-If paper $p$ has $n_p$ rows, the weight for each row is:
-
-| Strategy | Formula | Effect |
-|---|---|---|
-| `none` | $w = 1$ | All rows equal |
-| `inverse` | $w = 1 / n_p$ | Large papers heavily down-weighted |
-| `sqrt` | $w = 1 / \sqrt{n_p}$ | Moderate down-weighting (used by most candidates) |
-| `log` | $w = 1 / \ln(1 + n_p)$ | Gentle down-weighting |
-| `effective` | $w = (1-\beta) / (1-\beta^{n_p})$ | Class Balanced Loss formula |
-
-All weights are normalized so their mean = 1.
-
-### Class weighting
-Because 76% of rows are "ignition = Yes", the model can score 76%
-accuracy by always predicting Yes. Class weighting multiplies the
-paper weight by an additional factor:
-
-$$w_{\text{class}} = \frac{N}{2 \cdot N_k}$$
-
-where $N_k$ is the count of the row's class. This makes ignition
-and non-ignition examples contribute equally.
+These family-specific mechanics are part of what makes the benchmark fair across very different model
+types.
 
 ---
 
-## STEP 5 — Hyperparameter Tuning (Nested Search) (`fable_search.py`)
+## Step 6 — Selection and refit (`fable_select.py`, `fable_refit.py`)
 
-### The core idea
-For every outer training fold, we need to pick the best
-hyperparameters — **without peeking at the test fold**.
-We do this by splitting the outer training set into **inner folds**
-and trying many configurations.
+The selection step applies a fixed policy to the persisted evaluation artifacts and chooses one
+champion for interpolation and one for extrapolation. It does not train any new models.
 
-### The inner loop
+The refit step then retrains the chosen configuration on all labeled data for deployment. This
+creates the deployable artifacts after the evaluation phase is complete.
 
-For each outer fold:
-1. Generate 3 inner `StratifiedGroupKFold` splits of the training data
-   (papers are kept together here too, for the grouped/LOPO protocols)
-2. Sample **40 random configurations** from the search space
-3. For each configuration:
-   - Train on 2 inner folds, predict on the 3rd → repeat 3 times
-   - Record the **out-of-fold ROC-AUC** for each inner fold
-4. Pick the configuration with the highest mean inner ROC-AUC
-5. Train a fresh model with those hyperparameters on the **full** outer training fold
-6. Predict on the outer test fold → these are the official predictions
+### Why there are two champions
 
-### Threshold optimization
-Standard classifiers output a probability $\hat{p} \in [0,1]$.
-To get a hard Yes/No prediction, you need a threshold $\tau$:
-
-$$\hat{y} = \begin{cases} 1 & \text{if } \hat{p} \geq \tau \\ 0 & \text{otherwise} \end{cases}$$
-
-Instead of always using $\tau = 0.5$, the pipeline finds the
-**optimal threshold for 4 different objectives**, using only the
-inner out-of-fold predictions (never the test set):
-
-| Threshold name | What it maximizes |
-|---|---|
-| `mcc` | Matthews Correlation Coefficient |
-| `f1` | F1 score (harmonic mean of precision & recall) |
-| `balanced_accuracy` | Mean of sensitivity and specificity |
-| `youden_j` | Sensitivity + Specificity − 1 |
-
-**Matthews Correlation Coefficient:**
-
-$$\text{MCC} = \frac{TP \cdot TN - FP \cdot FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}$$
-
-This ranges from −1 to +1 and is considered the most honest single
-metric for binary classification under class imbalance.
-
-### LOPO special case
-For a Leave-One-Paper-Out fold, running 40 configurations × 3 inner
-folds is wasteful because we already know which hyperparameters work
-from the grouped CV. Instead:
-- Look at all `extrapolation_grouped` outer folds whose training set
-  **did not include** the held-out paper
-- Take the **most frequently selected** (modal) hyperparameters
-- Freeze those and train with 1 configuration, 1 iteration
+Interpolation and extrapolation answer different questions. A model can be very strong when test rows
+look similar to rows already seen during training, yet weaker when a completely new paper is held out.
+That is why the pipeline keeps separate champions rather than forcing a single winner for both tasks.
 
 ---
 
-## STEP 6 — Metrics (`fable_search.py`, `fable_evaluate.py`)
+## Step 7 — Per-family output directories
 
-Every fold records these metrics at the chosen thresholds:
+Evaluation artifacts are stored by family rather than under older `model_*` directory names. The
+per-family directory layout is based on the keys in `MODEL_FAMILIES`:
 
-| Metric | Formula | Plain English |
-|---|---|---|
-| **ROC-AUC** | Area under TPR vs FPR curve | How well does the model *rank* igniting vs non-igniting? 1.0 = perfect, 0.5 = random |
-| **PR-AUC** | Area under Precision vs Recall curve | Better metric when classes are imbalanced |
-| **Brier score** | $\frac{1}{n}\sum(\hat{p}_i - y_i)^2$ | Mean squared error of the probabilities (lower = better) |
-| **MCC** | See above | Best overall single number |
-| **F1** | $2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$ | Balance between catching ignitions and not over-predicting |
-| **Balanced accuracy** | $\frac{1}{2}(TPR + TNR)$ | Mean recall across both classes |
-| **Sensitivity** | $TP / (TP + FN)$ | Fraction of real ignitions caught |
-| **Specificity** | $TN / (TN + FP)$ | Fraction of real non-ignitions correctly rejected |
+- `results/evaluation/xgb/`
+- `results/evaluation/svm/`
+- `results/evaluation/knn/`
+- `results/evaluation/dt/`
+- `results/evaluation/mlp/`
 
----
-
-## STEP 7 — Statistical Validation (`fable_evaluate.py`)
-
-After all folds are done, the pipeline runs extra statistical checks.
-
-### Bootstrap confidence intervals
-To know how uncertain the metrics are, the pipeline does 2,000
-bootstrap resamples:
-1. Randomly resample with replacement (for grouped protocols, resample
-   whole papers, not individual rows)
-2. Recompute ROC-AUC, PR-AUC, Brier score on the resampled set
-3. Repeat 2,000 times → take the 2.5th and 97.5th percentiles as the
-   **95% confidence interval**
-
-### Wilcoxon signed-rank test
-To check if one model is *genuinely* better than another, a
-paired statistical test is run on the fold-level metrics:
-- For each pair of models A and B, compute $\delta = \text{AUC}_A - \text{AUC}_B$ on every shared fold
-- Run Wilcoxon signed-rank test: $H_0$ = the median difference is zero
-- A p-value < 0.05 suggests the difference is statistically significant
+These directories hold family-level outputs such as summary metrics, predictions, integrity checks,
+and comparison files. This structure is also what `fable_select.py` and the updated `fable_report.py`
+now expect.
 
 ---
 
-## STEP 8 — Model Selection (`fable_select.py`)
+## Step 8 — Report generation (`fable_report.py`)
 
-A candidate wins if it scores best on the **primary metric** for
-its target protocol. Ties are broken in this order:
+The report script builds publication tables and figures from the saved evaluation artifacts. It reads
+from the per-family output directories, summarizes the selected champions, merges integrity logs, and
+creates the report README and plots.
 
-**For extrapolation (the scientifically important one):**
-1. Highest ROC-AUC on `extrapolation_grouped`
-2. Tie? → Higher PR-AUC
-3. Still tied? → Lower uncertainty (narrower confidence interval)
-4. Still tied? → Physics-only feature set preferred
-5. Still tied? → Simpler model preferred
-
-**Simplicity order:** Decision Tree < KNN < SVM < XGBoost < MLP
-
-A candidate also passes a **robustness check**: it must achieve
-reasonable ROC-AUC on the LOPO protocol too (not just
-grouped CV). Candidates that only look good on one protocol are rejected.
-
-**Instability filter:** Any candidate whose fold-level ROC-AUC has
-a standard deviation > 0.15 is disqualified (too inconsistent to trust).
+The generated report README uses `Microgravity_Database.csv` in the project folder and points to
+family-based integrity files such as `../evaluation/<family>/integrity_checks.json`.
 
 ---
 
-## STEP 9 — Refit and Deploy (`fable_refit.py`, `fable_predict.py`)
+## Pipeline map
 
-Once the champion model is selected:
-1. It is retrained on **all available data** (no held-out test set)
-   using the modal hyperparameters from the grouped outer folds
-2. Saved as a `.joblib` file
-3. `fable_predict.py` loads this file and can score new experiments:
-   input a CSV row → output $P(\text{ignition})$ + a hard Yes/No per threshold
-
----
-
-## 🗺️ Full Pipeline Diagram
-
-```
+```text
 Raw database (CSV)
        │
        ▼
-fable_common.py ──► Clean + engineer 44 features ──► Deduplicate rows
+fable_common.py ──► Clean data and engineer 45 fixed features
        │
        ▼
-fable_splits.py ──► Generate 4 frozen protocols (ONCE, never re-run)
-       │           ├─ interpolation_holdout    (3 × 1 fold  =  3 folds)
-       │           ├─ interpolation_stratified (3 × 5 folds = 15 folds)
-       │           ├─ extrapolation_grouped    (3 × 5 folds = 15 folds)
-       │           └─ lopo                     (1 × 93 folds = 93 folds)
+fable_splits.py ──► Create 4 frozen split protocols
        │
        ▼
-fable_evaluate.py ── For each of 15 candidates × each outer fold:
-       │           ├─ fable_search.py: 40 configs × 3 inner folds → best HP
-       │           ├─ fable_models.py: train final model on outer train set
-       │           ├─ Predict on outer test set → probabilities
-       │           ├─ Optimize 4 thresholds on inner OOF predictions
-       │           └─ Record all metrics + predictions
+fable_evaluate.py ──► Tune and score 26 candidates across 5 families
        │
        ▼
-fable_evaluate.py ── Post-processing:
-       │           ├─ 2,000-iteration bootstrap CIs
-       │           ├─ Wilcoxon paired tests (all model pairs)
-       │           └─ Per-paper breakdown
+results/evaluation/<family>/
+       ├─ summary metrics
+       ├─ predictions and thresholds
+       ├─ integrity checks
+       └─ comparisons
        │
        ▼
-fable_select.py ──► Apply selection policy → pick 1 extrapolation champion
+fable_select.py ──► Apply the selection policy
        │
        ▼
-fable_refit.py ──► Train champion on all data → save model
+fable_refit.py ──► Refit the selected champions
        │
        ▼
-fable_predict.py ──► Score new experiments
+fable_report.py ──► Build tables, plots, and the final report
 ```
 
 ---
 
-## 🔑 Key Takeaways for an ML Beginner
+## Why the pipeline is structured this way
 
-1. **Train/test split is not enough** — when data comes from papers,
-   you must keep whole papers together or your metrics are misleadingly optimistic.
+The design keeps the science honest. By freezing splits, holding out papers together, and evaluating
+many candidates under the same conditions, the pipeline can compare models fairly.
 
-2. **Nested cross-validation** means the hyperparameter search is
-   also validated fairly — tuning on the test set would inflate your scores.
+The fixed physics feature list means every candidate sees the same inputs, which makes the benchmark
+cleaner and easier to interpret. The per-family output directories also make the persisted artifacts
+simpler to inspect and reuse.
 
-3. **Threshold matters** — 0.5 is rarely the best threshold.
-   This pipeline picks the threshold that maximizes the metric you care about.
+---
 
-4. **More data ≠ more information** — a paper with 300 rows
-   is not 300× more informative than one with 4 rows.
-   Sample weighting corrects for this.
+## A simple mental model
 
-5. **One number is never enough** — reporting ROC-AUC, PR-AUC,
-   MCC, Brier score, and per-paper metrics together paints a
-   much more honest picture than a single accuracy score.
-```
+Think of the pipeline as a funnel. First it cleans the raw database, then it generates safe split
+protocols, then it searches the 26 candidates, then it selects the best champions, and finally it
+refits and reports the result.
+
+That order matters because each later stage depends on the previous one being frozen and reproducible.
