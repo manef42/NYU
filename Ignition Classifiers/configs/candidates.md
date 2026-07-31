@@ -1,10 +1,10 @@
-# Candidate Design — Version 4
+# Candidate Design — Version 5
 
 ## Context
 
-The pipeline has been updated to use a physics-only database (`Physics_DB.csv`).
-All features are physics-based; the `feature_set` distinction from v1 is dropped.
-This document justifies the design of the 28 candidates across 5 model families.
+The pipeline uses a physics-only database (`Microgravity_Database.csv`).
+All features are physics-based; there is no `feature_set` distinction.
+This document justifies the design of the 26 candidates across 5 model families.
 
 ---
 
@@ -59,33 +59,28 @@ solely on focal loss for imbalance correction. Paper weighting is retained since
 corrects a different type of bias (sampling, not label).
 
 `focal_gamma` is fixed at **2.0**, the standard value from the original paper,
-appropriate for moderate class imbalance. Tuning γ is deferred to a future ablation.
+appropriate for moderate class imbalance.
 
 ### 5. Structural variants tested with both weighting strategies
-Specialized structural variants (pruning for Decision Tree, distance weighting for
-KNN, linear kernel for SVM) are each tested with both `sqrt` and `inverse` paper
-weighting. This ensures that the best structural configuration is identified
-independently of the weighting strategy choice.
+Specialized structural variants (distance weighting for KNN, linear kernel for SVM)
+are each tested with both `sqrt` and `inverse` paper weighting. This ensures that
+the best structural configuration is identified independently of the weighting
+strategy choice.
 
-### 6. Decision Tree pruning — fixed depth by design
-The full Decision Tree search space already tunes `max_depth` and `min_samples_leaf`
-for every candidate. Simply labelling a candidate "pruned" without constraining these
-parameters would produce an identical experiment to the weighted baseline.
-
-The `dt_pruned` candidates therefore **fix** `max_depth: 4` and
-`min_samples_leaf: 5`, removing them from the search space and restricting tuning
-to `criterion` only. This enforces a deliberately shallow, interpretable tree as a
-design choice — a meaningful hypothesis on a small physics dataset where
-overfitting risk is high and interpretability is valuable.
+### 6. Decision Tree — no structural variant needed
+The Decision Tree search space already tunes `max_depth`, `min_samples_leaf`, and
+`criterion` for every candidate. There is no structural variant that is not already
+covered by the hyperparameter search, so DT is kept at 3 candidates (baseline,
+sqrt, inverse). Adding a fixed-depth "pruned" candidate would be redundant — it
+would simply constrain the tuner to values it already explores freely.
 
 ### 7. SVM kernel choice — linear vs RBF
-The SVM implementation defaults to an RBF kernel for all candidates. Adding an
-`svm_rbf` candidate with `kernel: rbf` in `fixed_params` would therefore be
-redundant. Instead, `svm_linear` candidates explicitly test a **linear kernel**,
-which is a genuinely different hypothesis: that the ignition decision boundary is
-linearly separable in the physics feature space. This is scientifically plausible
-given that many physics relationships (e.g. oxygen threshold, pressure effects) are
-approximately linear in the feature ranges observed.
+The SVM implementation defaults to an RBF kernel for all candidates. `svm_linear`
+candidates explicitly test a **linear kernel**, which is a genuinely different
+hypothesis: that the ignition decision boundary is linearly separable in the physics
+feature space. This is scientifically plausible given that many physics relationships
+(e.g. oxygen threshold, pressure effects) are approximately linear in the observed
+feature ranges.
 
 ---
 
@@ -109,18 +104,16 @@ The first six candidates form a 2×3 ablation grid isolating paper weight strate
 (none / sqrt / inverse) and class weight (off / on). The last two test focal loss
 as a standalone imbalance correction with each paper weighting strategy.
 
-### Decision Tree (5 candidates)
-Pruned candidates fix `max_depth: 4` and `min_samples_leaf: 5`, restricting tuning
-to `criterion` only. This enforces a shallow interpretable tree distinct from the
-fully-tuned weighted baselines.
+### Decision Tree (3 candidates)
+No structural variant is added since all meaningful hyperparameters (`max_depth`,
+`min_samples_leaf`, `criterion`) are already tuned by the nested search for every
+candidate.
 
-| candidate_id | paper_weight | class_weight | special |
-|---|---|---|---|
-| dt_baseline | none | false | — |
-| dt_weighted_sqrt | sqrt | true | — |
-| dt_weighted_inverse | inverse | true | — |
-| dt_pruned_sqrt | sqrt | true | max_depth=4, min_samples_leaf=5 |
-| dt_pruned_inverse | inverse | true | max_depth=4, min_samples_leaf=5 |
+| candidate_id | paper_weight | class_weight |
+|---|---|---|
+| dt_baseline | none | false |
+| dt_weighted_sqrt | sqrt | true |
+| dt_weighted_inverse | inverse | true |
 
 ### KNN (5 candidates)
 Distance-based sample weighting (`weights: distance`) is the key structural variant,
@@ -135,8 +128,8 @@ giving closer neighbors stronger influence during prediction.
 | knn_distance_inverse | inverse | true | distance weights |
 
 ### MLP (5 candidates)
-Mirrors the XGBoost focal logic at a reduced scale (no paper/class isolation split
-since MLP is a comparison baseline). Focal loss is the key structural variant.
+Mirrors the XGBoost focal logic at a reduced scale. Focal loss is the key structural
+variant, used without class weighting to avoid double-correcting for imbalance.
 
 | candidate_id | paper_weight | class_weight | special |
 |---|---|---|---|
@@ -149,7 +142,7 @@ since MLP is a comparison baseline). Focal loss is the key structural variant.
 ### SVM (5 candidates)
 The linear kernel is tested as the key structural variant against the RBF default.
 A linear SVM tests whether the ignition boundary is linearly separable in the
-physics feature space, which is a scientifically plausible hypothesis.
+physics feature space.
 
 | candidate_id | paper_weight | class_weight | special |
 |---|---|---|---|
@@ -161,17 +154,17 @@ physics feature space, which is a scientifically plausible hypothesis.
 
 ---
 
-## Total: 28 candidates
+## Total: 26 candidates
 
 | Family | Count |
 |---|---|
 | XGBoost | 8 |
-| Decision Tree | 5 |
+| Decision Tree | 3 |
 | KNN | 5 |
 | MLP | 5 |
 | SVM | 5 |
-| **Total** | **28** |
+| **Total** | **26** |
 
-The asymmetry in XGBoost (8 vs 5) is intentional: as the primary model, it receives
-a full ablation of weighting mechanisms. The remaining four families serve as
-structured comparison baselines and do not require the same granularity.
+The asymmetry in XGBoost (8 vs 3–5) is intentional: as the primary model, it
+receives a full ablation of weighting mechanisms. The remaining four families serve
+as structured comparison baselines.

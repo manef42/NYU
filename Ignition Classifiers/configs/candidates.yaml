@@ -1,4 +1,4 @@
-version: 4
+version: 5
 random_state: 42
 
 # New database contains only physics-based features.
@@ -70,7 +70,7 @@ candidates:
 
 
   # =====================================================
-  # RANDOM FOREST / DECISION TREE
+  # DECISION TREE
   # =====================================================
 
   - candidate_id: dt_baseline
@@ -87,26 +87,6 @@ candidates:
     model_family: decision_tree
     paper_weight: inverse
     class_weight: true
-
-  - candidate_id: dt_pruned_sqrt
-    model_family: decision_tree
-    paper_weight: sqrt
-    class_weight: true
-    fixed_params:
-      max_depth: 4
-      min_samples_leaf: 5
-    search_space:
-      criterion: ["gini", "entropy", "log_loss"]
-
-  - candidate_id: dt_pruned_inverse
-    model_family: decision_tree
-    paper_weight: inverse
-    class_weight: true
-    fixed_params:
-      max_depth: 4
-      min_samples_leaf: 5
-    search_space:
-      criterion: ["gini", "entropy", "log_loss"]
 
 
   # =====================================================
