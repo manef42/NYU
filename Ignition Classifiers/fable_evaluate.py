@@ -16,11 +16,10 @@ import yaml
 from scipy.stats import wilcoxon
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 
-from fable_common import DATA_VERSION, configure_torch, empty_cuda_cache, load_data
+from fable_common import (DATA_VERSION, MODEL_FAMILIES, configure_torch,
+                          empty_cuda_cache, load_data)
 from fable_models import make_model
 from fable_search import THRESHOLD_NAMES, classification_metrics, nested_search
-
-MODEL_ID_TO_FAMILY = ("xgboost", "svm", "knn", "decision_tree", "mlp")
 
 
 def _load_candidates(path: str | Path) -> tuple[list[dict[str, Any]], int]:
@@ -103,7 +102,7 @@ def _bootstrap(predictions: pd.DataFrame, grouped: bool, iterations: int,
 
 
 def _summaries(fold_metrics: pd.DataFrame) -> pd.DataFrame:
-    keys = ["model_id", "model_family", "feature_set", "protocol"]
+    keys = ["model_id", "model_family", "protocol"]
     numeric = [c for c in fold_metrics.select_dtypes(include="number").columns
                if c not in {"seed", "fold", "n_test_rows", "n_test_papers"}]
     rows = []
@@ -151,7 +150,7 @@ def _paired(fold_metrics: pd.DataFrame) -> pd.DataFrame:
 
 def _per_paper(predictions: pd.DataFrame) -> pd.DataFrame:
     rows = []
-    keys = ["model_id", "model_family", "feature_set", "protocol", "paper_id", "paper_label"]
+    keys = ["model_id", "model_family", "protocol", "paper_id", "paper_label"]
     for values, group in predictions.groupby(keys, dropna=False):
         y, p = group["true_label"].to_numpy(), group["predicted_probability"].to_numpy()
         rows.append({
@@ -174,8 +173,8 @@ def main() -> None:
     parser.add_argument("--inner-group-folds", type=int, default=3)
     parser.add_argument("--bootstrap-iterations", type=int, default=2000)
     parser.add_argument(
-        "--model-id", type=int, choices=range(len(MODEL_ID_TO_FAMILY)),
-        help="Run one model family: 0=XGBoost, 1=SVM, 2=KNN, 3=Decision Tree, 4=MLP",
+        "--model", choices=sorted(MODEL_FAMILIES),
+        help="Run one model family, named as in the evaluation output directories.",
     )
     args = parser.parse_args()
     configure_torch()
@@ -183,8 +182,8 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     candidates, base_seed = _load_candidates(args.config)
     indexed_candidates = list(enumerate(candidates))
-    if args.model_id is not None:
-        selected_family = MODEL_ID_TO_FAMILY[args.model_id]
+    selected_family = MODEL_FAMILIES[args.model] if args.model else None
+    if selected_family is not None:
         indexed_candidates = [
             (number, candidate) for number, candidate in indexed_candidates
             if candidate["model_family"] == selected_family
@@ -211,7 +210,6 @@ def main() -> None:
     split_groups = list(assignments.groupby("split_id", sort=False))
     for selected_number, (candidate_number, candidate) in enumerate(indexed_candidates):
         candidate_id = candidate["candidate_id"]
-        feature_set = candidate.get("feature_set", "physics")
         grouped_params_by_paper: dict[str, list[str]] = {}
         manifest_rows.append({
             **{k: v for k, v in candidate.items()
@@ -304,7 +302,6 @@ def main() -> None:
                         "paper_label": row["paper_label"], "protocol": protocol,
                         "seed": seed, "fold": fold, "split_id": split_id,
                         "model_id": candidate_id, "model_family": candidate["model_family"],
-                        "feature_set": feature_set,
                         "true_label": int(y_test[local]),
                         "predicted_probability": float(probability[local]),
                         "selected_hyperparameters": selected_json,
@@ -318,8 +315,7 @@ def main() -> None:
                 metric_rows.append({
                     "split_id": split_id, "protocol": protocol, "seed": seed, "fold": fold,
                     "model_id": candidate_id, "model_family": candidate["model_family"],
-                    "feature_set": feature_set, "n_test_rows": len(test),
-                    "n_test_papers": len(test_papers), **metrics,
+                    "n_test_rows": len(test), "n_test_papers": len(test_papers), **metrics,
                 })
                 threshold_rows.append({
                     "split_id": split_id, "protocol": protocol, "seed": seed, "fold": fold,
@@ -422,9 +418,7 @@ def main() -> None:
     metadata = {
         "data_version": DATA_VERSION, "dataset_sha256": data_report["dataset_sha256"],
         "candidate_count": len(indexed_candidates), "search_iterations": args.search_iterations,
-        "model_id": args.model_id,
-        "model_family_filter": (MODEL_ID_TO_FAMILY[args.model_id]
-                                 if args.model_id is not None else None),
+        "model": args.model, "model_family_filter": selected_family,
         "inner_folds": args.inner_group_folds,
         "threshold_policy": {
             name: "selected exclusively from inner OOF predictions" for name in THRESHOLD_NAMES},

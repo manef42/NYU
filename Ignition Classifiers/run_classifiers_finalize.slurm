@@ -34,17 +34,17 @@ python fable_select.py \
 --policy configs/selection_policy.yaml \
 --out results/selection.json && \
 python fable_refit.py \
---data "'"${CLASSIFIER_DIR}"'/Microgravity_Database_reduced.csv" \
+--data "'"${CLASSIFIER_DIR}"'/Microgravity_Database.csv" \
 --selection results/selection.json \
 --champion interpolation \
 --out artifacts/interpolation_champion && \
 python fable_refit.py \
---data "'"${CLASSIFIER_DIR}"'/Microgravity_Database_reduced.csv" \
+--data "'"${CLASSIFIER_DIR}"'/Microgravity_Database.csv" \
 --selection results/selection.json \
 --champion extrapolation \
 --out artifacts/extrapolation_champion && \
 python fable_report.py \
---data "'"${CLASSIFIER_DIR}"'/Microgravity_Database_reduced.csv" \
+--data "'"${CLASSIFIER_DIR}"'/Microgravity_Database.csv" \
 --evaluation results/evaluation \
 --selection results/selection.json \
 --artifacts artifacts \

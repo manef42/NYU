@@ -276,20 +276,20 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
 class FableModel:
     """Model wrapper exposing fit(X,y,papers), predict_proba and feature names."""
 
-    def __init__(self, family: str, feature_set: str, params: dict[str, Any],
+    def __init__(self, family: str, params: dict[str, Any],
                  paper_weight: str = "none", class_weight: bool = False,
                  random_state: int = RANDOM_STATE, monotone_oxygen: bool = False,
                  paper_bagging: int = 0):
         if family not in MODEL_REGISTRY:
             raise ValueError(f"Unknown model family {family!r}")
-        self.family, self.spec, self.feature_set = family, MODEL_REGISTRY[family], feature_set
+        self.family, self.spec = family, MODEL_REGISTRY[family]
         self.params = dict(params)
         self.paper_weight, self.class_weight = paper_weight, class_weight
         self.random_state, self.monotone_oxygen = RANDOM_STATE, monotone_oxygen
         self.paper_bagging = int(paper_bagging)
         if self.paper_bagging and family != "xgboost":
             raise ValueError("Paper bagging is restricted to scientifically justified XGBoost candidates")
-        self.numeric, self.categorical = feature_lists(feature_set)
+        self.numeric, self.categorical = feature_lists()
         self.features = self.numeric + self.categorical
         self.preprocessor_: ColumnTransformer | None = None
         self.estimators_: list[Any] = []
@@ -388,7 +388,6 @@ def make_model(candidate: dict[str, Any], params: dict[str, Any] | None = None,
     merged.update(params or {})
     return FableModel(
         family=candidate["model_family"],
-        feature_set=candidate.get("feature_set", "physics"),
         params=merged,
         paper_weight=candidate.get("paper_weight", "none"),
         class_weight=bool(candidate.get("class_weight", False)),

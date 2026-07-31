@@ -16,7 +16,30 @@ DATA_VERSION = "fable-data-v4"
 ENCODINGS = ("utf-8", "utf-8-sig", "cp1252", "latin-1")
 _NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 _DIM = re.compile(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*(µm|μm|um|mm|cm|m)?", re.I)
+_LABELLED_DIM = re.compile(
+    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*(µm|μm|um|mm|cm|m)?\s*(core|inner|outer|outside)?",
+    re.I)
 RANDOM_STATE = 42
+
+# Columns that must never be used as features and are dropped on load.
+# Matching is case-insensitive on the stripped header.
+DROPPED_COLUMNS = (
+    "Material of Sample",
+    "Rig Name",
+    "Internal Geometry",
+    "Internal Dimensions",
+    "Facility",
+    "Info",
+)
+
+# Evaluation output directory name -> model family, in Slurm array order.
+MODEL_FAMILIES = {
+    "xgb": "xgboost",
+    "svm": "svm",
+    "knn": "knn",
+    "dt": "decision_tree",
+    "mlp": "mlp",
+}
 
 
 def torch_device(local_rank: int | None = None) -> torch.device:
@@ -52,48 +75,52 @@ def slurm_num_workers() -> int:
 COLUMNS = {
     "article": "Article (MLA)", "authors": "Authors", "doi": "DOI",
     "geometry": "Geometry of Sample", "dimensions": "Dimensions of sample",
+    "half_thickness": "half_thickness", "characteristic_length": "characteristic_length_m",
     "fuel_density": "fuel_density_kg_m3", "fuel_k": "fuel_k_W_mK",
     "fuel_cp": "fuel_cp_J_kgK", "fuel_pyrolysis": "fuel_pyrolysis_T_K",
-    "fuel_alpha": "fuel_alpha_m2_s", "core_density": "core_density_kg_m3",
+    "fuel_alpha": "fuel_alpha_m2_s",
+    "fuel_volumetric_cp": "fuel_volumetric_heat_capacity_J_m3K",
+    "core_density": "core_density_kg_m3",
     "core_k": "core_k_W_mK", "core_cp": "core_cp_J_kgK",
+    "core_volumetric_cp": "core_volumetric_heat_capacity_J_m3K",
     "oxygen": "Oxygen Concentration", "diluent": "diluent", "gas_m": "gas_M",
     "gas_cp": "gas_cp_mass", "gas_k": "gas_k", "gas_density": "gas_density_kg_m3",
-    "gas_alpha": "gas_alpha_m2_s", "gas_nu": "gas_nu_m2_s", "pressure": "Pressure",
-    "flow": "Flow Velocity", "internal_geometry": "Internal Geometry",
-    "internal_dimensions": "Internal Dimensions", "gravity": "Gravity",
-    "facility": "Facility", "ignition_method": "Ignition Method",
+    "gas_alpha": "gas_alpha_m2_s", "gas_nu": "gas_nu_m2_s",
+    "reynolds": "Reynolds", "peclet": "Peclet", "prandtl": "Prandtl",
+    "thermal_diffusion_time": "thermal_diffusion_time",
+    "pressure": "Pressure",
+    "flow": "Flow Velocity",
+    "gravity": "Gravity",
+    "ignition_method": "Ignition Method",
     "ignition_power": "Ignition Power", "ignition_time": "Ignition Time",
     "target": "Ignition",
 }
 POST_OUTCOME_COLUMNS = ("Flame Length", "FSR", "HRR", "Smoke/ Areosols")
 
-NUMERIC_FEATURES = {
-    "fuel_density_kg_m3": "physics", "fuel_k_w_mk": "physics",
-    "fuel_cp_j_kgk": "physics", "fuel_pyrolysis_t_k": "physics",
-    "fuel_alpha_m2_s": "physics", "core_density_kg_m3": "physics",
-    "core_k_w_mk": "physics", "core_cp_j_kgk": "physics",
-    "oxygen_fraction": "physics", "gas_molar_mass": "physics",
-    "gas_cp_j_kgk": "physics", "gas_k_w_mk": "physics",
-    "gas_density_kg_m3": "physics", "gas_alpha_m2_s": "physics",
-    "gas_nu_m2_s": "physics", "pressure_kpa": "physics",
-    "flow_velocity_mm_s": "physics", "flow_speed_abs_mm_s": "physics",
-    "gravity_g": "physics", "log10_gravity_g": "physics",
-    "ignition_power_w": "apparatus", "ignition_time_s": "apparatus",
-    "ignition_energy_j": "apparatus", "sample_dim_1_mm": "apparatus",
-    "sample_dim_2_mm": "apparatus", "sample_dim_3_mm": "apparatus",
-    "sample_dim_min_mm": "apparatus", "sample_dim_max_mm": "apparatus",
-    "sample_dim_mean_mm": "apparatus", "sample_dim_count": "apparatus",
-    "core_diameter_mm": "apparatus", "outer_diameter_mm": "apparatus",
-    "insulation_thickness_mm": "apparatus", "internal_dim_1_mm": "apparatus",
-    "internal_dim_2_mm": "apparatus", "internal_dim_3_mm": "apparatus",
-    "internal_dim_mean_mm": "apparatus",
-}
-CATEGORICAL_FEATURES = {
-    "geometry_cat": "physics", "diluent_cat": "physics",
-    "flow_direction_cat": "physics", "gravity_regime_cat": "physics",
-    "internal_geometry_cat": "apparatus", "facility_cat": "apparatus",
-    "ignition_method_cat": "apparatus",
-}
+NUMERIC_FEATURES = (
+    "fuel_density_kg_m3", "fuel_k_w_mk", "fuel_cp_j_kgk", "fuel_pyrolysis_t_k",
+    "fuel_alpha_m2_s", "fuel_volumetric_heat_capacity_j_m3k",
+    "core_density_kg_m3", "core_k_w_mk", "core_cp_j_kgk",
+    "core_volumetric_heat_capacity_j_m3k",
+    "oxygen_fraction", "gas_molar_mass", "gas_cp_j_kgk", "gas_k_w_mk",
+    "gas_density_kg_m3", "gas_alpha_m2_s", "gas_nu_m2_s",
+    "reynolds", "peclet", "prandtl", "thermal_diffusion_time_s",
+    "pressure_kpa", "flow_velocity_mm_s", "flow_speed_abs_mm_s", "gravity_g",
+    "ignition_power_w", "ignition_time_s", "ignition_energy_j",
+    "half_thickness_m", "characteristic_length_m",
+    "sample_dim_1_mm", "sample_dim_2_mm", "sample_dim_3_mm", "sample_dim_min_mm",
+    "sample_dim_max_mm", "sample_dim_mean_mm", "sample_dim_count",
+    "core_diameter_mm", "outer_diameter_mm", "insulation_thickness_mm",
+)
+CATEGORICAL_FEATURES = (
+    "geometry_cat", "diluent_cat", "flow_direction_cat", "gravity_regime_cat",
+    "ignition_method_cat",
+)
+
+# Unit written in a column header, e.g. "Pressure (Pa)", scaled to the feature unit.
+PRESSURE_TO_KPA = {"mpa": 1000., "kpa": 1., "atm": 101.325, "psi": 6.894757,
+                   "bar": 100., "pa": .001}
+FLOW_TO_MM_S = {"mm/s": 1., "cm/s": 10., "m/s": 1000.}
 
 
 def _text(value: Any) -> str | float:
@@ -106,46 +133,76 @@ def _text(value: Any) -> str | float:
 def _number(value: Any) -> float:
     if pd.isna(value):
         return np.nan
-    match = _NUM.search(str(value).replace(",", ".").replace("−", "-"))
+    match = _NUM.search(str(value).replace(",", ".").replace("\u2212", "-"))
     return float(match.group()) if match else np.nan
 
 
 def _factor(unit: str) -> float:
-    return {"µm": .001, "μm": .001, "um": .001, "cm": 10., "m": 1000.}.get(
+    return {"\u00b5m": .001, "\u03bcm": .001, "um": .001, "cm": 10., "m": 1000.}.get(
         (unit or "mm").lower(), 1.)
+
+
+def _dimension_text(value: Any) -> str:
+    return str(value).replace(",", ".").replace("\u00d7", "x").replace("\u00d8", " diameter ")
 
 
 def dimensions_mm(value: Any) -> list[float]:
     if pd.isna(value):
         return []
-    text = str(value).replace(",", ".").replace("×", "x").replace("Ø", " diameter ")
-    return [float(number) * _factor(unit) for number, unit in _DIM.findall(text)]
+    return [float(number) * _factor(unit)
+            for number, unit in _DIM.findall(_dimension_text(value))]
 
 
-def pressure_kpa(value: Any) -> float:
+def labelled_dimensions_mm(value: Any) -> dict[str, float]:
+    """Extract core and outer diameters from a labelled dimensions cell, in mm."""
+    if pd.isna(value):
+        return {}
+    labelled: dict[str, float] = {}
+    for number, unit, label in _LABELLED_DIM.findall(_dimension_text(value)):
+        if not label:
+            continue
+        key = "core" if label.lower() in {"core", "inner"} else "outer"
+        labelled.setdefault(key, float(number) * _factor(unit))
+    return labelled
+
+
+def header_unit_scale(header: str, scales: dict[str, float], fallback: str) -> float:
+    """Scale factor for the unit declared in a column header, e.g. "Pressure (Pa)"."""
+    match = re.search(r"\(([^)]*)\)", str(header))
+    unit = (match.group(1) if match else fallback).strip().lower()
+    if unit not in scales:
+        raise ValueError(
+            f"Unrecognized unit {unit!r} in column header {header!r}; "
+            f"expected one of {sorted(scales)}")
+    return scales[unit]
+
+
+def pressure_kpa(value: Any, header_scale: float = 1.) -> float:
+    """Convert a pressure cell to kPa; unitless cells use the header unit scale."""
     number, text = _number(value), str(value).lower()
     if pd.isna(number):
         return np.nan
-    if "mpa" in text: return number * 1000
-    if "atm" in text: return number * 101.325
-    if "psi" in text: return number * 6.894757
-    if "pa" in text and "kpa" not in text and "mpa" not in text: return number / 1000
-    return number
+    for unit, scale in PRESSURE_TO_KPA.items():
+        if unit in text:
+            return number * scale
+    return number * header_scale
 
 
-def flow_mm_s(value: Any) -> float:
+def flow_mm_s(value: Any, header_scale: float = 1.) -> float:
+    """Convert a flow-velocity cell to mm/s; unitless cells use the header unit scale."""
     number, text = _number(value), str(value).lower()
     if pd.isna(number):
         return np.nan
-    if "cm/s" in text: return number * 10
-    if "m/s" in text and "mm/s" not in text and "cm/s" not in text: return number * 1000
-    return number
+    for unit, scale in FLOW_TO_MM_S.items():
+        if unit in text:
+            return number * scale
+    return number * header_scale
 
 
 def gravity_g(value: Any) -> float:
-    text, number = str(value).lower().replace("²", "2"), _number(value)
+    text, number = str(value).lower().replace("\u00b2", "2"), _number(value)
     if pd.isna(number):
-        return 1e-6 if any(x in text for x in ("micro", "µg", "μg")) else np.nan
+        return 1e-6 if any(x in text for x in ("micro", "\u00b5g", "\u03bcg")) else np.nan
     if "cm/s2" in text or "cm/s^2" in text: return number / 981
     if "mm/s2" in text or "mm/s^2" in text: return number / 9810
     if "m/s2" in text or "m/s^2" in text: return number / 9.81
@@ -285,25 +342,24 @@ def dataset_hash(path: str | Path) -> str:
     return digest.hexdigest()
 
 
-def feature_lists(feature_set: str) -> tuple[list[str], list[str]]:
-    if feature_set not in {"all", "physics"}:
-        raise ValueError("feature_set must be 'all' or 'physics'")
-    numeric = [name for name, role in NUMERIC_FEATURES.items()
-               if feature_set == "all" or role == "physics"]
-    categorical = [name for name, role in CATEGORICAL_FEATURES.items()
-                   if feature_set == "all" or role == "physics"]
-    return numeric, categorical
+def feature_lists() -> tuple[list[str], list[str]]:
+    """Return the numeric and categorical physics features used by every model."""
+    return list(NUMERIC_FEATURES), list(CATEGORICAL_FEATURES)
 
 
 def feature_manifest() -> list[dict[str, str]]:
-    return ([{"feature": k, "kind": "numeric", "role": v} for k, v in NUMERIC_FEATURES.items()] +
-            [{"feature": k, "kind": "categorical", "role": v} for k, v in CATEGORICAL_FEATURES.items()])
+    return ([{"feature": name, "kind": "numeric"} for name in NUMERIC_FEATURES] +
+            [{"feature": name, "kind": "categorical"} for name in CATEGORICAL_FEATURES])
 
 
 def load_data(path: str | Path, require_target: bool = True, deduplicate: bool = True
               ) -> tuple[pd.DataFrame, dict[str, Any]]:
     raw, encoding = read_raw(path)
     original_rows = len(raw)
+    # Drop disallowed columns before any further processing.
+    disallowed = {name.strip().lower() for name in DROPPED_COLUMNS}
+    raw = raw.drop(columns=[c for c in raw.columns
+                             if str(c).strip().lower() in disallowed], errors="ignore")
     blank_mask = raw.replace(r"^\s*$", np.nan, regex=True).isna().all(axis=1)
     blank_source_rows = (raw.index[blank_mask] + 3).astype(int).tolist()
     raw = raw.loc[~blank_mask].copy()
@@ -336,52 +392,55 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
     source_to_feature = {
         "fuel_density": "fuel_density_kg_m3", "fuel_k": "fuel_k_w_mk",
         "fuel_cp": "fuel_cp_j_kgk", "fuel_pyrolysis": "fuel_pyrolysis_t_k",
-        "fuel_alpha": "fuel_alpha_m2_s", "core_density": "core_density_kg_m3",
+        "fuel_alpha": "fuel_alpha_m2_s",
+        "fuel_volumetric_cp": "fuel_volumetric_heat_capacity_j_m3k",
+        "core_density": "core_density_kg_m3",
         "core_k": "core_k_w_mk", "core_cp": "core_cp_j_kgk",
+        "core_volumetric_cp": "core_volumetric_heat_capacity_j_m3k",
         "gas_m": "gas_molar_mass", "gas_cp": "gas_cp_j_kgk", "gas_k": "gas_k_w_mk",
         "gas_density": "gas_density_kg_m3", "gas_alpha": "gas_alpha_m2_s",
-        "gas_nu": "gas_nu_m2_s",
+        "gas_nu": "gas_nu_m2_s", "reynolds": "reynolds", "peclet": "peclet",
+        "prandtl": "prandtl", "thermal_diffusion_time": "thermal_diffusion_time_s",
+        "half_thickness": "half_thickness_m",
+        "characteristic_length": "characteristic_length_m",
     }
     for source, feature in source_to_feature.items():
         df[feature] = pd.to_numeric(raw[columns[source]], errors="coerce")
     df["oxygen_fraction"] = raw[columns["oxygen"]].map(oxygen_fraction)
-    df["pressure_kpa"] = raw[columns["pressure"]].map(pressure_kpa)
-    df["flow_velocity_mm_s"] = raw[columns["flow"]].map(flow_mm_s)
+    pressure_scale = header_unit_scale(columns["pressure"], PRESSURE_TO_KPA, "kpa")
+    flow_scale = header_unit_scale(columns["flow"], FLOW_TO_MM_S, "mm/s")
+    df["pressure_kpa"] = raw[columns["pressure"]].map(
+        lambda x: pressure_kpa(x, pressure_scale))
+    df["flow_velocity_mm_s"] = raw[columns["flow"]].map(lambda x: flow_mm_s(x, flow_scale))
     df["flow_speed_abs_mm_s"] = df["flow_velocity_mm_s"].abs()
     df["gravity_g"] = raw[columns["gravity"]].map(gravity_g)
-    df["log10_gravity_g"] = np.log10(df["gravity_g"].clip(lower=1e-8))
     df["ignition_power_w"] = raw[columns["ignition_power"]].map(watts)
     df["ignition_time_s"] = raw[columns["ignition_time"]].map(_number)
     df["ignition_energy_j"] = df["ignition_power_w"] * df["ignition_time_s"]
 
     sample_dims = raw[columns["dimensions"]].map(dimensions_mm)
-    internal_dims = raw[columns["internal_dimensions"]].map(dimensions_mm)
-    for prefix, values in (("sample", sample_dims), ("internal", internal_dims)):
-        for i in range(3):
-            df[f"{prefix}_dim_{i + 1}_mm"] = values.map(lambda x, i=i: x[i] if len(x) > i else np.nan)
+    for i in range(3):
+        df[f"sample_dim_{i + 1}_mm"] = sample_dims.map(lambda x, i=i: x[i] if len(x) > i else np.nan)
     df["sample_dim_min_mm"] = sample_dims.map(lambda x: min(x) if x else np.nan)
     df["sample_dim_max_mm"] = sample_dims.map(lambda x: max(x) if x else np.nan)
     df["sample_dim_mean_mm"] = sample_dims.map(lambda x: float(np.mean(x)) if x else np.nan)
     df["sample_dim_count"] = sample_dims.map(len).astype(float)
-    df["internal_dim_mean_mm"] = internal_dims.map(lambda x: float(np.mean(x)) if x else np.nan)
-    dimension_text = raw[columns["dimensions"]].fillna("").astype(str).str.lower()
-    core = dimension_text.str.extract(r"(?:core|inner)\D{0,20}(" + _NUM.pattern + r")")[0].astype(float)
-    outer = dimension_text.str.extract(r"(?:outer|outside)\D{0,20}(" + _NUM.pattern + r")")[0].astype(float)
+    labelled_dims = raw[columns["dimensions"]].map(labelled_dimensions_mm)
+    core = labelled_dims.map(lambda x: x.get("core", np.nan))
+    outer = labelled_dims.map(lambda x: x.get("outer", np.nan))
     df["core_diameter_mm"], df["outer_diameter_mm"] = core, outer
     df["insulation_thickness_mm"] = (outer - core).where(outer >= core) / 2
 
     df["geometry_cat"] = raw[columns["geometry"]].map(lambda x: _category(
         x, {"Wire": ("wire",), "Flat": ("flat",), "Cylindrical": ("cyl",), "Spherical": ("spher",)}))
-    df["internal_geometry_cat"] = raw[columns["internal_geometry"]].map(lambda x: _category(
-        x, {"Rectangular": ("rect",), "Cylindrical": ("cyl", "circular", "annular")}))
     df["ignition_method_cat"] = raw[columns["ignition_method"]].map(lambda x: _category(
         x, {"Open Flame": ("open flame", "pilot", "match"), "Radiative Heater": ("radiative", "heater"),
             "Discharge": ("discharge", "high-voltage"), "Wire / Coil": ("wire", "coil", "nicr", "electric")}))
-    df["facility_cat"] = raw[columns["facility"]].fillna("Unknown").astype(str)
     df["diluent_cat"] = raw[columns["diluent"]].fillna("Unknown").astype(str)
+    # Zero and unreported flow are both quiescent experiments.
     df["flow_direction_cat"] = np.select(
-        [df["flow_velocity_mm_s"] > 0, df["flow_velocity_mm_s"] < 0,
-         df["flow_velocity_mm_s"] == 0], ["Coflow", "Counterflow", "Quiescent"], "Unknown")
+        [df["flow_velocity_mm_s"] > 0, df["flow_velocity_mm_s"] < 0],
+        ["Coflow", "Counterflow"], default="Quiescent")
     df["gravity_regime_cat"] = np.select(
         [df["gravity_g"] < .001, df["gravity_g"] < .95, df["gravity_g"] <= 1.05],
         ["Microgravity", "Partial", "Earth"], "Hyper / Unknown")

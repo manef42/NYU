@@ -30,7 +30,7 @@ singularity exec \
 source /ext3/env.sh
 cd "'"${CLASSIFIER_DIR}"'"
 python fable_splits.py \
---data "'"${CLASSIFIER_DIR}"'/Microgravity_Database_reduced.csv" \
+--data "'"${CLASSIFIER_DIR}"'/Microgravity_Database.csv" \
 --out results/splits \
 --n-seeds 3 \
 --n-group-folds 5 \
