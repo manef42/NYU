@@ -12,13 +12,10 @@ import numpy as np
 import pandas as pd
 import torch
 
-DATA_VERSION = "fable-data-v4"
+DATA_VERSION = "fable-data-v5"
 ENCODINGS = ("utf-8", "utf-8-sig", "cp1252", "latin-1")
 _NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 _DIM = re.compile(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*(µm|μm|um|mm|cm|m)?", re.I)
-_LABELLED_DIM = re.compile(
-    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*(µm|μm|um|mm|cm|m)?\s*(core|inner|outer|outside)?",
-    re.I)
 RANDOM_STATE = 42
 
 # Columns that must never be used as features and are dropped on load.
@@ -97,6 +94,8 @@ COLUMNS = {
 }
 POST_OUTCOME_COLUMNS = ("Flame Length", "FSR", "HRR", "Smoke/ Areosols")
 
+# Numeric features — all physical quantities already in SI / natural units in the DB:
+#   dimensions in m, pressure in Pa, flow/FSR in m/s, gravity in g/g_earth.
 NUMERIC_FEATURES = (
     "fuel_density_kg_m3", "fuel_k_w_mk", "fuel_cp_j_kgk", "fuel_pyrolysis_t_k",
     "fuel_alpha_m2_s", "fuel_volumetric_heat_capacity_j_m3k",
@@ -105,22 +104,21 @@ NUMERIC_FEATURES = (
     "oxygen_fraction", "gas_molar_mass", "gas_cp_j_kgk", "gas_k_w_mk",
     "gas_density_kg_m3", "gas_alpha_m2_s", "gas_nu_m2_s",
     "reynolds", "peclet", "prandtl", "thermal_diffusion_time_s",
-    "pressure_kpa", "flow_velocity_mm_s", "flow_speed_abs_mm_s", "gravity_g",
-    "ignition_power_w", "ignition_time_s", "ignition_energy_j",
+    "pressure_pa", "flow_velocity_m_s", "flow_speed_abs_m_s", "gravity_g",
+    "ignition_power_w", "ignition_time_s",
     "half_thickness_m", "characteristic_length_m",
-    "sample_dim_1_mm", "sample_dim_2_mm", "sample_dim_3_mm", "sample_dim_min_mm",
-    "sample_dim_max_mm", "sample_dim_mean_mm", "sample_dim_count",
-    "core_diameter_mm", "outer_diameter_mm", "insulation_thickness_mm",
+    "sample_dim_1_m", "sample_dim_2_m", "sample_dim_3_m",
 )
 CATEGORICAL_FEATURES = (
     "geometry_cat", "diluent_cat", "flow_direction_cat", "gravity_regime_cat",
     "ignition_method_cat",
 )
 
-# Unit written in a column header, e.g. "Pressure (Pa)", scaled to the feature unit.
-PRESSURE_TO_KPA = {"mpa": 1000., "kpa": 1., "atm": 101.325, "psi": 6.894757,
-                   "bar": 100., "pa": .001}
-FLOW_TO_MM_S = {"mm/s": 1., "cm/s": 10., "m/s": 1000.}
+# Pressure: DB already stores Pa — no conversion needed (defensive parsing still supported).
+PRESSURE_TO_PA = {"pa": 1., "kpa": 1e3, "mpa": 1e6, "atm": 101325., "psi": 6894.757, "bar": 1e5}
+
+# Flow velocity: DB already stores m/s — no conversion needed (defensive parsing still supported).
+FLOW_TO_M_S = {"m/s": 1., "cm/s": 1e-2, "mm/s": 1e-3}
 
 
 def _text(value: Any) -> str | float:
@@ -137,33 +135,22 @@ def _number(value: Any) -> float:
     return float(match.group()) if match else np.nan
 
 
-def _factor(unit: str) -> float:
-    return {"\u00b5m": .001, "\u03bcm": .001, "um": .001, "cm": 10., "m": 1000.}.get(
-        (unit or "mm").lower(), 1.)
+def _factor_to_m(unit: str) -> float:
+    """Convert a dimension unit string to a factor that gives metres."""
+    return {"\u00b5m": 1e-6, "\u03bcm": 1e-6, "um": 1e-6,
+            "mm": 1e-3, "cm": 1e-2}.get((unit or "m").lower(), 1.0)
 
 
 def _dimension_text(value: Any) -> str:
     return str(value).replace(",", ".").replace("\u00d7", "x").replace("\u00d8", " diameter ")
 
 
-def dimensions_mm(value: Any) -> list[float]:
+def dimensions_m(value: Any) -> list[float]:
+    """Parse a dimensions cell and return a list of values in metres."""
     if pd.isna(value):
         return []
-    return [float(number) * _factor(unit)
+    return [float(number) * _factor_to_m(unit)
             for number, unit in _DIM.findall(_dimension_text(value))]
-
-
-def labelled_dimensions_mm(value: Any) -> dict[str, float]:
-    """Extract core and outer diameters from a labelled dimensions cell, in mm."""
-    if pd.isna(value):
-        return {}
-    labelled: dict[str, float] = {}
-    for number, unit, label in _LABELLED_DIM.findall(_dimension_text(value)):
-        if not label:
-            continue
-        key = "core" if label.lower() in {"core", "inner"} else "outer"
-        labelled.setdefault(key, float(number) * _factor(unit))
-    return labelled
 
 
 def header_unit_scale(header: str, scales: dict[str, float], fallback: str) -> float:
@@ -177,23 +164,23 @@ def header_unit_scale(header: str, scales: dict[str, float], fallback: str) -> f
     return scales[unit]
 
 
-def pressure_kpa(value: Any, header_scale: float = 1.) -> float:
-    """Convert a pressure cell to kPa; unitless cells use the header unit scale."""
+def pressure_pa(value: Any, header_scale: float = 1.) -> float:
+    """Return pressure in Pa; unitless cells use the header unit scale."""
     number, text = _number(value), str(value).lower()
     if pd.isna(number):
         return np.nan
-    for unit, scale in PRESSURE_TO_KPA.items():
+    for unit, scale in PRESSURE_TO_PA.items():
         if unit in text:
             return number * scale
     return number * header_scale
 
 
-def flow_mm_s(value: Any, header_scale: float = 1.) -> float:
-    """Convert a flow-velocity cell to mm/s; unitless cells use the header unit scale."""
+def flow_m_s(value: Any, header_scale: float = 1.) -> float:
+    """Return flow velocity in m/s; unitless cells use the header unit scale."""
     number, text = _number(value), str(value).lower()
     if pd.isna(number):
         return np.nan
-    for unit, scale in FLOW_TO_MM_S.items():
+    for unit, scale in FLOW_TO_M_S.items():
         if unit in text:
             return number * scale
     return number * header_scale
@@ -207,11 +194,6 @@ def gravity_g(value: Any) -> float:
     if "mm/s2" in text or "mm/s^2" in text: return number / 9810
     if "m/s2" in text or "m/s^2" in text: return number / 9.81
     return number
-
-
-def oxygen_fraction(value: Any) -> float:
-    number = _number(value)
-    return number / 100 if pd.notna(number) and number > 1 else number
 
 
 def watts(value: Any) -> float:
@@ -256,7 +238,7 @@ def _resolve(raw: pd.DataFrame, require_target: bool) -> dict[str, str]:
     2. All other columns:
        - prefer exact match;
        - otherwise accept headers that start with the expected name
-         (e.g. "Pressure (kPa)", "Ignition Power (W)").
+         (e.g. "Pressure (Pa)", "Ignition Power (W)").
     """
     found: dict[str, str] = {}
     inference_optional = {"article", "authors", "doi", "target"}
@@ -406,30 +388,31 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
     }
     for source, feature in source_to_feature.items():
         df[feature] = pd.to_numeric(raw[columns[source]], errors="coerce")
-    df["oxygen_fraction"] = raw[columns["oxygen"]].map(oxygen_fraction)
-    pressure_scale = header_unit_scale(columns["pressure"], PRESSURE_TO_KPA, "kpa")
-    flow_scale = header_unit_scale(columns["flow"], FLOW_TO_MM_S, "mm/s")
-    df["pressure_kpa"] = raw[columns["pressure"]].map(
-        lambda x: pressure_kpa(x, pressure_scale))
-    df["flow_velocity_mm_s"] = raw[columns["flow"]].map(lambda x: flow_mm_s(x, flow_scale))
-    df["flow_speed_abs_mm_s"] = df["flow_velocity_mm_s"].abs()
+
+    # Oxygen is already stored as a fraction in the DB — read directly.
+    df["oxygen_fraction"] = pd.to_numeric(raw[columns["oxygen"]], errors="coerce")
+
+    # Pressure already in Pa in the DB; still handle explicit unit labels defensively.
+    pressure_scale = header_unit_scale(columns["pressure"], PRESSURE_TO_PA, "pa")
+    df["pressure_pa"] = raw[columns["pressure"]].map(
+        lambda x: pressure_pa(x, pressure_scale))
+
+    # Flow velocity already in m/s in the DB; still handle explicit unit labels defensively.
+    flow_scale = header_unit_scale(columns["flow"], FLOW_TO_M_S, "m/s")
+    df["flow_velocity_m_s"] = raw[columns["flow"]].map(lambda x: flow_m_s(x, flow_scale))
+    df["flow_speed_abs_m_s"] = df["flow_velocity_m_s"].abs()
+
+    # Gravity already in g/g_earth in the DB.
     df["gravity_g"] = raw[columns["gravity"]].map(gravity_g)
+
     df["ignition_power_w"] = raw[columns["ignition_power"]].map(watts)
     df["ignition_time_s"] = raw[columns["ignition_time"]].map(_number)
-    df["ignition_energy_j"] = df["ignition_power_w"] * df["ignition_time_s"]
 
-    sample_dims = raw[columns["dimensions"]].map(dimensions_mm)
+    # Sample dimensions: DB stores values in metres already.
+    sample_dims = raw[columns["dimensions"]].map(dimensions_m)
     for i in range(3):
-        df[f"sample_dim_{i + 1}_mm"] = sample_dims.map(lambda x, i=i: x[i] if len(x) > i else np.nan)
-    df["sample_dim_min_mm"] = sample_dims.map(lambda x: min(x) if x else np.nan)
-    df["sample_dim_max_mm"] = sample_dims.map(lambda x: max(x) if x else np.nan)
-    df["sample_dim_mean_mm"] = sample_dims.map(lambda x: float(np.mean(x)) if x else np.nan)
-    df["sample_dim_count"] = sample_dims.map(len).astype(float)
-    labelled_dims = raw[columns["dimensions"]].map(labelled_dimensions_mm)
-    core = labelled_dims.map(lambda x: x.get("core", np.nan))
-    outer = labelled_dims.map(lambda x: x.get("outer", np.nan))
-    df["core_diameter_mm"], df["outer_diameter_mm"] = core, outer
-    df["insulation_thickness_mm"] = (outer - core).where(outer >= core) / 2
+        df[f"sample_dim_{i + 1}_m"] = sample_dims.map(
+            lambda x, i=i: x[i] if len(x) > i else np.nan)
 
     df["geometry_cat"] = raw[columns["geometry"]].map(lambda x: _category(
         x, {"Wire": ("wire",), "Flat": ("flat",), "Cylindrical": ("cyl",), "Spherical": ("spher",)}))
@@ -439,7 +422,7 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
     df["diluent_cat"] = raw[columns["diluent"]].fillna("Unknown").astype(str)
     # Zero and unreported flow are both quiescent experiments.
     df["flow_direction_cat"] = np.select(
-        [df["flow_velocity_mm_s"] > 0, df["flow_velocity_mm_s"] < 0],
+        [df["flow_velocity_m_s"] > 0, df["flow_velocity_m_s"] < 0],
         ["Coflow", "Counterflow"], default="Quiescent")
     df["gravity_regime_cat"] = np.select(
         [df["gravity_g"] < .001, df["gravity_g"] < .95, df["gravity_g"] <= 1.05],
