@@ -2,8 +2,6 @@
 
 ## Context
 
-The pipeline has been updated to use a physics-only database (`Physics_DB.csv`).
-All features are physics-based; the `feature_set` distinction from v1 is dropped.
 This document justifies the design of the 28 candidates across 5 model families.
 
 ---
@@ -20,7 +18,7 @@ The database presents **two independent sources of imbalance**:
 
 - **Paper imbalance** — some papers contribute disproportionately more rows than
   others, introducing sampling bias toward specific experimental conditions.
-- **Class imbalance** — the ignition/no-ignition ratio is not balanced, causing
+- **Class imbalance** — the ignition/extinction ratio is not balanced, causing
   models to be biased toward the majority class.
 
 These two problems are corrected by orthogonal mechanisms:
