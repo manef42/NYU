@@ -1,4 +1,4 @@
-version: 3
+version: 4
 random_state: 42
 
 # New database contains only physics-based features.
@@ -93,16 +93,20 @@ candidates:
     paper_weight: sqrt
     class_weight: true
     fixed_params:
-      max_depth: tuned
-      min_samples_leaf: tuned
+      max_depth: 4
+      min_samples_leaf: 5
+    search_space:
+      criterion: ["gini", "entropy", "log_loss"]
 
   - candidate_id: dt_pruned_inverse
     model_family: decision_tree
     paper_weight: inverse
     class_weight: true
     fixed_params:
-      max_depth: tuned
-      min_samples_leaf: tuned
+      max_depth: 4
+      min_samples_leaf: 5
+    search_space:
+      criterion: ["gini", "entropy", "log_loss"]
 
 
   # =====================================================
@@ -194,16 +198,16 @@ candidates:
     paper_weight: inverse
     class_weight: true
 
-  - candidate_id: svm_rbf_sqrt
+  - candidate_id: svm_linear_sqrt
     model_family: svm
     paper_weight: sqrt
     class_weight: true
     fixed_params:
-      kernel: rbf
+      kernel: linear
 
-  - candidate_id: svm_rbf_inverse
+  - candidate_id: svm_linear_inverse
     model_family: svm
     paper_weight: inverse
     class_weight: true
     fixed_params:
-      kernel: rbf
+      kernel: linear

@@ -211,6 +211,7 @@ def main() -> None:
     split_groups = list(assignments.groupby("split_id", sort=False))
     for selected_number, (candidate_number, candidate) in enumerate(indexed_candidates):
         candidate_id = candidate["candidate_id"]
+        feature_set = candidate.get("feature_set", "physics")
         grouped_params_by_paper: dict[str, list[str]] = {}
         manifest_rows.append({
             **{k: v for k, v in candidate.items()
@@ -303,7 +304,7 @@ def main() -> None:
                         "paper_label": row["paper_label"], "protocol": protocol,
                         "seed": seed, "fold": fold, "split_id": split_id,
                         "model_id": candidate_id, "model_family": candidate["model_family"],
-                        "feature_set": candidate["feature_set"],
+                        "feature_set": feature_set,
                         "true_label": int(y_test[local]),
                         "predicted_probability": float(probability[local]),
                         "selected_hyperparameters": selected_json,
@@ -317,7 +318,7 @@ def main() -> None:
                 metric_rows.append({
                     "split_id": split_id, "protocol": protocol, "seed": seed, "fold": fold,
                     "model_id": candidate_id, "model_family": candidate["model_family"],
-                    "feature_set": candidate["feature_set"], "n_test_rows": len(test),
+                    "feature_set": feature_set, "n_test_rows": len(test),
                     "n_test_papers": len(test_papers), **metrics,
                 })
                 threshold_rows.append({

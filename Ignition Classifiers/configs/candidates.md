@@ -1,7 +1,9 @@
-# Candidate Design — Version 3
+# Candidate Design — Version 4
 
 ## Context
 
+The pipeline has been updated to use a physics-only database (`Physics_DB.csv`).
+All features are physics-based; the `feature_set` distinction from v1 is dropped.
 This document justifies the design of the 28 candidates across 5 model families.
 
 ---
@@ -18,7 +20,7 @@ The database presents **two independent sources of imbalance**:
 
 - **Paper imbalance** — some papers contribute disproportionately more rows than
   others, introducing sampling bias toward specific experimental conditions.
-- **Class imbalance** — the ignition/extinction ratio is not balanced, causing
+- **Class imbalance** — the ignition/no-ignition ratio is not balanced, causing
   models to be biased toward the majority class.
 
 These two problems are corrected by orthogonal mechanisms:
@@ -61,9 +63,29 @@ appropriate for moderate class imbalance. Tuning γ is deferred to a future abla
 
 ### 5. Structural variants tested with both weighting strategies
 Specialized structural variants (pruning for Decision Tree, distance weighting for
-KNN, RBF kernel for SVM) are each tested with both `sqrt` and `inverse` paper
+KNN, linear kernel for SVM) are each tested with both `sqrt` and `inverse` paper
 weighting. This ensures that the best structural configuration is identified
 independently of the weighting strategy choice.
+
+### 6. Decision Tree pruning — fixed depth by design
+The full Decision Tree search space already tunes `max_depth` and `min_samples_leaf`
+for every candidate. Simply labelling a candidate "pruned" without constraining these
+parameters would produce an identical experiment to the weighted baseline.
+
+The `dt_pruned` candidates therefore **fix** `max_depth: 4` and
+`min_samples_leaf: 5`, removing them from the search space and restricting tuning
+to `criterion` only. This enforces a deliberately shallow, interpretable tree as a
+design choice — a meaningful hypothesis on a small physics dataset where
+overfitting risk is high and interpretability is valuable.
+
+### 7. SVM kernel choice — linear vs RBF
+The SVM implementation defaults to an RBF kernel for all candidates. Adding an
+`svm_rbf` candidate with `kernel: rbf` in `fixed_params` would therefore be
+redundant. Instead, `svm_linear` candidates explicitly test a **linear kernel**,
+which is a genuinely different hypothesis: that the ignition decision boundary is
+linearly separable in the physics feature space. This is scientifically plausible
+given that many physics relationships (e.g. oxygen threshold, pressure effects) are
+approximately linear in the feature ranges observed.
 
 ---
 
@@ -88,16 +110,17 @@ The first six candidates form a 2×3 ablation grid isolating paper weight strate
 as a standalone imbalance correction with each paper weighting strategy.
 
 ### Decision Tree (5 candidates)
-Pruning (`max_depth`, `min_samples_leaf` tuned via nested search) is the key
-structural variant, controlling overfitting on the small physics dataset.
+Pruned candidates fix `max_depth: 4` and `min_samples_leaf: 5`, restricting tuning
+to `criterion` only. This enforces a shallow interpretable tree distinct from the
+fully-tuned weighted baselines.
 
 | candidate_id | paper_weight | class_weight | special |
 |---|---|---|---|
 | dt_baseline | none | false | — |
 | dt_weighted_sqrt | sqrt | true | — |
 | dt_weighted_inverse | inverse | true | — |
-| dt_pruned_sqrt | sqrt | true | pruned |
-| dt_pruned_inverse | inverse | true | pruned |
+| dt_pruned_sqrt | sqrt | true | max_depth=4, min_samples_leaf=5 |
+| dt_pruned_inverse | inverse | true | max_depth=4, min_samples_leaf=5 |
 
 ### KNN (5 candidates)
 Distance-based sample weighting (`weights: distance`) is the key structural variant,
@@ -124,16 +147,17 @@ since MLP is a comparison baseline). Focal loss is the key structural variant.
 | mlp_focal_inverse | inverse | false | focal γ=2 |
 
 ### SVM (5 candidates)
-The RBF kernel is tested as the key structural variant. The default kernel (linear)
-is implicitly covered by the baseline and weighted candidates.
+The linear kernel is tested as the key structural variant against the RBF default.
+A linear SVM tests whether the ignition boundary is linearly separable in the
+physics feature space, which is a scientifically plausible hypothesis.
 
 | candidate_id | paper_weight | class_weight | special |
 |---|---|---|---|
 | svm_baseline | none | false | — |
 | svm_weighted_sqrt | sqrt | true | — |
 | svm_weighted_inverse | inverse | true | — |
-| svm_rbf_sqrt | sqrt | true | RBF kernel |
-| svm_rbf_inverse | inverse | true | RBF kernel |
+| svm_linear_sqrt | sqrt | true | linear kernel |
+| svm_linear_inverse | inverse | true | linear kernel |
 
 ---
 
