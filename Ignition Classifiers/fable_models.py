@@ -174,8 +174,10 @@ class CuMLSVCWithFallback:
 
     def fit(self, X: np.ndarray, y: np.ndarray,
             sample_weight: np.ndarray | None = None) -> "CuMLSVCWithFallback":
+        # Read kernel from params (default rbf); pop so it is not passed twice.
+        kernel = self.params.pop("kernel", "rbf")
         estimator = CalibratedClassifierCV(
-            SVC(kernel="rbf", cache_size=1000, random_state=RANDOM_STATE, **self.params),
+            SVC(kernel=kernel, cache_size=1000, random_state=RANDOM_STATE, **self.params),
             method="sigmoid", cv=3, n_jobs=-1)
         estimator.fit(X, y, sample_weight=sample_weight)
         self.estimator_ = estimator
@@ -385,9 +387,12 @@ def make_model(candidate: dict[str, Any], params: dict[str, Any] | None = None,
     merged = dict(candidate.get("fixed_params", {}))
     merged.update(params or {})
     return FableModel(
-        family=candidate["model_family"], feature_set=candidate["feature_set"],
-        params=merged, paper_weight=candidate.get("paper_weight", "none"),
-        class_weight=bool(candidate.get("class_weight", False)), random_state=RANDOM_STATE,
+        family=candidate["model_family"],
+        feature_set=candidate.get("feature_set", "physics"),
+        params=merged,
+        paper_weight=candidate.get("paper_weight", "none"),
+        class_weight=bool(candidate.get("class_weight", False)),
+        random_state=RANDOM_STATE,
         monotone_oxygen=bool(candidate.get("monotone_oxygen", False)),
         paper_bagging=int(candidate.get("paper_bagging", 0)),
     )

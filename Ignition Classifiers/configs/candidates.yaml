@@ -1,88 +1,213 @@
-version: 1
+version: 4
 random_state: 42
+
+# New database contains only physics-based features.
+# No feature_set distinction.
+
 candidates:
-  - candidate_id: xgb_all_unweighted
+
+  # =====================================================
+  # XGBOOST
+  # =====================================================
+
+  - candidate_id: xgb_baseline
     model_family: xgboost
-    feature_set: all
     paper_weight: none
     class_weight: false
-    fixed_params: {objective_variant: logistic}
-  - candidate_id: xgb_physics_unweighted
+    fixed_params:
+      objective_variant: logistic
+
+  - candidate_id: xgb_paper_sqrt
     model_family: xgboost
-    feature_set: physics
+    paper_weight: sqrt
+    class_weight: false
+    fixed_params:
+      objective_variant: logistic
+
+  - candidate_id: xgb_paper_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    class_weight: false
+    fixed_params:
+      objective_variant: logistic
+
+  - candidate_id: xgb_class_only
+    model_family: xgboost
+    paper_weight: none
+    class_weight: true
+    fixed_params:
+      objective_variant: logistic
+
+  - candidate_id: xgb_weighted_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    class_weight: true
+    fixed_params:
+      objective_variant: logistic
+
+  - candidate_id: xgb_weighted_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    class_weight: true
+    fixed_params:
+      objective_variant: logistic
+
+  - candidate_id: xgb_focal_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    class_weight: false
+    fixed_params:
+      objective_variant: focal
+      focal_gamma: 2.0
+
+  - candidate_id: xgb_focal_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    class_weight: false
+    fixed_params:
+      objective_variant: focal
+      focal_gamma: 2.0
+
+
+  # =====================================================
+  # RANDOM FOREST / DECISION TREE
+  # =====================================================
+
+  - candidate_id: dt_baseline
+    model_family: decision_tree
     paper_weight: none
     class_weight: false
-    fixed_params: {objective_variant: logistic}
-  - candidate_id: xgb_all_class_paper_weighted
-    model_family: xgboost
-    feature_set: all
-    paper_weight: sqrt
-    class_weight: true
-    fixed_params: {objective_variant: logistic}
-  - candidate_id: xgb_physics_class_paper_weighted_monotone_o2
-    model_family: xgboost
-    feature_set: physics
-    paper_weight: sqrt
-    class_weight: true
-    monotone_oxygen: true
-    fixed_params: {objective_variant: logistic}
-  - candidate_id: xgb_all_focal_class_paper_weighted
-    model_family: xgboost
-    feature_set: all
-    paper_weight: sqrt
-    class_weight: true
-    fixed_params: {objective_variant: focal, focal_gamma: 2.0}
-  - candidate_id: xgb_physics_focal_class_paper_weighted
-    model_family: xgboost
-    feature_set: physics
-    paper_weight: sqrt
-    class_weight: true
-    fixed_params: {objective_variant: focal, focal_gamma: 2.0}
-  - candidate_id: xgb_physics_paper_bagging
-    model_family: xgboost
-    feature_set: physics
-    paper_weight: sqrt
-    class_weight: true
-    monotone_oxygen: true
-    paper_bagging: 10
-    fixed_params: {objective_variant: logistic}
-  - candidate_id: knn_all
-    model_family: knn
-    feature_set: all
-    paper_weight: sqrt
-    class_weight: true
-  - candidate_id: knn_physics
-    model_family: knn
-    feature_set: physics
-    paper_weight: sqrt
-    class_weight: true
-  - candidate_id: decision_tree_all
+
+  - candidate_id: dt_weighted_sqrt
     model_family: decision_tree
-    feature_set: all
     paper_weight: sqrt
     class_weight: true
-  - candidate_id: decision_tree_physics
+
+  - candidate_id: dt_weighted_inverse
     model_family: decision_tree
-    feature_set: physics
+    paper_weight: inverse
+    class_weight: true
+
+  - candidate_id: dt_pruned_sqrt
+    model_family: decision_tree
     paper_weight: sqrt
     class_weight: true
-  - candidate_id: mlp_all
+    fixed_params:
+      max_depth: 4
+      min_samples_leaf: 5
+    search_space:
+      criterion: ["gini", "entropy", "log_loss"]
+
+  - candidate_id: dt_pruned_inverse
+    model_family: decision_tree
+    paper_weight: inverse
+    class_weight: true
+    fixed_params:
+      max_depth: 4
+      min_samples_leaf: 5
+    search_space:
+      criterion: ["gini", "entropy", "log_loss"]
+
+
+  # =====================================================
+  # KNN
+  # =====================================================
+
+  - candidate_id: knn_baseline
+    model_family: knn
+    paper_weight: none
+    class_weight: false
+
+  - candidate_id: knn_weighted_sqrt
+    model_family: knn
+    paper_weight: sqrt
+    class_weight: true
+
+  - candidate_id: knn_weighted_inverse
+    model_family: knn
+    paper_weight: inverse
+    class_weight: true
+
+  - candidate_id: knn_distance_sqrt
+    model_family: knn
+    paper_weight: sqrt
+    class_weight: true
+    fixed_params:
+      weights: distance
+
+  - candidate_id: knn_distance_inverse
+    model_family: knn
+    paper_weight: inverse
+    class_weight: true
+    fixed_params:
+      weights: distance
+
+
+  # =====================================================
+  # MLP
+  # =====================================================
+
+  - candidate_id: mlp_baseline
     model_family: mlp
-    feature_set: all
-    paper_weight: sqrt
-    class_weight: true
-  - candidate_id: mlp_physics
+    paper_weight: none
+    class_weight: false
+
+  - candidate_id: mlp_weighted_sqrt
     model_family: mlp
-    feature_set: physics
     paper_weight: sqrt
     class_weight: true
-  - candidate_id: svm_all
+
+  - candidate_id: mlp_weighted_inverse
+    model_family: mlp
+    paper_weight: inverse
+    class_weight: true
+
+  - candidate_id: mlp_focal_sqrt
+    model_family: mlp
+    paper_weight: sqrt
+    class_weight: false
+    fixed_params:
+      loss_variant: focal
+      focal_gamma: 2.0
+
+  - candidate_id: mlp_focal_inverse
+    model_family: mlp
+    paper_weight: inverse
+    class_weight: false
+    fixed_params:
+      loss_variant: focal
+      focal_gamma: 2.0
+
+
+  # =====================================================
+  # SVM
+  # =====================================================
+
+  - candidate_id: svm_baseline
     model_family: svm
-    feature_set: all
-    paper_weight: sqrt
-    class_weight: true
-  - candidate_id: svm_physics
+    paper_weight: none
+    class_weight: false
+
+  - candidate_id: svm_weighted_sqrt
     model_family: svm
-    feature_set: physics
     paper_weight: sqrt
     class_weight: true
+
+  - candidate_id: svm_weighted_inverse
+    model_family: svm
+    paper_weight: inverse
+    class_weight: true
+
+  - candidate_id: svm_linear_sqrt
+    model_family: svm
+    paper_weight: sqrt
+    class_weight: true
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svm_linear_inverse
+    model_family: svm
+    paper_weight: inverse
+    class_weight: true
+    fixed_params:
+      kernel: linear
