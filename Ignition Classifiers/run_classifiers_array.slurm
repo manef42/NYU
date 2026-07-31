@@ -36,7 +36,7 @@ singularity exec \
         source /ext3/env.sh
         cd "'"${CLASSIFIER_DIR}"'"
         python fable_evaluate.py \
-            --data "'"${CLASSIFIER_DIR}"'/Microgravity_Database_reduced.csv" \
+            --data "'"${CLASSIFIER_DIR}"'/Microgravity_Database.csv" \
             --splits results/splits \
             --config configs/candidates.yaml \
             --out "'"${OUT_DIR}"'" \

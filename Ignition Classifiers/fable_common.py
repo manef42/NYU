@@ -18,6 +18,16 @@ _NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 _DIM = re.compile(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*(µm|μm|um|mm|cm|m)?", re.I)
 RANDOM_STATE = 42
 
+# Columns that must never be used as features and are dropped on load.
+DROPPED_COLUMNS = (
+    "Material of Sample",
+    "Rig Name",
+    "Internal Geometry",
+    "Internal Dimensions",
+    "Facility",
+    "Info",
+)
+
 
 def torch_device(local_rank: int | None = None) -> torch.device:
     """Return the available CUDA device, or CPU when CUDA is unavailable."""
@@ -59,9 +69,9 @@ COLUMNS = {
     "oxygen": "Oxygen Concentration", "diluent": "diluent", "gas_m": "gas_M",
     "gas_cp": "gas_cp_mass", "gas_k": "gas_k", "gas_density": "gas_density_kg_m3",
     "gas_alpha": "gas_alpha_m2_s", "gas_nu": "gas_nu_m2_s", "pressure": "Pressure",
-    "flow": "Flow Velocity", "internal_geometry": "Internal Geometry",
-    "internal_dimensions": "Internal Dimensions", "gravity": "Gravity",
-    "facility": "Facility", "ignition_method": "Ignition Method",
+    "flow": "Flow Velocity",
+    "gravity": "Gravity",
+    "ignition_method": "Ignition Method",
     "ignition_power": "Ignition Power", "ignition_time": "Ignition Time",
     "target": "Ignition",
 }
@@ -77,7 +87,7 @@ NUMERIC_FEATURES = {
     "gas_density_kg_m3": "physics", "gas_alpha_m2_s": "physics",
     "gas_nu_m2_s": "physics", "pressure_kpa": "physics",
     "flow_velocity_mm_s": "physics", "flow_speed_abs_mm_s": "physics",
-    "gravity_g": "physics", "log10_gravity_g": "physics",
+    "gravity_g": "physics",
     "ignition_power_w": "apparatus", "ignition_time_s": "apparatus",
     "ignition_energy_j": "apparatus", "sample_dim_1_mm": "apparatus",
     "sample_dim_2_mm": "apparatus", "sample_dim_3_mm": "apparatus",
@@ -91,7 +101,6 @@ NUMERIC_FEATURES = {
 CATEGORICAL_FEATURES = {
     "geometry_cat": "physics", "diluent_cat": "physics",
     "flow_direction_cat": "physics", "gravity_regime_cat": "physics",
-    "internal_geometry_cat": "apparatus", "facility_cat": "apparatus",
     "ignition_method_cat": "apparatus",
 }
 
@@ -106,19 +115,19 @@ def _text(value: Any) -> str | float:
 def _number(value: Any) -> float:
     if pd.isna(value):
         return np.nan
-    match = _NUM.search(str(value).replace(",", ".").replace("−", "-"))
+    match = _NUM.search(str(value).replace(",", ".").replace("\u2212", "-"))
     return float(match.group()) if match else np.nan
 
 
 def _factor(unit: str) -> float:
-    return {"µm": .001, "μm": .001, "um": .001, "cm": 10., "m": 1000.}.get(
+    return {"\u00b5m": .001, "\u03bcm": .001, "um": .001, "cm": 10., "m": 1000.}.get(
         (unit or "mm").lower(), 1.)
 
 
 def dimensions_mm(value: Any) -> list[float]:
     if pd.isna(value):
         return []
-    text = str(value).replace(",", ".").replace("×", "x").replace("Ø", " diameter ")
+    text = str(value).replace(",", ".").replace("\u00d7", "x").replace("\u00d8", " diameter ")
     return [float(number) * _factor(unit) for number, unit in _DIM.findall(text)]
 
 
@@ -143,9 +152,9 @@ def flow_mm_s(value: Any) -> float:
 
 
 def gravity_g(value: Any) -> float:
-    text, number = str(value).lower().replace("²", "2"), _number(value)
+    text, number = str(value).lower().replace("\u00b2", "2"), _number(value)
     if pd.isna(number):
-        return 1e-6 if any(x in text for x in ("micro", "µg", "μg")) else np.nan
+        return 1e-6 if any(x in text for x in ("micro", "\u00b5g", "\u03bcg")) else np.nan
     if "cm/s2" in text or "cm/s^2" in text: return number / 981
     if "mm/s2" in text or "mm/s^2" in text: return number / 9810
     if "m/s2" in text or "m/s^2" in text: return number / 9.81
@@ -304,6 +313,9 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
               ) -> tuple[pd.DataFrame, dict[str, Any]]:
     raw, encoding = read_raw(path)
     original_rows = len(raw)
+    # Drop disallowed columns before any further processing.
+    raw = raw.drop(columns=[c for c in raw.columns
+                             if c in DROPPED_COLUMNS], errors="ignore")
     blank_mask = raw.replace(r"^\s*$", np.nan, regex=True).isna().all(axis=1)
     blank_source_rows = (raw.index[blank_mask] + 3).astype(int).tolist()
     raw = raw.loc[~blank_mask].copy()
@@ -349,22 +361,29 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
     df["flow_velocity_mm_s"] = raw[columns["flow"]].map(flow_mm_s)
     df["flow_speed_abs_mm_s"] = df["flow_velocity_mm_s"].abs()
     df["gravity_g"] = raw[columns["gravity"]].map(gravity_g)
-    df["log10_gravity_g"] = np.log10(df["gravity_g"].clip(lower=1e-8))
     df["ignition_power_w"] = raw[columns["ignition_power"]].map(watts)
     df["ignition_time_s"] = raw[columns["ignition_time"]].map(_number)
     df["ignition_energy_j"] = df["ignition_power_w"] * df["ignition_time_s"]
 
     sample_dims = raw[columns["dimensions"]].map(dimensions_mm)
-    internal_dims = raw[columns["internal_dimensions"]].map(dimensions_mm)
-    for prefix, values in (("sample", sample_dims), ("internal", internal_dims)):
-        for i in range(3):
-            df[f"{prefix}_dim_{i + 1}_mm"] = values.map(lambda x, i=i: x[i] if len(x) > i else np.nan)
+    for i in range(3):
+        df[f"sample_dim_{i + 1}_mm"] = sample_dims.map(lambda x, i=i: x[i] if len(x) > i else np.nan)
     df["sample_dim_min_mm"] = sample_dims.map(lambda x: min(x) if x else np.nan)
     df["sample_dim_max_mm"] = sample_dims.map(lambda x: max(x) if x else np.nan)
     df["sample_dim_mean_mm"] = sample_dims.map(lambda x: float(np.mean(x)) if x else np.nan)
     df["sample_dim_count"] = sample_dims.map(len).astype(float)
-    df["internal_dim_mean_mm"] = internal_dims.map(lambda x: float(np.mean(x)) if x else np.nan)
+    # internal_dim_* features are derived from the raw Dimensions column via regex
+    # (the separate "Internal Dimensions" column has been dropped).
     dimension_text = raw[columns["dimensions"]].fillna("").astype(str).str.lower()
+    internal_raw = dimension_text.map(
+        lambda t: [float(m) * _factor(u) for m, u in _DIM.findall(t)
+                   if any(kw in t for kw in ("internal", "inner", "id"))]
+    )
+    for i in range(3):
+        df[f"internal_dim_{i + 1}_mm"] = internal_raw.map(
+            lambda x, i=i: x[i] if len(x) > i else np.nan)
+    df["internal_dim_mean_mm"] = internal_raw.map(
+        lambda x: float(np.mean(x)) if x else np.nan)
     core = dimension_text.str.extract(r"(?:core|inner)\D{0,20}(" + _NUM.pattern + r")")[0].astype(float)
     outer = dimension_text.str.extract(r"(?:outer|outside)\D{0,20}(" + _NUM.pattern + r")")[0].astype(float)
     df["core_diameter_mm"], df["outer_diameter_mm"] = core, outer
@@ -372,16 +391,18 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
 
     df["geometry_cat"] = raw[columns["geometry"]].map(lambda x: _category(
         x, {"Wire": ("wire",), "Flat": ("flat",), "Cylindrical": ("cyl",), "Spherical": ("spher",)}))
-    df["internal_geometry_cat"] = raw[columns["internal_geometry"]].map(lambda x: _category(
-        x, {"Rectangular": ("rect",), "Cylindrical": ("cyl", "circular", "annular")}))
     df["ignition_method_cat"] = raw[columns["ignition_method"]].map(lambda x: _category(
         x, {"Open Flame": ("open flame", "pilot", "match"), "Radiative Heater": ("radiative", "heater"),
             "Discharge": ("discharge", "high-voltage"), "Wire / Coil": ("wire", "coil", "nicr", "electric")}))
-    df["facility_cat"] = raw[columns["facility"]].fillna("Unknown").astype(str)
     df["diluent_cat"] = raw[columns["diluent"]].fillna("Unknown").astype(str)
+    # NaN flow (quiescent experiments with no reported flow) maps to "Quiescent".
     df["flow_direction_cat"] = np.select(
         [df["flow_velocity_mm_s"] > 0, df["flow_velocity_mm_s"] < 0,
-         df["flow_velocity_mm_s"] == 0], ["Coflow", "Counterflow", "Quiescent"], "Unknown")
+         df["flow_velocity_mm_s"] == 0,
+         df["flow_velocity_mm_s"].isna()],
+        ["Coflow", "Counterflow", "Quiescent", "Quiescent"],
+        default="Quiescent",
+    )
     df["gravity_regime_cat"] = np.select(
         [df["gravity_g"] < .001, df["gravity_g"] < .95, df["gravity_g"] <= 1.05],
         ["Microgravity", "Partial", "Earth"], "Hyper / Unknown")
