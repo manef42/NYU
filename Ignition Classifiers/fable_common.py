@@ -101,7 +101,7 @@ NUMERIC_FEATURES = (
     "fuel_alpha_m2_s", "fuel_volumetric_heat_capacity_j_m3k",
     "core_density_kg_m3", "core_k_w_mk", "core_cp_j_kgk",
     "core_volumetric_heat_capacity_j_m3k",
-    "oxygen_fraction", "gas_molar_mass", "gas_cp_j_kgk", "gas_k_w_mk",
+    "oxygen", "gas_molar_mass", "gas_cp_j_kgk", "gas_k_w_mk",
     "gas_density_kg_m3", "gas_alpha_m2_s", "gas_nu_m2_s",
     "reynolds", "peclet", "prandtl", "thermal_diffusion_time_s",
     "pressure_pa", "flow_velocity_m_s", "flow_speed_abs_m_s", "gravity_g",
@@ -390,7 +390,7 @@ def load_data(path: str | Path, require_target: bool = True, deduplicate: bool =
         df[feature] = pd.to_numeric(raw[columns[source]], errors="coerce")
 
     # Oxygen is already stored as a fraction in the DB — read directly.
-    df["oxygen_fraction"] = pd.to_numeric(raw[columns["oxygen"]], errors="coerce")
+    df["oxygen"] = pd.to_numeric(raw[columns["oxygen"]], errors="coerce")
 
     # Pressure already in Pa in the DB; still handle explicit unit labels defensively.
     pressure_scale = header_unit_scale(columns["pressure"], PRESSURE_TO_PA, "pa")
