@@ -5,78 +5,61 @@ random_state: 42
 bootstrap_rows: 1000
 candidates:
   # --- XGBoost: GPU histogram boosting -------------------------------------
-  - candidate_id: xgb_all
-    model_family: xgboost
-    feature_set: all
-    paper_weight: none
-    fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_physics
+  - candidate_id: xgb
     model_family: xgboost
     feature_set: physics
     paper_weight: none
     fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_all_paper_weighted
+  - candidate_id: xgb_paper_weighted
     model_family: xgboost
-    feature_set: all
+    feature_set: physics
     paper_weight: sqrt
     fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_physics_paper_weighted_monotone_o2
+  - candidate_id: xgb_paper_weighted_monotone_o2
     model_family: xgboost
     feature_set: physics
     paper_weight: sqrt
     monotone_oxygen: true
     fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_all_pseudohuber
+  - candidate_id: xgb_pseudohuber
     model_family: xgboost
-    feature_set: all
+    feature_set: physics
     paper_weight: sqrt
     fixed_params: {objective_variant: pseudohuber}
-  - candidate_id: xgb_all_log_target
+  - candidate_id: xgb_log_target
     model_family: xgboost
-    feature_set: all
+    feature_set: physics
     paper_weight: sqrt
     target_transform: signed_log1p
     fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_physics_paper_bagging
+  - candidate_id: xgb_paper_bagging
     model_family: xgboost
     feature_set: physics
     paper_weight: sqrt
     paper_bagging: 10
     fixed_params: {objective_variant: squarederror}
   # --- K-nearest neighbours: cuML when available ---------------------------
-  - candidate_id: knn_all
-    model_family: knn
-    feature_set: all
-    paper_weight: sqrt
-  - candidate_id: knn_physics
+  - candidate_id: knn
     model_family: knn
     feature_set: physics
     paper_weight: sqrt
-  - candidate_id: knn_physics_log_target
+  - candidate_id: knn_log_target
     model_family: knn
     feature_set: physics
     paper_weight: sqrt
     target_transform: signed_log1p
   # --- Decision tree: interpretable CPU baseline ---------------------------
-  - candidate_id: decision_tree_all
-    model_family: decision_tree
-    feature_set: all
-    paper_weight: sqrt
-  - candidate_id: decision_tree_physics
+  - candidate_id: decision_tree
     model_family: decision_tree
     feature_set: physics
     paper_weight: sqrt
   # --- Multi-layer perceptron: PyTorch on one or many GPUs -----------------
-  - candidate_id: mlp_all
-    model_family: mlp
-    feature_set: all
-    paper_weight: sqrt
-  - candidate_id: mlp_physics
+  - candidate_id: mlp
     model_family: mlp
     feature_set: physics
     paper_weight: sqrt
-  - candidate_id: mlp_all_log_target
+  - candidate_id: mlp_log_target
     model_family: mlp
-    feature_set: all
+    feature_set: physics
     paper_weight: sqrt
     target_transform: signed_log1p

@@ -23,7 +23,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-DATA_VERSION = "fsr-data-v1"
+DATA_VERSION = "fsr-data-v2"
 RANDOM_STATE = 42
 TARGET = "fsr"
 ENCODINGS = ("utf-8", "utf-8-sig", "cp1252", "latin-1")
@@ -33,6 +33,17 @@ EXCEL_ENGINES = {".xlsm", ".xlsx", ".xls"}
 _NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 _LEADING_NUM = re.compile(r"^[-+]?\.?\d")
 SCRIPT_DIR = Path(__file__).resolve().parent
+
+# Columns that must never be used as features and are dropped on load.
+# Matching is case-insensitive on the stripped header.
+DROPPED_COLUMNS = (
+    "Material of Sample",
+    "Rig Name",
+    "Internal Geometry",
+    "Internal Dimensions",
+    "Facility",
+    "Info",
+)
 
 
 # =============================================================================
@@ -369,6 +380,14 @@ def load_data(path: str | Path, require_target: bool = True,
     path = locate_data_file(path)
     raw, parse_source = read_database(path)
     raw_rows = len(raw)
+
+    # Drop disallowed columns before any further processing.
+    disallowed = {name.strip().lower() for name in DROPPED_COLUMNS}
+    raw = raw.drop(
+        columns=[c for c in raw.columns if str(c).strip().lower() in disallowed],
+        errors="ignore",
+    )
+
     try:
         target_column = detect_target_column(raw)
     except ValueError:
@@ -450,17 +469,20 @@ def load_data(path: str | Path, require_target: bool = True,
     return df, report
 
 
-def feature_lists(manifest: list[dict[str, str]], feature_set: str
+def feature_lists(manifest: list[dict[str, str]], feature_set: str = "physics"
                   ) -> tuple[list[str], list[str]]:
-    """Return (numeric, categorical) feature names for 'all' or 'physics'."""
-    if feature_set not in {"all", "physics"}:
-        raise ValueError("feature_set must be 'all' or 'physics'")
-    numeric = [item["feature"] for item in manifest if item["kind"] == "numeric"
-               and (feature_set == "all" or item["role"] == "physics")]
-    categorical = [item["feature"] for item in manifest if item["kind"] == "categorical"
-                   and (feature_set == "all" or item["role"] == "physics")]
+    """Return (numeric, categorical) feature names from the manifest.
+
+    The Microgravity_Database.csv contains only physical features, so the
+    ``feature_set`` argument is accepted for API compatibility but no longer
+    filters by role — all manifest entries are returned regardless of the value
+    passed.  Callers that previously passed ``'all'`` or ``'physics'`` both
+    receive the same full feature list.
+    """
+    numeric = [item["feature"] for item in manifest if item["kind"] == "numeric"]
+    categorical = [item["feature"] for item in manifest if item["kind"] == "categorical"]
     if not numeric and not categorical:
-        raise ValueError(f"Feature set {feature_set!r} selected no features")
+        raise ValueError("The feature manifest is empty; cannot build a feature list")
     return numeric, categorical
 
 

@@ -18,7 +18,7 @@ set -euo pipefail
 
 REGRESSOR_DIR="${SLURM_SUBMIT_DIR}"
 REPO_DIR="$(dirname "${REGRESSOR_DIR}")"
-DATA="${FSR_DATA:-${REPO_DIR}/Microgravity_Database.xlsm}"
+DATA="${FSR_DATA:-${REPO_DIR}/Microgravity_Database.csv}"
 OVERLAY="${FSR_OVERLAY:-/scratch/me3144/ignition_hpc/ignition_python.ext3}"
 IMAGE="${FSR_IMAGE:-/share/apps/images/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif}"
 BOOTSTRAP_ITERATIONS="${FSR_BOOTSTRAP_ITERATIONS:-2000}"
