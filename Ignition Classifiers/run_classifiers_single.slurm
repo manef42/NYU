@@ -3,8 +3,8 @@
 #SBATCH --account=torch_pr_1163_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=64G
 #SBATCH --time=00:30:00
 #SBATCH --output=logs/%j_splits_output.log
 #SBATCH --error=logs/%j_splits_error.log
