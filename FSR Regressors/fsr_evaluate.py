@@ -1,9 +1,10 @@
 """The sole FSR benchmark runner: nested tuning on immutable outer splits.
 
 One invocation evaluates one or more candidates on every persisted split and
-writes a self-contained shard of results. ``--model-id`` restricts the run to a
-single model family, which is how the Slurm array fans the five families out over
-five GPUs; ``fsr_aggregate.py`` merges the shards afterwards.
+writes a self-contained shard of results. ``--candidate-id`` restricts the run
+to a single candidate by its string identifier, which is how the Slurm array
+fans all 30 candidates out over 30 GPUs; ``fsr_aggregate.py`` merges the shards
+afterwards.
 
 For every outer split the pipeline
 
@@ -102,9 +103,12 @@ def main() -> None:
     parser.add_argument("--protocols", default="",
                         help="Optional comma-separated protocol filter.")
     parser.add_argument("--model-id", type=int, choices=range(len(MODEL_ID_TO_FAMILY)),
-                        help="Run one family: " + ", ".join(
+                        help="(Legacy) Filter to one family by numeric index: " + ", ".join(
                             f"{index}={family}" for index, family
                             in enumerate(MODEL_ID_TO_FAMILY)))
+    parser.add_argument("--candidate-id", type=str, default=None,
+                        help="Run a single candidate by its candidate_id string. "
+                             "This is how the Slurm array isolates one task per candidate.")
     args = parser.parse_args()
     configure_torch()
     out = Path(args.out)
@@ -120,7 +124,16 @@ def main() -> None:
     if bootstrap_rows <= 0 and "rd_bt" in augmentations:
         augmentations = [name for name in augmentations if name != "rd_bt"]
     indexed = list(enumerate(candidates))
-    if args.model_id is not None:
+
+    # --candidate-id takes priority: filter to the single named candidate.
+    if args.candidate_id is not None:
+        indexed = [(number, candidate) for number, candidate in indexed
+                   if candidate["candidate_id"] == args.candidate_id]
+        if not indexed:
+            raise ValueError(f"No candidate with candidate_id {args.candidate_id!r} "
+                             f"found in {args.config}")
+    elif args.model_id is not None:
+        # Legacy family-level filter kept for backwards compatibility.
         family = MODEL_ID_TO_FAMILY[args.model_id]
         indexed = [(number, candidate) for number, candidate in indexed
                    if candidate["model_family"] == family]
@@ -311,6 +324,7 @@ def main() -> None:
         "group_column": data_report["group_column"],
         "row_count": data_report["row_count"], "paper_count": data_report["paper_count"],
         "candidate_count": len(indexed),
+        "candidate_id_filter": args.candidate_id,
         "model_id": args.model_id,
         "model_family_filter": (MODEL_ID_TO_FAMILY[args.model_id]
                                 if args.model_id is not None else None),
