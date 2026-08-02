@@ -1,6 +1,6 @@
 """Unified regressor interface and registry for every FSR model family.
 
-Six families are compared: XGBoost, Random Forest, k-nearest neighbours, a
+Five families are compared: XGBoost, Random Forest, k-nearest neighbours, a
 multi-layer perceptron, and Support Vector Regression. Each family uses
 whatever accelerator is available - XGBoost trains with the CUDA histogram
 builder, the MLP trains in PyTorch on one GPU or across every visible GPU with
@@ -26,7 +26,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
-from sklearn.tree import DecisionTreeRegressor
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler, TensorDataset
 from xgboost import XGBRegressor
@@ -279,16 +278,11 @@ def _xgb(params: dict[str, Any]) -> XGBRegressor:
 
 
 def _rf(params: dict[str, Any]) -> RandomForestRegressor:
-    params = dict(params)
     return RandomForestRegressor(
         random_state=RANDOM_STATE,
         n_jobs=slurm_cpu_count(),
         **params,
     )
-
-
-def _tree(params: dict[str, Any]) -> DecisionTreeRegressor:
-    return DecisionTreeRegressor(random_state=RANDOM_STATE, **params)
 
 
 def _knn(params: dict[str, Any]) -> CuMLKNNWithFallback:
@@ -300,7 +294,6 @@ def _mlp(params: dict[str, Any]) -> TorchMLPRegressor:
 
 
 def _svr(params: dict[str, Any]) -> SVR:
-    params = dict(params)
     return SVR(**params)
 
 
@@ -327,14 +320,6 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
             "max_features": ["sqrt", "log2", .5, .8, 1.0],
         }, True, False, False, "cpu",
         "Random state 42; parallelized over all allocated CPU cores."),
-    "decision_tree": ModelSpec(
-        "decision_tree", _tree, {
-            "max_depth": [3, 4, 5, 6, 8, 10, 12, None],
-            "min_samples_split": [2, 5, 10, 20, 40],
-            "min_samples_leaf": [1, 2, 4, 8, 16, 32],
-            "max_features": ["sqrt", "log2", .5, .8, 1., None],
-        }, True, False, False, "cpu",
-        "Random state 42 for tie resolution; folds run in parallel threads."),
     "knn": ModelSpec(
         "knn", _knn, {
             "n_neighbors": [3, 5, 7, 9, 11, 15, 21, 31],
@@ -361,8 +346,8 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
 }
 
 # Ordered tuple used by fsr_evaluate.py --model-id Slurm array indexing.
-# Index: 0=xgboost, 1=random_forest, 2=knn, 3=decision_tree, 4=mlp, 5=svr
-MODEL_ID_TO_FAMILY = ("xgboost", "random_forest", "knn", "decision_tree", "mlp", "svr")
+# Index: 0=xgboost, 1=random_forest, 2=knn, 3=mlp, 4=svr
+MODEL_ID_TO_FAMILY = ("xgboost", "random_forest", "knn", "mlp", "svr")
 
 
 # =============================================================================
@@ -397,7 +382,6 @@ class FSRModel:
         self.preprocessor_: ColumnTransformer | None = None
         self.estimators_: list[Any] = []
 
-    # ---------------------------------------------------------------- helpers
     def _preprocessor(self) -> ColumnTransformer:
         return build_preprocessor(
             self.numeric, self.categorical, scale_numeric=self.spec.scale_numeric,
@@ -434,7 +418,6 @@ class FSRModel:
         return rng.choice(np.arange(len(weights)), size=len(weights), replace=True,
                           p=probabilities)
 
-    # ------------------------------------------------------------------- API
     def fit(self, X: pd.DataFrame, y: np.ndarray, papers: pd.Series) -> "FSRModel":
         missing = [column for column in self.features if column not in X.columns]
         if missing:

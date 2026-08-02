@@ -28,7 +28,7 @@ from fsr_models import MODEL_REGISTRY, make_model
 
 # Families that run exclusively on CPU and are safe to parallelize across cores.
 # GPU families (xgboost, mlp) keep parallel_jobs=1 to avoid CUDA contention.
-CPU_PARALLEL_FAMILIES = ("knn", "decision_tree", "random_forest", "svr")
+CPU_PARALLEL_FAMILIES = ("knn", "random_forest", "svr")
 SELECTION_ORDER = ("RMSE", "MAE", "R2")
 
 
