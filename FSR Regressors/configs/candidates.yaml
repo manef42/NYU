@@ -1,65 +1,189 @@
-version: 1
+version: 2
 random_state: 42
-# Rows added with replacement to a training partition under the rd_bt condition
-# (Rivera et al. add ~1000 bootstrap rows).
+
+# New database contains only physics-based features.
+# No feature_set distinction.
+
+# Bootstrap rows added to training partitions under the rd_bt augmentation.
 bootstrap_rows: 1000
+
 candidates:
-  # --- XGBoost: GPU histogram boosting -------------------------------------
-  - candidate_id: xgb
+
+
+  # =====================================================
+  # XGBOOST
+  # =====================================================
+
+  - candidate_id: xgb_baseline
     model_family: xgboost
-    feature_set: physics
     paper_weight: none
-    fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_paper_weighted
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_paper_sqrt
     model_family: xgboost
-    feature_set: physics
     paper_weight: sqrt
-    fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_paper_weighted_monotone_o2
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_paper_inverse
     model_family: xgboost
-    feature_set: physics
+    paper_weight: inverse
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_absoluteerror_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    fixed_params:
+      objective_variant: absoluteerror
+
+  - candidate_id: xgb_absoluteerror_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    fixed_params:
+      objective_variant: absoluteerror
+
+  - candidate_id: xgb_pseudohuber_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    fixed_params:
+      objective_variant: pseudohuber
+
+  - candidate_id: xgb_pseudohuber_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    fixed_params:
+      objective_variant: pseudohuber
+
+  - candidate_id: xgb_log_target_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    target_transform: signed_log1p
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_log_target_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    target_transform: signed_log1p
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_monotone_o2_sqrt
+    model_family: xgboost
     paper_weight: sqrt
     monotone_oxygen: true
-    fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_pseudohuber
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_monotone_o2_inverse
     model_family: xgboost
-    feature_set: physics
-    paper_weight: sqrt
-    fixed_params: {objective_variant: pseudohuber}
-  - candidate_id: xgb_log_target
+    paper_weight: inverse
+    monotone_oxygen: true
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_paper_bagging_sqrt
     model_family: xgboost
-    feature_set: physics
-    paper_weight: sqrt
-    target_transform: signed_log1p
-    fixed_params: {objective_variant: squarederror}
-  - candidate_id: xgb_paper_bagging
-    model_family: xgboost
-    feature_set: physics
     paper_weight: sqrt
     paper_bagging: 10
-    fixed_params: {objective_variant: squarederror}
-  # --- K-nearest neighbours: cuML when available ---------------------------
-  - candidate_id: knn
-    model_family: knn
-    feature_set: physics
+    fixed_params:
+      objective_variant: squarederror
+
+
+  # =====================================================
+  # DECISION TREE
+  # =====================================================
+
+  - candidate_id: dt_baseline
+    model_family: decision_tree
+    paper_weight: none
+
+  - candidate_id: dt_paper_sqrt
+    model_family: decision_tree
     paper_weight: sqrt
-  - candidate_id: knn_log_target
+
+  - candidate_id: dt_paper_inverse
+    model_family: decision_tree
+    paper_weight: inverse
+
+
+  # =====================================================
+  # KNN
+  # =====================================================
+
+  - candidate_id: knn_baseline
     model_family: knn
-    feature_set: physics
+    paper_weight: none
+
+  - candidate_id: knn_paper_sqrt
+    model_family: knn
+    paper_weight: sqrt
+
+  - candidate_id: knn_paper_inverse
+    model_family: knn
+    paper_weight: inverse
+
+  - candidate_id: knn_distance_sqrt
+    model_family: knn
+    paper_weight: sqrt
+    fixed_params:
+      weights: distance
+
+  - candidate_id: knn_distance_inverse
+    model_family: knn
+    paper_weight: inverse
+    fixed_params:
+      weights: distance
+
+  - candidate_id: knn_manhattan_sqrt
+    model_family: knn
+    paper_weight: sqrt
+    fixed_params:
+      p: 1
+
+  - candidate_id: knn_manhattan_inverse
+    model_family: knn
+    paper_weight: inverse
+    fixed_params:
+      p: 1
+
+
+  # =====================================================
+  # MLP
+  # =====================================================
+
+  - candidate_id: mlp_baseline
+    model_family: mlp
+    paper_weight: none
+
+  - candidate_id: mlp_paper_sqrt
+    model_family: mlp
+    paper_weight: sqrt
+
+  - candidate_id: mlp_paper_inverse
+    model_family: mlp
+    paper_weight: inverse
+
+  - candidate_id: mlp_tanh_sqrt
+    model_family: mlp
+    paper_weight: sqrt
+    fixed_params:
+      activation: tanh
+
+  - candidate_id: mlp_tanh_inverse
+    model_family: mlp
+    paper_weight: inverse
+    fixed_params:
+      activation: tanh
+
+  - candidate_id: mlp_log_target_sqrt
+    model_family: mlp
     paper_weight: sqrt
     target_transform: signed_log1p
-  # --- Decision tree: interpretable CPU baseline ---------------------------
-  - candidate_id: decision_tree
-    model_family: decision_tree
-    feature_set: physics
-    paper_weight: sqrt
-  # --- Multi-layer perceptron: PyTorch on one or many GPUs -----------------
-  - candidate_id: mlp
+
+  - candidate_id: mlp_log_target_inverse
     model_family: mlp
-    feature_set: physics
-    paper_weight: sqrt
-  - candidate_id: mlp_log_target
-    model_family: mlp
-    feature_set: physics
-    paper_weight: sqrt
+    paper_weight: inverse
     target_transform: signed_log1p
