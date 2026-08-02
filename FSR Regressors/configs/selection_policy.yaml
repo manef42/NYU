@@ -13,9 +13,13 @@ minimum_r2: -0.25
 # and resolved by the declared tie-breakers instead of by noise.
 tie_tolerance_fraction: 0.02
 refit_hyperparameter_rule: modal outer-fold selected configuration with lexical tie resolution
+# Simplicity order for tie-breaking: leftmost = simplest.
+# decision_tree < random_forest < knn < svr < xgboost < mlp
 simplicity_order:
   - decision_tree
+  - random_forest
   - knn
+  - svr
   - xgboost
   - mlp
 augmentation_policy:

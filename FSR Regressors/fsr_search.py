@@ -26,7 +26,9 @@ from sklearn.model_selection import GroupKFold, KFold
 from fsr_common import METRIC_KEYS, regression_metrics
 from fsr_models import MODEL_REGISTRY, make_model
 
-CPU_PARALLEL_FAMILIES = ("knn", "decision_tree")
+# Families that run exclusively on CPU and are safe to parallelize across cores.
+# GPU families (xgboost, mlp) keep parallel_jobs=1 to avoid CUDA contention.
+CPU_PARALLEL_FAMILIES = ("knn", "decision_tree", "random_forest", "svr")
 SELECTION_ORDER = ("RMSE", "MAE", "R2")
 
 
