@@ -10,5 +10,5 @@ presentation/figures/
 *.parquet
 
 # Large evaluation prediction artifacts
-Ignition Classifiers/results/evaluation/inner_oof_predictions.csv
-Ignition Classifiers/results/evaluation/outer_fold_predictions.csv
+Ignition Classifiers/results/evaluation/model_0/inner_oof_predictions.csv
+Ignition Classifiers/results/evaluation/model_0/outer_fold_predictions.csv
