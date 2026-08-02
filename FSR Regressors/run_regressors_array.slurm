@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=fsr-regressor-array
 #SBATCH --account=torch_pr_1163_tandon_advanced
-#SBATCH --array=0-3
+#SBATCH --array=0-5
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
@@ -11,7 +11,8 @@
 #SBATCH --output=logs/%A_%a_eval_output.log
 #SBATCH --error=logs/%A_%a_eval_error.log
 
-# One array task per model family: 0=XGBoost, 1=KNN, 2=Decision Tree, 3=MLP.
+# One array task per model family:
+# 0=XGBoost  1=Random Forest  2=KNN  3=Decision Tree  4=MLP  5=SVR
 # Each task tunes and benchmarks its family on every persisted split and writes a
 # self-contained shard under results/evaluation/model_<task>. CUDA MPS lets the
 # concurrent inner-fold fits of one task share the allocated GPU.

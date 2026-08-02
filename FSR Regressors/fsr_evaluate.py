@@ -2,8 +2,8 @@
 
 One invocation evaluates one or more candidates on every persisted split and
 writes a self-contained shard of results. ``--model-id`` restricts the run to a
-single model family, which is how the Slurm array fans the four families out over
-four GPUs; ``fsr_aggregate.py`` merges the shards afterwards.
+single model family, which is how the Slurm array fans the six families out over
+six GPUs; ``fsr_aggregate.py`` merges the shards afterwards.
 
 For every outer split the pipeline
 
@@ -38,7 +38,7 @@ from fsr_models import MODEL_ID_TO_FAMILY, MODEL_REGISTRY, make_model
 from fsr_search import nested_search
 
 AUGMENTATIONS = ("rd", "rd_bt")
-EXPLAINABLE_FAMILIES = ("xgboost", "decision_tree")
+EXPLAINABLE_FAMILIES = ("xgboost", "decision_tree", "random_forest")
 
 
 def _load_candidates(path: str | Path) -> tuple[list[dict[str, Any]], int, int]:

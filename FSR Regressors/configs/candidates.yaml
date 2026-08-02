@@ -1,4 +1,4 @@
-version: 2
+version: 3
 random_state: 42
 
 # New database contains only physics-based features.
@@ -11,7 +11,7 @@ candidates:
 
 
   # =====================================================
-  # XGBOOST
+  # XGBOOST (10)
   # =====================================================
 
   - candidate_id: xgb_baseline
@@ -70,20 +70,6 @@ candidates:
     fixed_params:
       objective_variant: squarederror
 
-  - candidate_id: xgb_monotone_o2_sqrt
-    model_family: xgboost
-    paper_weight: sqrt
-    monotone_oxygen: true
-    fixed_params:
-      objective_variant: squarederror
-
-  - candidate_id: xgb_monotone_o2_inverse
-    model_family: xgboost
-    paper_weight: inverse
-    monotone_oxygen: true
-    fixed_params:
-      objective_variant: squarederror
-
   - candidate_id: xgb_paper_bagging_sqrt
     model_family: xgboost
     paper_weight: sqrt
@@ -93,37 +79,49 @@ candidates:
 
 
   # =====================================================
-  # DECISION TREE
+  # RANDOM FOREST (3)
   # =====================================================
 
-  - candidate_id: dt_baseline
-    model_family: decision_tree
+  - candidate_id: rf_baseline
+    model_family: random_forest
     paper_weight: none
 
-  - candidate_id: dt_paper_sqrt
-    model_family: decision_tree
+  - candidate_id: rf_paper_sqrt
+    model_family: random_forest
     paper_weight: sqrt
 
-  - candidate_id: dt_paper_inverse
-    model_family: decision_tree
+  - candidate_id: rf_paper_inverse
+    model_family: random_forest
     paper_weight: inverse
 
 
   # =====================================================
-  # KNN
+  # KNN (6)
   # =====================================================
 
-  - candidate_id: knn_baseline
+  - candidate_id: knn_uniform
     model_family: knn
     paper_weight: none
+    fixed_params:
+      weights: uniform
 
-  - candidate_id: knn_paper_sqrt
+  - candidate_id: knn_uniform_sqrt
     model_family: knn
     paper_weight: sqrt
+    fixed_params:
+      weights: uniform
 
-  - candidate_id: knn_paper_inverse
+  - candidate_id: knn_uniform_inverse
     model_family: knn
     paper_weight: inverse
+    fixed_params:
+      weights: uniform
+
+  - candidate_id: knn_distance
+    model_family: knn
+    paper_weight: none
+    fixed_params:
+      weights: distance
 
   - candidate_id: knn_distance_sqrt
     model_family: knn
@@ -137,21 +135,9 @@ candidates:
     fixed_params:
       weights: distance
 
-  - candidate_id: knn_manhattan_sqrt
-    model_family: knn
-    paper_weight: sqrt
-    fixed_params:
-      p: 1
-
-  - candidate_id: knn_manhattan_inverse
-    model_family: knn
-    paper_weight: inverse
-    fixed_params:
-      p: 1
-
 
   # =====================================================
-  # MLP
+  # MLP (5)
   # =====================================================
 
   - candidate_id: mlp_baseline
@@ -166,18 +152,6 @@ candidates:
     model_family: mlp
     paper_weight: inverse
 
-  - candidate_id: mlp_tanh_sqrt
-    model_family: mlp
-    paper_weight: sqrt
-    fixed_params:
-      activation: tanh
-
-  - candidate_id: mlp_tanh_inverse
-    model_family: mlp
-    paper_weight: inverse
-    fixed_params:
-      activation: tanh
-
   - candidate_id: mlp_log_target_sqrt
     model_family: mlp
     paper_weight: sqrt
@@ -187,3 +161,44 @@ candidates:
     model_family: mlp
     paper_weight: inverse
     target_transform: signed_log1p
+
+
+  # =====================================================
+  # SVR (6)
+  # =====================================================
+
+  - candidate_id: svr_linear
+    model_family: svr
+    paper_weight: none
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svr_linear_sqrt
+    model_family: svr
+    paper_weight: sqrt
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svr_linear_inverse
+    model_family: svr
+    paper_weight: inverse
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svr_rbf
+    model_family: svr
+    paper_weight: none
+    fixed_params:
+      kernel: rbf
+
+  - candidate_id: svr_rbf_sqrt
+    model_family: svr
+    paper_weight: sqrt
+    fixed_params:
+      kernel: rbf
+
+  - candidate_id: svr_rbf_inverse
+    model_family: svr
+    paper_weight: inverse
+    fixed_params:
+      kernel: rbf

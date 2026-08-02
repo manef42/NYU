@@ -1,11 +1,12 @@
 """Unified regressor interface and registry for every FSR model family.
 
-Four families are compared: decision trees, XGBoost, k-nearest neighbours and a
-multi-layer perceptron. Each family uses whatever accelerator is available -
-XGBoost trains with the CUDA histogram builder, the MLP trains in PyTorch on one
-GPU or across every visible GPU with NCCL ``DistributedDataParallel``, and KNN
-uses cuML when it is installed - while remaining bit-for-bit runnable on CPU-only
-hosts so that results are reproducible off the cluster.
+Six families are compared: XGBoost, Random Forest, k-nearest neighbours, a
+multi-layer perceptron, and Support Vector Regression. Each family uses
+whatever accelerator is available - XGBoost trains with the CUDA histogram
+builder, the MLP trains in PyTorch on one GPU or across every visible GPU with
+NCCL DistributedDataParallel, and KNN uses cuML when it is installed - while
+remaining bit-for-bit runnable on CPU-only hosts so that results are
+reproducible off the cluster.
 """
 from __future__ import annotations
 
@@ -22,7 +23,9 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler, TensorDataset
@@ -275,6 +278,15 @@ def _xgb(params: dict[str, Any]) -> XGBRegressor:
                         random_state=RANDOM_STATE, verbosity=0, **params)
 
 
+def _rf(params: dict[str, Any]) -> RandomForestRegressor:
+    params = dict(params)
+    return RandomForestRegressor(
+        random_state=RANDOM_STATE,
+        n_jobs=slurm_cpu_count(),
+        **params,
+    )
+
+
 def _tree(params: dict[str, Any]) -> DecisionTreeRegressor:
     return DecisionTreeRegressor(random_state=RANDOM_STATE, **params)
 
@@ -285,6 +297,11 @@ def _knn(params: dict[str, Any]) -> CuMLKNNWithFallback:
 
 def _mlp(params: dict[str, Any]) -> TorchMLPRegressor:
     return TorchMLPRegressor(random_state=RANDOM_STATE, **params)
+
+
+def _svr(params: dict[str, Any]) -> SVR:
+    params = dict(params)
+    return SVR(**params)
 
 
 MODEL_REGISTRY: dict[str, ModelSpec] = {
@@ -301,6 +318,15 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
             "gamma": [0., .1, .3, 1.],
         }, True, False, True, "gpu",
         "Random state 42; CUDA histogram tree method when a GPU is visible."),
+    "random_forest": ModelSpec(
+        "random_forest", _rf, {
+            "n_estimators": [100, 200, 300, 500],
+            "max_depth": [4, 6, 8, 10, 12, None],
+            "min_samples_split": [2, 5, 10, 20],
+            "min_samples_leaf": [1, 2, 4, 8, 16],
+            "max_features": ["sqrt", "log2", .5, .8, 1.0],
+        }, True, False, False, "cpu",
+        "Random state 42; parallelized over all allocated CPU cores."),
     "decision_tree": ModelSpec(
         "decision_tree", _tree, {
             "max_depth": [3, 4, 5, 6, 8, 10, 12, None],
@@ -325,9 +351,18 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
             "batch_size": [32, 64, 128],
         }, True, True, False, "gpu",
         "PyTorch seed 42; one GPU or NCCL DDP across every visible GPU."),
+    "svr": ModelSpec(
+        "svr", _svr, {
+            "C": [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0],
+            "epsilon": [0.01, 0.05, 0.1, 0.2, 0.5],
+            "gamma": ["scale", "auto", 0.001, 0.01, 0.1],
+        }, False, True, False, "cpu",
+        "sklearn SVR; no sample_weight support, uses weighted resampling instead."),
 }
 
-MODEL_ID_TO_FAMILY = ("xgboost", "knn", "decision_tree", "mlp")
+# Ordered tuple used by fsr_evaluate.py --model-id Slurm array indexing.
+# Index: 0=xgboost, 1=random_forest, 2=knn, 3=decision_tree, 4=mlp, 5=svr
+MODEL_ID_TO_FAMILY = ("xgboost", "random_forest", "knn", "decision_tree", "mlp", "svr")
 
 
 # =============================================================================
