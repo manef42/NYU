@@ -1,615 +1,562 @@
 #!/usr/bin/env python3
-"""
-Generate a comprehensive set of metric plots/charts from
-Microgravity_Database_reduced.csv into the ./metrics folder.
+"""Generate categorized exploratory metrics for Microgravity_Database.csv.
 
-Metrics covered:
-- Number of papers, points per paper, paper sizes
-- Ignition/extinction composition (overall, per paper, per facility, per geometry)
-- Ranges & gaps of: fuel density, fuel conductivity, fuel cp, oxygen,
-  pressure, gravity, flow velocity, FSR
-- O2 vs Pressure per point (colored by ignition, gravity, diluent)
-- FSR relationships (vs O2, pressure, gravity, fuel density)
-- Categorical compositions (diluent, facility, geometry, ignition method)
-- Data completeness / missingness
-- Correlation heatmap
+The upgraded database uses SI units and exposes material, rig, internal geometry,
+dimensionless flow properties, ignition energy inputs, and richer outputs.  This
+script validates that schema, cleans known label inconsistencies, and writes PNG
+figures into five topic folders beside the database.
+
+Run from any directory:
+    python metrics/generate_metrics.py
+    python metrics/generate_metrics.py --clean
 """
 
-import os
-import numpy as np
-import pandas as pd
+from __future__ import annotations
+
+import argparse
+import math
+import shutil
+from pathlib import Path
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+import numpy as np
+import pandas as pd
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "metrics")
-os.makedirs(OUT, exist_ok=True)
-
-plt.rcParams.update({
-    "figure.dpi": 130,
-    "savefig.dpi": 130,
-    "font.size": 10,
-    "axes.titlesize": 12,
-    "axes.titleweight": "bold",
-    "axes.grid": True,
-    "grid.alpha": 0.3,
-})
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_INPUT = BASE_DIR / "Microgravity_Database.csv"
+OUTPUT_FOLDERS = {
+    "overview": "01_overview",
+    "coverage": "02_parameter_coverage",
+    "ignition": "03_ignition_metrics",
+    "fsr": "04_fsr_metrics",
+    "quality": "05_data_quality",
+}
 
 COL = {
     "paper": "Article (MLA)",
-    "geom": "Geometry of Sample (Flat, wire, or Cylindrical)",
-    "fuel_rho": "fuel_density_kg_m3",
+    "authors": "Authors",
+    "doi": "DOI",
+    "geometry": "Geometry of Sample",
+    "material": "Material of sample",
+    "half_thickness": "half_thickness",
+    "length": "characteristic_length_m",
+    "fuel_density": "fuel_density_kg_m3",
     "fuel_k": "fuel_k_W_mK",
     "fuel_cp": "fuel_cp_J_kgK",
+    "fuel_pyrolysis_t": "fuel_pyrolysis_T_K",
+    "fuel_alpha": "fuel_alpha_m2_s",
     "o2": "Oxygen Concentration",
     "diluent": "diluent",
-    "pressure": "Pressure",
-    "flow": "Flow Velocity (Co flow is + and counter flow is -)",
-    "gravity": "Gravity (g/gearth)",
-    "facility": "Expireimental facility (Parabolic Aircraft, Drop Tower, Spacecraft, Sounding Rocket, Ground)",
-    "ign_method": "Ignition method (Wire, open flame, or Radiative Heater",
-    "ignition": "Ignition (Yes/No)",
-    "fsr": "FSR (Flame Spread Rate)",
-    "flame_len": "Flame Length",
-    "hrr": "HRR (Heat release rate)",
-    "gas_k": "gas_k",
-    "gas_rho": "gas_density_kg_m3",
+    "gas_density": "gas_density_kg_m3",
+    "reynolds": "Reynolds",
+    "peclet": "Peclet",
+    "prandtl": "Prandtl",
+    "diffusion_time": "thermal_diffusion_time",
+    "pressure": "Pressure (Pa)",
+    "flow": "Flow Velocity (m/s)",
+    "rig": "Rig Name",
+    "internal_geometry": "Internal Geometry",
+    "gravity": "Gravity",
+    "facility": "Facility",
+    "ignition_method": "Ignition Method",
+    "ignition_power": "Ignition Power (W)",
+    "ignition_time": "Ignition Time (s)",
+    "ignition": "Ignition",
+    "flame_length": "Flame Length",
+    "fsr": "FSR (m/s)",
+    "hrr": "HRR",
+    "smoke": "Smoke/ Areosols",
 }
 
-# ---------------------------------------------------------------- load
-df = pd.read_csv("Microgravity_Database_reduced.csv", header=1, encoding="latin-1")
-df = df.dropna(how="all")
-
-# clean ignition label
-df["ign_clean"] = df[COL["ignition"]].astype(str).str.strip().str.title()
-df.loc[~df["ign_clean"].isin(["Yes", "No"]), "ign_clean"] = np.nan
-
-# clean geometry
-df["geom_clean"] = df[COL["geom"]].astype(str).str.strip().str.title()
-df.loc[df["geom_clean"].isin(["Nan", ""]), "geom_clean"] = np.nan
-
-# numeric FSR
-df["fsr_num"] = pd.to_numeric(df[COL["fsr"]], errors="coerce")
-df["flame_len_num"] = pd.to_numeric(df[COL["flame_len"]], errors="coerce")
-
-# short paper id (first author + index)
-first_author = df[COL["paper"]].astype(str).str.split(",").str[0].str.strip()
-codes, uniques = pd.factorize(df[COL["paper"]])
-df["paper_id"] = ["P%02d %s" % (c + 1, a[:18]) for c, a in zip(codes, first_author)]
-
-IGN_COLORS = {"Yes": "#2ca02c", "No": "#d62728"}
-
-saved = []
-
-
-def save(fig, name):
-    path = os.path.join(OUT, name)
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
-    saved.append(name)
-    print("saved", name)
-
-
-# ================================================================
-# 1. DATASET OVERVIEW SUMMARY CARD
-# ================================================================
-n_points = len(df)
-n_papers = df[COL["paper"]].nunique()
-n_ign = (df["ign_clean"] == "Yes").sum()
-n_ext = (df["ign_clean"] == "No").sum()
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.axis("off")
-stats = [
-    ("Total data points", f"{n_points:,}"),
-    ("Number of papers", f"{n_papers}"),
-    ("Median points / paper", f"{df.groupby(COL['paper']).size().median():.0f}"),
-    ("Ignition (Yes)", f"{n_ign:,} ({100*n_ign/n_points:.1f}%)"),
-    ("Extinction / No-ignition (No)", f"{n_ext:,} ({100*n_ext/n_points:.1f}%)"),
-    ("O2 mole-fraction range", f"{df[COL['o2']].min():.3f} - {df[COL['o2']].max():.3f}"),
-    ("Pressure range (kPa)", f"{df[COL['pressure']].min():.1f} - {df[COL['pressure']].max():.0f}"),
-    ("Gravity range (g/g_earth)", f"{df[COL['gravity']].min():.2f} - {df[COL['gravity']].max():.2f}"),
-    ("Fuel density range (kg/m3)", f"{df[COL['fuel_rho']].min():.0f} - {df[COL['fuel_rho']].max():.0f}"),
-    ("Fuel conductivity range (W/mK)", f"{df[COL['fuel_k']].min():.3f} - {df[COL['fuel_k']].max():.2f}"),
-    ("Points with numeric FSR", f"{df['fsr_num'].notna().sum():,}"),
-    ("FSR range (mm/s)", f"{df['fsr_num'].min():.2f} - {df['fsr_num'].max():.0f}"),
+NUMERIC_KEYS = [
+    "half_thickness", "length", "fuel_density", "fuel_k", "fuel_cp",
+    "fuel_pyrolysis_t", "fuel_alpha", "o2", "gas_density", "reynolds",
+    "peclet", "prandtl", "diffusion_time", "pressure", "flow", "gravity",
+    "ignition_power", "ignition_time", "hrr",
 ]
-for i, (k, v) in enumerate(stats):
-    r, c = i % 6, i // 6
-    ax.text(0.02 + c * 0.5, 0.92 - r * 0.16, k, fontsize=11, weight="bold", va="top")
-    ax.text(0.02 + c * 0.5, 0.86 - r * 0.16, v, fontsize=11, color="#1f77b4", va="top")
-ax.set_title("Dataset Overview - Microgravity Flammability Database (reduced)", fontsize=14)
-save(fig, "01_dataset_overview_summary.png")
 
-# ================================================================
-# 2. POINTS PER PAPER (all papers, horizontal bar)
-# ================================================================
-pp = df.groupby("paper_id").size().sort_values()
-fig, ax = plt.subplots(figsize=(10, 16))
-pp.plot.barh(ax=ax, color="#1f77b4")
-ax.set_xlabel("Number of data points")
-ax.set_ylabel("Paper")
-ax.set_title(f"Number of Data Points per Paper (all {n_papers} papers)")
-ax.tick_params(axis="y", labelsize=7)
-save(fig, "02_points_per_paper_all.png")
+IGNITION_COLORS = {"Yes": "#24935b", "No": "#d1495b"}
+GRAVITY_ORDER = ["Microgravity (<=0.01 g)", "Partial gravity", "Earth gravity", "Hypergravity"]
+GRAVITY_COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444"]
+PALETTE = ["#2563eb", "#0f766e", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"]
 
-# 3. top 25 papers
-fig, ax = plt.subplots(figsize=(10, 8))
-pp.tail(25).plot.barh(ax=ax, color="#ff7f0e")
-ax.set_xlabel("Number of data points")
-ax.set_title("Top 25 Papers by Number of Data Points")
-save(fig, "03_points_per_paper_top25.png")
+plt.rcParams.update({
+    "figure.dpi": 130,
+    "savefig.dpi": 160,
+    "font.size": 9.5,
+    "axes.titlesize": 12,
+    "axes.titleweight": "bold",
+    "axes.grid": True,
+    "grid.alpha": 0.22,
+    "figure.facecolor": "white",
+    "axes.facecolor": "#fbfdff",
+})
 
-# 4. histogram of paper sizes
-fig, ax = plt.subplots(figsize=(9, 5))
-ax.hist(pp.values, bins=30, color="#2ca02c", edgecolor="k")
-ax.axvline(pp.median(), color="r", ls="--", label=f"median = {pp.median():.0f}")
-ax.axvline(pp.mean(), color="b", ls="--", label=f"mean = {pp.mean():.1f}")
-ax.set_xlabel("Points in paper")
-ax.set_ylabel("Number of papers")
-ax.set_title("Distribution of Paper Sizes (points per paper)")
-ax.legend()
-save(fig, "04_paper_size_histogram.png")
 
-# 5. cumulative share of data by paper (Pareto)
-fig, ax = plt.subplots(figsize=(9, 5))
-cum = pp.sort_values(ascending=False).cumsum() / n_points * 100
-ax.plot(range(1, len(cum) + 1), cum.values, marker="o", ms=3)
-ax.axhline(80, color="r", ls="--", alpha=0.6, label="80% of data")
-n80 = int((cum.values < 80).sum()) + 1
-ax.axvline(n80, color="r", ls=":", alpha=0.6, label=f"{n80} papers -> 80%")
-ax.set_xlabel("Number of papers (largest first)")
-ax.set_ylabel("Cumulative % of all data points")
-ax.set_title("Pareto Curve - Cumulative Data Share by Paper")
-ax.legend()
-save(fig, "05_pareto_cumulative_data_by_paper.png")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT, help="upgraded CSV path")
+    parser.add_argument("--output", type=Path, default=BASE_DIR, help="parent output directory")
+    parser.add_argument("--clean", action="store_true", help="remove old categorized output first")
+    return parser.parse_args()
 
-# ================================================================
-# 6. IGNITION / EXTINCTION COMPOSITION (overall pie)
-# ================================================================
-fig, ax = plt.subplots(figsize=(7, 6))
-counts = df["ign_clean"].value_counts(dropna=False)
-labels = [("Unknown" if pd.isna(k) else ("Ignition (Yes)" if k == "Yes" else "No ignition / Extinction"))
-          for k in counts.index]
-colors = ["#2ca02c" if k == "Yes" else "#d62728" if k == "No" else "#7f7f7f" for k in counts.index]
-ax.pie(counts.values, labels=[f"{l}\n{v:,} ({100*v/n_points:.1f}%)" for l, v in zip(labels, counts.values)],
-       colors=colors, startangle=90, wedgeprops=dict(edgecolor="w"))
-ax.set_title("Overall Composition: Ignition vs Extinction (No-Ignition)")
-save(fig, "06_ignition_composition_pie.png")
 
-# 7. ignition composition per paper (stacked, top 30 papers)
-top30 = pp.tail(30).index
-ct = pd.crosstab(df["paper_id"], df["ign_clean"]).reindex(top30).fillna(0)
-fig, ax = plt.subplots(figsize=(10, 10))
-left = np.zeros(len(ct))
-for lab, col in [("Yes", "#2ca02c"), ("No", "#d62728")]:
-    if lab in ct:
-        ax.barh(ct.index, ct[lab], left=left, color=col, label=f"Ignition={lab}")
-        left += ct[lab].values
-ax.set_xlabel("Data points")
-ax.set_title("Ignition vs Extinction Composition per Paper (top 30 papers)")
-ax.legend()
-ax.tick_params(axis="y", labelsize=7)
-save(fig, "07_ignition_composition_per_paper.png")
+def clean_text(series: pd.Series) -> pd.Series:
+    out = series.astype("string").str.strip().replace({"": pd.NA, "nan": pd.NA, "None": pd.NA})
+    return out
 
-# 8. ignition fraction per paper histogram
-frac = df.groupby(COL["paper"])["ign_clean"].apply(lambda s: (s == "Yes").mean())
-fig, ax = plt.subplots(figsize=(9, 5))
-ax.hist(frac, bins=20, color="#9467bd", edgecolor="k")
-ax.set_xlabel("Fraction of points with Ignition = Yes")
-ax.set_ylabel("Number of papers")
-ax.set_title("Distribution of Ignition Fraction Across Papers")
-save(fig, "08_ignition_fraction_per_paper_hist.png")
 
-# ================================================================
-# CATEGORICAL COMPOSITIONS
-# ================================================================
-def cat_bar(series, title, fname, color="#1f77b4"):
-    fig, ax = plt.subplots(figsize=(9, 5))
-    vc = series.fillna("Unknown").value_counts()
-    vc.plot.bar(ax=ax, color=color, edgecolor="k")
-    for i, v in enumerate(vc.values):
-        ax.text(i, v, f"{v:,}", ha="center", va="bottom", fontsize=9)
-    ax.set_ylabel("Data points")
-    ax.set_title(title)
-    plt.xticks(rotation=30, ha="right")
-    save(fig, fname)
+def parse_length_m(value: object) -> float:
+    """Parse the mixed-unit Flame Length field to metres without guessing bare units."""
+    if pd.isna(value):
+        return np.nan
+    text = str(value).strip().lower()
+    try:
+        return float(text)
+    except ValueError:
+        pass
+    parts = text.split()
+    if len(parts) != 2:
+        return np.nan
+    try:
+        magnitude = float(parts[0])
+    except ValueError:
+        return np.nan
+    return magnitude * {"mm": 1e-3, "cm": 1e-2, "m": 1.0}.get(parts[1], np.nan)
 
-cat_bar(df[COL["facility"]], "Data Points by Experimental Facility", "09_facility_composition.png", "#17becf")
-cat_bar(df["geom_clean"], "Data Points by Sample Geometry", "10_geometry_composition.png", "#bcbd22")
-cat_bar(df[COL["diluent"]], "Data Points by Diluent Gas", "11_diluent_composition.png", "#e377c2")
-cat_bar(df[COL["ign_method"]], "Data Points by Ignition Method", "12_ignition_method_composition.png", "#8c564b")
 
-# 13. facility vs ignition stacked
-ct = pd.crosstab(df[COL["facility"]].fillna("Unknown"), df["ign_clean"])
-fig, ax = plt.subplots(figsize=(9, 5))
-ct[["Yes", "No"]].plot.bar(stacked=True, ax=ax, color=["#2ca02c", "#d62728"], edgecolor="k")
-ax.set_ylabel("Data points")
-ax.set_title("Ignition Outcome by Experimental Facility")
-plt.xticks(rotation=30, ha="right")
-ax.legend(title="Ignition")
-save(fig, "13_ignition_by_facility.png")
+def load_database(path: Path) -> pd.DataFrame:
+    if not path.is_file():
+        raise FileNotFoundError(f"Database not found: {path}")
+    df = pd.read_csv(path, header=1, encoding="cp1252", low_memory=False).dropna(how="all")
+    missing = sorted(set(COL.values()) - set(df.columns))
+    if missing:
+        raise ValueError("Upgraded database schema mismatch; missing columns: " + ", ".join(missing))
 
-# 14. geometry vs ignition stacked (fraction)
-ct = pd.crosstab(df["geom_clean"], df["ign_clean"], normalize="index") * 100
-fig, ax = plt.subplots(figsize=(9, 5))
-ct[["Yes", "No"]].plot.bar(stacked=True, ax=ax, color=["#2ca02c", "#d62728"], edgecolor="k")
-ax.set_ylabel("% of points")
-ax.set_title("Ignition Outcome Share by Sample Geometry (%)")
-plt.xticks(rotation=0)
-ax.legend(title="Ignition", loc="lower right")
-save(fig, "14_ignition_share_by_geometry.png")
+    for key in NUMERIC_KEYS:
+        df[key] = pd.to_numeric(df[COL[key]], errors="coerce").replace([np.inf, -np.inf], np.nan)
+    df["fsr"] = pd.to_numeric(df[COL["fsr"]], errors="coerce").replace([np.inf, -np.inf], np.nan)
+    df["flame_length_m"] = df[COL["flame_length"]].map(parse_length_m)
 
-# ================================================================
-# RANGE + GAP ANALYSIS helper
-# ================================================================
-def range_and_gaps(vals, label, unit, fname_prefix, log=False, bins=40, top_gaps=8):
-    v = pd.to_numeric(vals, errors="coerce").dropna()
-    v = v[np.isfinite(v)]
-    if log:
-        v = v[v > 0]
-    u = np.sort(v.unique())
+    df["paper"] = clean_text(df[COL["paper"]])
+    df["authors"] = clean_text(df[COL["authors"]])
+    df["material"] = clean_text(df[COL["material"]])
+    df["geometry"] = clean_text(df[COL["geometry"]]).str.title()
+    df["facility"] = clean_text(df[COL["facility"]]).str.title()
+    df["diluent"] = clean_text(df[COL["diluent"]])
+    df["rig"] = clean_text(df[COL["rig"]])
+    df["internal_geometry"] = clean_text(df[COL["internal_geometry"]]).str.title()
+    df["ignition_method"] = clean_text(df[COL["ignition_method"]]).str.title()
+    df["ignition"] = clean_text(df[COL["ignition"]]).str.title()
+    df.loc[~df["ignition"].isin(["Yes", "No"]), "ignition"] = pd.NA
+    df["ignition_binary"] = df["ignition"].map({"No": 0.0, "Yes": 1.0})
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8),
-                                   gridspec_kw={"height_ratios": [3, 1.3]})
-    # histogram
-    if log:
-        b = np.logspace(np.log10(u.min()), np.log10(u.max()), bins)
-        ax1.set_xscale("log")
-    else:
-        b = bins
-    ax1.hist(v, bins=b, color="#1f77b4", edgecolor="k", alpha=0.85)
-    ax1.set_ylabel("Data points")
-    ax1.set_title(f"Range of {label}: {u.min():.4g} to {u.max():.4g} {unit}  "
-                  f"({len(u)} unique values, n={len(v):,})")
+    df["pressure_kpa"] = df["pressure"] / 1_000.0
+    df["fsr_mm_s"] = df["fsr"] * 1_000.0
+    df["abs_flow"] = df["flow"].abs()
+    df["ignition_energy_j"] = df["ignition_power"] * df["ignition_time"]
+    df["gravity_regime"] = pd.cut(
+        df["gravity"], [-np.inf, 0.01, 0.9, 1.1, np.inf], labels=GRAVITY_ORDER,
+        include_lowest=True,
+    )
 
-    # coverage strip / gaps
-    ax2.eventplot(u, orientation="horizontal", colors="#1f77b4", lineoffsets=0.5,
-                  linelengths=0.8, linewidths=0.8)
-    if log:
-        ax2.set_xscale("log")
-        gaps = np.diff(np.log10(u))
-    else:
-        gaps = np.diff(u)
-    if len(gaps):
-        idx = np.argsort(gaps)[::-1][:top_gaps]
-        for i in idx:
-            lo, hi = u[i], u[i + 1]
-            ax2.axvspan(lo, hi, color="red", alpha=0.25)
-        # annotate largest gap
-        i0 = idx[0]
-        ax2.text(np.sqrt(u[i0] * u[i0 + 1]) if log else (u[i0] + u[i0 + 1]) / 2, 1.05,
-                 f"largest gap:\n{u[i0]:.4g} - {u[i0+1]:.4g}", ha="center",
-                 fontsize=8, color="darkred")
-    ax2.set_ylim(0, 1.4)
-    ax2.set_yticks([])
-    ax2.set_xlabel(f"{label} {unit}")
-    ax2.set_title(f"Coverage Strip and Largest {top_gaps} Gaps in {label} (red = untested gaps)",
-                  fontsize=10)
+    first_author = df["authors"].fillna(df["paper"]).str.split(",").str[0].str.strip()
+    paper_codes, _ = pd.factorize(df["paper"], sort=True)
+    df["paper_id"] = [f"P{code + 1:02d} {author[:18]}" for code, author in zip(paper_codes, first_author)]
+    return df
+
+
+class PlotWriter:
+    def __init__(self, root: Path, clean: bool = False) -> None:
+        self.root = root.resolve()
+        self.saved: list[Path] = []
+        if clean:
+            # Flat PNGs are legacy outputs from the pre-upgrade schema.  New
+            # outputs always live in categorized folders.
+            for path in self.root.glob("*.png"):
+                path.unlink()
+            for folder in OUTPUT_FOLDERS.values():
+                path = self.root / folder
+                if path.exists():
+                    shutil.rmtree(path)
+        for folder in OUTPUT_FOLDERS.values():
+            (self.root / folder).mkdir(parents=True, exist_ok=True)
+
+    def save(self, fig: plt.Figure, category: str, filename: str) -> None:
+        path = self.root / OUTPUT_FOLDERS[category] / filename
+        fig.savefig(path, bbox_inches="tight", facecolor="white")
+        plt.close(fig)
+        self.saved.append(path)
+        print(f"saved {path.relative_to(self.root)}")
+
+
+def annotate_bars(ax: plt.Axes, fmt: str = ",.0f") -> None:
+    for container in ax.containers:
+        labels = [format(bar.get_height(), fmt) for bar in container]
+        ax.bar_label(container, labels=labels, padding=2, fontsize=8)
+
+
+def safe_rate_table(df: pd.DataFrame, group: str, min_n: int = 20) -> pd.DataFrame:
+    table = df.groupby(group, observed=True)["ignition_binary"].agg(["mean", "count"])
+    return table[table["count"] >= min_n].sort_values("mean")
+
+
+def overview_metrics(df: pd.DataFrame, writer: PlotWriter) -> None:
+    n, papers = len(df), df["paper"].nunique()
+    numeric_fsr = df["fsr"].notna().sum()
+    paper_sizes = df.groupby("paper", observed=True).size().sort_values(ascending=False)
+
+    fig, ax = plt.subplots(figsize=(12, 6.5)); ax.axis("off")
+    stats = [
+        ("Experimental rows", f"{n:,}"), ("Papers", f"{papers}"),
+        ("Distinct materials", f"{df['material'].nunique()}"), ("Facilities / rigs", f"{df['facility'].nunique()} / {df['rig'].nunique()}"),
+        ("Ignition rate", f"{100 * df['ignition_binary'].mean():.1f}%"), ("Numeric FSR targets", f"{numeric_fsr:,} ({100*numeric_fsr/n:.1f}%)"),
+        ("O2 range", f"{df['o2'].min():.3f} - {df['o2'].max():.3f}"), ("Pressure range", f"{df['pressure_kpa'].min():.1f} - {df['pressure_kpa'].max():,.0f} kPa"),
+        ("Gravity range", f"{df['gravity'].min():.3g} - {df['gravity'].max():.3g} g"), ("Flow range", f"{df['flow'].min():.2f} - {df['flow'].max():.2f} m/s"),
+        ("FSR range", f"{df['fsr_mm_s'].min():.3g} - {df['fsr_mm_s'].max():.0f} mm/s"), ("Median rows / paper", f"{paper_sizes.median():.0f}"),
+    ]
+    for i, (label, value) in enumerate(stats):
+        row, col = divmod(i, 3); x, y = 0.03 + col * 0.33, 0.88 - row * 0.21
+        ax.text(x, y, label, weight="bold", color="#334155", transform=ax.transAxes)
+        ax.text(x, y - 0.075, value, fontsize=16, color=PALETTE[col], transform=ax.transAxes)
+    ax.set_title("Upgraded Microgravity Database — Dataset Overview", fontsize=17, pad=20)
+    writer.save(fig, "overview", "01_dataset_overview.png")
+
+    top = paper_sizes.head(25).sort_values()
+    fig, ax = plt.subplots(figsize=(11, 8))
+    top.plot.barh(ax=ax, color="#2563eb")
+    ax.set(xlabel="Rows", ylabel="", title="Largest Paper Contributions (top 25)")
+    annotate_bars(ax)
+    writer.save(fig, "overview", "02_largest_paper_contributions.png")
+
+    cumulative = paper_sizes.cumsum() / n * 100
+    n50 = int((cumulative < 50).sum() + 1); n80 = int((cumulative < 80).sum() + 1)
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    ax.plot(np.arange(1, len(cumulative) + 1), cumulative, marker="o", ms=3, color="#0f766e")
+    for share, count in [(50, n50), (80, n80)]:
+        ax.axhline(share, color="#dc2626", ls="--", alpha=.5)
+        ax.axvline(count, color="#dc2626", ls=":", alpha=.5, label=f"{count} papers produce {share}%")
+    ax.set(xlabel="Papers, largest contribution first", ylabel="Cumulative share of rows (%)", title="Dataset Concentration Across Sources")
+    ax.legend()
+    writer.save(fig, "overview", "03_paper_pareto_concentration.png")
+
+    fields = {
+        "Paper": "paper", "Material": "material", "Geometry": "geometry", "Fuel properties": "fuel_density",
+        "Oxygen": "o2", "Pressure": "pressure", "Flow velocity": "flow", "Gravity": "gravity",
+        "Facility": "facility", "Rig": "rig", "Ignition method": "ignition_method", "Ignition power": "ignition_power",
+        "Ignition time": "ignition_time", "Ignition outcome": "ignition", "FSR target": "fsr",
+        "Flame length": "flame_length_m", "HRR": "hrr", "Smoke": COL["smoke"],
+    }
+    completeness = pd.Series({label: 100 * df[col].notna().mean() for label, col in fields.items()}).sort_values()
+    fig, ax = plt.subplots(figsize=(10, 7))
+    colors = ["#dc2626" if v < 25 else "#f59e0b" if v < 75 else "#0f766e" for v in completeness]
+    ax.barh(completeness.index, completeness.values, color=colors)
+    for i, value in enumerate(completeness): ax.text(value + .7, i, f"{value:.1f}%", va="center", fontsize=8)
+    ax.set(xlim=(0, 108), xlabel="Rows populated (%)", title="Field Completeness in the Upgraded Schema")
+    writer.save(fig, "overview", "04_field_completeness.png")
+
+    targets = df.groupby("paper_id", observed=True).agg(rows=("paper", "size"), fsr=("fsr", "count"), ignition=("ignition", "count"))
+    targets["FSR available"] = 100 * targets["fsr"] / targets["rows"]
+    targets["Ignition available"] = 100 * targets["ignition"] / targets["rows"]
+    targets = targets.sort_values("rows", ascending=False).head(30).sort_values("rows")
+    fig, ax = plt.subplots(figsize=(11, 9))
+    y = np.arange(len(targets)); ax.barh(y, targets["Ignition available"], color="#94a3b8", label="Ignition")
+    ax.barh(y, targets["FSR available"], color="#7c3aed", label="Numeric FSR")
+    ax.set_yticks(y, targets.index, fontsize=7)
+    ax.set(xlabel="Target availability within paper (%)", title="Outcome Availability by Major Data Source")
+    ax.legend()
+    writer.save(fig, "overview", "05_target_availability_by_paper.png")
+
+
+def coverage_metrics(df: pd.DataFrame, writer: PlotWriter) -> None:
+    fig, axes = plt.subplots(2, 3, figsize=(14, 9))
+    for ax, (col, title) in zip(axes.flat, [
+        ("facility", "Facility"), ("geometry", "Sample geometry"), ("diluent", "Diluent"),
+        ("internal_geometry", "Rig internal geometry"), ("ignition_method", "Ignition method"), ("gravity_regime", "Gravity regime"),
+    ]):
+        vc = df[col].astype("string").fillna("Unknown").value_counts().head(10).sort_values()
+        ax.barh(vc.index, vc.values, color="#0891b2"); ax.set_title(title); ax.set_xlabel("Rows")
+    fig.suptitle("Experimental Composition in the Upgraded Database", fontsize=15, weight="bold")
     fig.tight_layout()
-    save(fig, f"{fname_prefix}.png")
+    writer.save(fig, "coverage", "01_experimental_composition.png")
+
+    specs = [
+        ("o2", "Oxygen mole fraction", False), ("pressure_kpa", "Pressure (kPa)", True),
+        ("gravity", "Gravity (g)", False), ("flow", "Flow velocity (m/s)", False),
+        ("length", "Characteristic length (m)", True), ("half_thickness", "Half-thickness (m)", True),
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(14, 8.5))
+    for ax, (col, label, log) in zip(axes.flat, specs):
+        values = df[col].dropna(); values = values[values > 0] if log else values
+        bins = np.logspace(np.log10(values.min()), np.log10(values.max()), 35) if log else 35
+        ax.hist(values, bins=bins, color="#2563eb", alpha=.82, edgecolor="white")
+        if log: ax.set_xscale("log")
+        ax.set_title(f"{label}\nn={len(values):,}, unique={values.nunique():,}")
+        ax.set_xlabel(label); ax.set_ylabel("Rows")
+    fig.suptitle("Core Experimental Parameter Coverage", fontsize=15, weight="bold")
+    fig.tight_layout()
+    writer.save(fig, "coverage", "02_core_parameter_distributions.png")
+
+    sub = df.dropna(subset=["o2", "pressure_kpa"]); sub = sub[sub["pressure_kpa"] > 0]
+    fig, ax = plt.subplots(figsize=(10, 7))
+    hb = ax.hexbin(sub["o2"], sub["pressure_kpa"], gridsize=42, yscale="log", mincnt=1, norm=LogNorm(), cmap="viridis")
+    fig.colorbar(hb, ax=ax, label="Rows per cell (log)")
+    ax.set(xlabel="Oxygen mole fraction", ylabel="Pressure (kPa, log)", title="Joint Coverage Density: Oxygen × Pressure")
+    writer.save(fig, "coverage", "03_oxygen_pressure_coverage.png")
+
+    sub = df.dropna(subset=["gravity", "flow", "facility"])
+    fig, ax = plt.subplots(figsize=(10, 7))
+    facilities = sub["facility"].value_counts().head(7).index
+    for color, facility in zip(PALETTE + ["#64748b"], facilities):
+        s = sub[sub["facility"] == facility]
+        ax.scatter(s["gravity"], s["flow"], s=16, alpha=.45, color=color, label=f"{facility} (n={len(s):,})")
+    ax.axhline(0, color="black", lw=.8); ax.set(xlabel="Gravity (g)", ylabel="Signed flow velocity (m/s)", title="Gravity × Flow Coverage by Facility")
+    ax.legend(fontsize=8, loc="best")
+    writer.save(fig, "coverage", "04_gravity_flow_by_facility.png")
+
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.8))
+    for ax, col, label in zip(axes, ["reynolds", "peclet", "prandtl"], ["Reynolds", "Peclet", "Prandtl"]):
+        values = df[col].dropna(); values = values[values > 0]
+        ax.hist(values, bins=np.logspace(np.log10(values.min()), np.log10(values.max()), 40), color="#7c3aed", edgecolor="white")
+        ax.set_xscale("log"); ax.set_title(f"{label} (n={len(values):,})"); ax.set_xlabel(f"{label} number (log)")
+    fig.suptitle("Dimensionless Transport-Regime Coverage", fontsize=15, weight="bold")
+    fig.tight_layout()
+    writer.save(fig, "coverage", "05_dimensionless_transport_coverage.png")
+
+    material = df.groupby("material", observed=True).agg(rows=("paper", "size"), papers=("paper", "nunique"), o2_span=("o2", lambda x: x.max()-x.min()), pressure_span=("pressure_kpa", lambda x: x.max()/x.min() if x.min() > 0 else np.nan))
+    material = material[material["rows"] >= 20].sort_values("rows").tail(25)
+    fig, ax = plt.subplots(figsize=(11, 8))
+    sizes = 30 + 20 * material["papers"]
+    sc = ax.scatter(material["o2_span"], material["pressure_span"], s=sizes, c=material["rows"], cmap="plasma", norm=LogNorm(), alpha=.8, edgecolor="white")
+    for name, row in material.tail(12).iterrows(): ax.annotate(str(name)[:28], (row["o2_span"], row["pressure_span"]), xytext=(4, 3), textcoords="offset points", fontsize=7)
+    ax.set_yscale("log"); ax.set(xlabel="O2 span", ylabel="Pressure range ratio (max/min, log)", title="Material Test-Space Breadth")
+    fig.colorbar(sc, ax=ax, label="Rows (log color); bubble size = papers")
+    writer.save(fig, "coverage", "06_material_test_space_breadth.png")
+
+    gap_specs = [("o2", "O2", False), ("pressure_kpa", "Pressure kPa", True), ("gravity", "Gravity g", False), ("flow", "Flow m/s", False), ("fsr_mm_s", "FSR mm/s", True)]
+    lines = []
+    for col, label, logarithmic in gap_specs:
+        u = np.sort(df[col].dropna().unique()); u = u[u > 0] if logarithmic else u
+        gaps = np.diff(np.log10(u)) if logarithmic else np.diff(u)
+        for idx in np.argsort(gaps)[-3:][::-1]:
+            score = 10 ** gaps[idx] if logarithmic else gaps[idx]
+            descriptor = f"x{score:.2g}" if logarithmic else f"gap {score:.3g}"
+            lines.append((label, u[idx], u[idx+1], descriptor))
+    fig, ax = plt.subplots(figsize=(11, 7)); ax.axis("off")
+    ax.set_title("Largest One-Dimensional Sampling Gaps", fontsize=15)
+    ax.text(.02, .94, "Variable", weight="bold"); ax.text(.26, .94, "Lower bound"); ax.text(.48, .94, "Upper bound"); ax.text(.72, .94, "Gap size", weight="bold")
+    for i, (label, low, high, desc) in enumerate(lines):
+        y=.89-i*.052; ax.text(.02,y,label); ax.text(.26,y,f"{low:.5g}",family="monospace"); ax.text(.48,y,f"{high:.5g}",family="monospace"); ax.text(.72,y,desc,color="#dc2626")
+    ax.text(.02,.03,"Log-scaled variables report multiplicative gaps; others report absolute gaps.",style="italic",color="#475569")
+    writer.save(fig, "coverage", "07_largest_sampling_gaps.png")
 
 
-range_and_gaps(df[COL["fuel_rho"]], "Fuel Density", "[kg/m3]",
-               "15_fuel_density_range_gaps", log=False)
-range_and_gaps(df[COL["fuel_k"]], "Fuel Thermal Conductivity", "[W/m-K]",
-               "16_fuel_conductivity_range_gaps", log=True)
-range_and_gaps(df[COL["fuel_cp"]], "Fuel Specific Heat cp", "[J/kg-K]",
-               "17_fuel_cp_range_gaps", log=False)
-range_and_gaps(df[COL["o2"]], "Oxygen Concentration", "[mole fraction]",
-               "18_oxygen_range_gaps", log=False)
-range_and_gaps(df[COL["pressure"]], "Pressure", "[kPa]",
-               "19_pressure_range_gaps", log=True)
-range_and_gaps(df[COL["gravity"]], "Gravity Level", "[g/g_earth]",
-               "20_gravity_range_gaps", log=False)
-range_and_gaps(df[COL["flow"]], "Flow Velocity", "[cm/s] (+co-flow / -counter-flow)",
-               "21_flow_velocity_range_gaps", log=False)
-range_and_gaps(df["fsr_num"], "Flame Spread Rate (FSR)", "[mm/s]",
-               "22_fsr_range_gaps", log=True)
+def ignition_metrics(df: pd.DataFrame, writer: PlotWriter) -> None:
+    counts = df["ignition"].value_counts().reindex(["Yes", "No"]).fillna(0)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
+    axes[0].pie(counts, labels=[f"{x}: {int(v):,}\n({100*v/counts.sum():.1f}%)" for x,v in counts.items()], colors=[IGNITION_COLORS[x] for x in counts.index], startangle=90, wedgeprops={"edgecolor":"white"})
+    axes[0].set_title("Pooled ignition outcomes")
+    per_paper = df.groupby("paper", observed=True)["ignition_binary"].mean().dropna()
+    axes[1].hist(per_paper * 100, bins=np.arange(0, 105, 5), color="#7c3aed", edgecolor="white")
+    axes[1].axvline(100*per_paper.mean(), color="#dc2626", ls="--", label=f"paper-balanced mean={100*per_paper.mean():.1f}%")
+    axes[1].set(xlabel="Ignition rate within paper (%)", ylabel="Papers", title="Source-level outcome heterogeneity"); axes[1].legend(fontsize=8)
+    fig.suptitle("Ignition Outcome Balance: Rows vs Sources", fontsize=15, weight="bold")
+    fig.tight_layout()
+    writer.save(fig, "ignition", "01_outcome_balance.png")
 
-# ================================================================
-# GRAVITY REGIMES
-# ================================================================
-g = df[COL["gravity"]]
-regime = pd.cut(g, bins=[-0.001, 0.01, 0.9, 1.1, 100],
-                labels=["Microgravity (<=0.01g)", "Partial g (0.01-0.9g)",
-                        "Normal g (~1g)", "Hypergravity (>1.1g)"])
-fig, ax = plt.subplots(figsize=(9, 5))
-vc = regime.value_counts().reindex(["Microgravity (<=0.01g)", "Partial g (0.01-0.9g)",
-                                    "Normal g (~1g)", "Hypergravity (>1.1g)"])
-vc.plot.bar(ax=ax, color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"], edgecolor="k")
-for i, v in enumerate(vc.values):
-    ax.text(i, v, f"{v:,}", ha="center", va="bottom")
-ax.set_ylabel("Data points")
-ax.set_title("Data Points by Gravity Regime")
-plt.xticks(rotation=15)
-save(fig, "23_gravity_regime_composition.png")
+    for number, (group, title) in enumerate([("facility", "Facility"), ("geometry", "Sample Geometry"), ("ignition_method", "Ignition Method")], start=2):
+        table = safe_rate_table(df, group).sort_values("mean")
+        fig, ax = plt.subplots(figsize=(10, max(5, .55*len(table)+1.5)))
+        colors = plt.cm.RdYlGn(table["mean"].to_numpy())
+        ax.barh(table.index.astype(str), 100*table["mean"], color=colors)
+        for i, (_, row) in enumerate(table.iterrows()): ax.text(100*row["mean"]+1, i, f"{100*row['mean']:.1f}%  n={int(row['count']):,}", va="center", fontsize=8)
+        ax.set(xlim=(0,115), xlabel="Ignition rate (%)", title=f"Ignition Rate by {title} (groups with n >= 20)")
+        writer.save(fig, "ignition", f"{number:02d}_ignition_rate_by_{group}.png")
 
-# 24. ignition share by gravity regime
-ct = pd.crosstab(regime, df["ign_clean"], normalize="index") * 100
-fig, ax = plt.subplots(figsize=(9, 5))
-ct[["Yes", "No"]].plot.bar(stacked=True, ax=ax, color=["#2ca02c", "#d62728"], edgecolor="k")
-ax.set_ylabel("% of points")
-ax.set_title("Ignition Outcome Share by Gravity Regime (%)")
-plt.xticks(rotation=15)
-ax.legend(title="Ignition", loc="lower right")
-save(fig, "24_ignition_share_by_gravity_regime.png")
+    # Pooled rates can be dominated by large papers; compare them with equal-paper weighting.
+    rows = []
+    for facility, part in df.groupby("facility", observed=True):
+        source_rates = part.groupby("paper", observed=True)["ignition_binary"].mean().dropna()
+        if len(part) >= 30 and len(source_rates) >= 2:
+            rows.append((facility, part["ignition_binary"].mean(), source_rates.mean(), len(part), len(source_rates)))
+    balance = pd.DataFrame(rows, columns=["facility", "pooled", "paper_balanced", "rows", "papers"]).sort_values("pooled")
+    fig, ax = plt.subplots(figsize=(10, 6)); y=np.arange(len(balance))
+    ax.plot(100*balance["pooled"], y, "o", ms=8, label="Pooled rows", color="#2563eb")
+    ax.plot(100*balance["paper_balanced"], y, "s", ms=7, label="Each paper weighted equally", color="#f59e0b")
+    for i, row in balance.iterrows(): ax.plot([100*row["pooled"],100*row["paper_balanced"]],[i,i],color="#94a3b8",zorder=0)
+    ax.set_yticks(y, [f"{x.facility} (p={x.papers}, n={x.rows})" for x in balance.itertuples()]); ax.set(xlabel="Ignition rate (%)",title="Facility Ignition Rate: Pooled vs Paper-Balanced")
+    ax.legend()
+    writer.save(fig, "ignition", "05_pooled_vs_paper_balanced_facility.png")
 
-# ================================================================
-# O2 vs PRESSURE per point
-# ================================================================
-m = df[COL["o2"]].notna() & df[COL["pressure"]].notna()
-sub = df[m]
+    valid = df.dropna(subset=["o2", "pressure_kpa", "ignition_binary"]); valid=valid[valid["pressure_kpa"]>0].copy()
+    valid["o2_bin"] = pd.cut(valid["o2"], bins=np.linspace(valid["o2"].min(), valid["o2"].max(), 18))
+    valid["p_bin"] = pd.cut(np.log10(valid["pressure_kpa"]), bins=14)
+    rates = valid.pivot_table(index="p_bin", columns="o2_bin", values="ignition_binary", aggfunc="mean", observed=True)
+    counts2 = valid.pivot_table(index="p_bin", columns="o2_bin", values="ignition_binary", aggfunc="count", observed=True)
+    rates = rates.where(counts2 >= 5)
+    fig, ax = plt.subplots(figsize=(12, 7))
+    im=ax.imshow(rates.to_numpy(),origin="lower",aspect="auto",vmin=0,vmax=1,cmap="RdYlGn")
+    xcent=[interval.mid for interval in rates.columns]; ycent=[10**interval.mid for interval in rates.index]
+    ax.set_xticks(np.arange(len(xcent))[::2], [f"{x:.2f}" for x in xcent[::2]])
+    ax.set_yticks(np.arange(len(ycent))[::2], [f"{y:.1f}" for y in ycent[::2]])
+    ax.set(xlabel="Oxygen mole-fraction bin",ylabel="Pressure bin center (kPa, log-spaced)",title="Empirical Ignition Probability in O2 × Pressure Space (cell n >= 5)")
+    fig.colorbar(im,ax=ax,label="Observed ignition probability")
+    writer.save(fig, "ignition", "06_oxygen_pressure_ignition_map.png")
 
-# 25. colored by ignition
-fig, ax = plt.subplots(figsize=(10, 7))
-for lab, col in IGN_COLORS.items():
-    s = sub[sub["ign_clean"] == lab]
-    ax.scatter(s[COL["o2"]], s[COL["pressure"]], s=12, alpha=0.45, c=col,
-               label=f"Ignition={lab} (n={len(s):,})", edgecolors="none")
-ax.set_yscale("log")
-ax.set_xlabel("Oxygen Concentration [mole fraction]")
-ax.set_ylabel("Pressure [kPa] (log scale)")
-ax.set_title("O2 vs Pressure per Data Point, Colored by Ignition Outcome")
-ax.legend()
-save(fig, "25_o2_vs_pressure_by_ignition.png")
+    energy=df.dropna(subset=["ignition_power","ignition_time","ignition"])
+    fig, ax=plt.subplots(figsize=(10,7))
+    for outcome,color in IGNITION_COLORS.items():
+        s=energy[energy["ignition"]==outcome]
+        ax.scatter(s["ignition_time"],s["ignition_power"],s=20,alpha=.5,color=color,label=f"{outcome} (n={len(s):,})")
+    ax.set(xlabel="Ignition time (s)",ylabel="Ignition power (W)",title="Igniter Operating Envelope and Outcome"); ax.legend()
+    writer.save(fig,"ignition","07_ignition_power_time_envelope.png")
 
-# 26. colored by gravity regime
-fig, ax = plt.subplots(figsize=(10, 7))
-cols = {"Microgravity (<=0.01g)": "#1f77b4", "Partial g (0.01-0.9g)": "#ff7f0e",
-        "Normal g (~1g)": "#2ca02c", "Hypergravity (>1.1g)": "#d62728"}
-reg_sub = regime[m]
-for lab, col in cols.items():
-    s = sub[reg_sub == lab]
-    ax.scatter(s[COL["o2"]], s[COL["pressure"]], s=12, alpha=0.45, c=col,
-               label=f"{lab} (n={len(s):,})", edgecolors="none")
-ax.set_yscale("log")
-ax.set_xlabel("Oxygen Concentration [mole fraction]")
-ax.set_ylabel("Pressure [kPa] (log scale)")
-ax.set_title("O2 vs Pressure per Data Point, Colored by Gravity Regime")
-ax.legend()
-save(fig, "26_o2_vs_pressure_by_gravity.png")
+    table=safe_rate_table(df,"material",min_n=30)
+    table=table.sort_values("count",ascending=False).head(25).sort_values("mean")
+    fig,ax=plt.subplots(figsize=(11,8)); y=np.arange(len(table))
+    rate_colors = plt.cm.RdYlGn(table["mean"].to_numpy(copy=True))
+    ax.barh(y,100*table["mean"],color=rate_colors)
+    ax.set_yticks(y,[str(name)[:48] for name in table.index],fontsize=7)
+    for i,(_,row) in enumerate(table.iterrows()): ax.text(100*row["mean"]+1,i,f"{100*row['mean']:.0f}% (n={int(row['count'])})",va="center",fontsize=7)
+    ax.set(xlim=(0,118),xlabel="Ignition rate (%)",title="Ignition Rate for Best-Represented Materials")
+    writer.save(fig,"ignition","08_ignition_rate_by_material.png")
 
-# 27. colored by diluent
-fig, ax = plt.subplots(figsize=(10, 7))
-dil_cols = {"N2": "#1f77b4", "CO2": "#d62728", "Ar": "#2ca02c", "He": "#ff7f0e"}
-for lab, col in dil_cols.items():
-    s = sub[sub[COL["diluent"]] == lab]
-    ax.scatter(s[COL["o2"]], s[COL["pressure"]], s=12, alpha=0.5, c=col,
-               label=f"{lab} (n={len(s):,})", edgecolors="none")
-ax.set_yscale("log")
-ax.set_xlabel("Oxygen Concentration [mole fraction]")
-ax.set_ylabel("Pressure [kPa] (log scale)")
-ax.set_title("O2 vs Pressure per Data Point, Colored by Diluent Gas")
-ax.legend()
-save(fig, "27_o2_vs_pressure_by_diluent.png")
 
-# 28. hexbin density of O2 vs P (coverage / gaps in 2D)
-fig, ax = plt.subplots(figsize=(10, 7))
-hb = ax.hexbin(sub[COL["o2"]], sub[COL["pressure"]], gridsize=40, yscale="log",
-               cmap="viridis", norm=LogNorm(), mincnt=1)
-fig.colorbar(hb, ax=ax, label="Data points per cell (log)")
-ax.set_xlabel("Oxygen Concentration [mole fraction]")
-ax.set_ylabel("Pressure [kPa] (log scale)")
-ax.set_title("2D Coverage Density: O2 vs Pressure (empty regions = testing gaps)")
-save(fig, "28_o2_vs_pressure_density_hexbin.png")
+def fsr_metrics(df: pd.DataFrame, writer: PlotWriter) -> None:
+    raw_present=df[COL["fsr"]].notna(); numeric=df["fsr"].notna(); positive=df["fsr"]>0
+    labels=["Raw values present","Numeric SI values","Positive regression targets"]
+    values=[raw_present.sum(),numeric.sum(),positive.sum()]
+    fig,ax=plt.subplots(figsize=(9,5)); ax.bar(labels,values,color=["#94a3b8","#7c3aed","#0f766e"]); annotate_bars(ax)
+    ax.set(ylabel="Rows",title="FSR Target Parsing and Regression Readiness"); ax.tick_params(axis="x",rotation=10)
+    note=int((raw_present & ~numeric).sum()); ax.text(.98,.94,f"Excluded descriptive ratios: {note}",ha="right",va="top",transform=ax.transAxes,color="#dc2626")
+    writer.save(fig,"fsr","01_fsr_target_readiness.png")
 
-# 29. O2 vs gravity coverage
-m2 = df[COL["o2"]].notna() & df[COL["gravity"]].notna()
-fig, ax = plt.subplots(figsize=(10, 7))
-for lab, col in IGN_COLORS.items():
-    s = df[m2 & (df["ign_clean"] == lab)]
-    ax.scatter(s[COL["gravity"]], s[COL["o2"]], s=12, alpha=0.45, c=col,
-               label=f"Ignition={lab}", edgecolors="none")
-ax.set_xlabel("Gravity [g/g_earth]")
-ax.set_ylabel("Oxygen Concentration [mole fraction]")
-ax.set_title("Oxygen vs Gravity per Data Point, Colored by Ignition Outcome")
-ax.legend()
-save(fig, "29_o2_vs_gravity_by_ignition.png")
+    fs=df[df["fsr_mm_s"]>0].copy()
+    fig,axes=plt.subplots(1,2,figsize=(12,5))
+    axes[0].hist(fs["fsr_mm_s"],bins=np.logspace(np.log10(fs["fsr_mm_s"].min()),np.log10(fs["fsr_mm_s"].max()),45),color="#7c3aed",edgecolor="white")
+    axes[0].set_xscale("log"); axes[0].set(xlabel="FSR (mm/s, log)",ylabel="Rows",title="Positive FSR distribution")
+    paper_medians=fs.groupby("paper",observed=True)["fsr_mm_s"].median()
+    axes[1].hist(paper_medians,bins=np.logspace(np.log10(paper_medians.min()),np.log10(paper_medians.max()),28),color="#0891b2",edgecolor="white")
+    axes[1].set_xscale("log"); axes[1].set(xlabel="Median FSR per paper (mm/s, log)",ylabel="Papers",title="Paper-balanced target distribution")
+    fig.suptitle("FSR Distribution: Row-Level vs Source-Level",fontsize=15,weight="bold"); fig.tight_layout()
+    writer.save(fig,"fsr","02_fsr_distribution_row_vs_paper.png")
 
-# ================================================================
-# FSR RELATIONSHIPS
-# ================================================================
-fs = df[df["fsr_num"].notna() & (df["fsr_num"] > 0)]
+    sub=fs.dropna(subset=["o2","pressure_kpa"]); sub=sub[sub["pressure_kpa"]>0]
+    fig,ax=plt.subplots(figsize=(10,7)); sc=ax.scatter(sub["o2"],sub["fsr_mm_s"],c=sub["pressure_kpa"],norm=LogNorm(),cmap="plasma",s=18,alpha=.55)
+    ax.set_yscale("log"); ax.set(xlabel="Oxygen mole fraction",ylabel="FSR (mm/s, log)",title="Flame Spread Rate vs Oxygen and Pressure"); fig.colorbar(sc,ax=ax,label="Pressure (kPa, log)")
+    writer.save(fig,"fsr","03_fsr_vs_oxygen_pressure.png")
 
-# 30. FSR vs O2
-fig, ax = plt.subplots(figsize=(10, 7))
-sc = ax.scatter(fs[COL["o2"]], fs["fsr_num"], s=14, alpha=0.5,
-                c=fs[COL["pressure"]], cmap="plasma", norm=LogNorm())
-fig.colorbar(sc, ax=ax, label="Pressure [kPa] (log)")
-ax.set_yscale("log")
-ax.set_xlabel("Oxygen Concentration [mole fraction]")
-ax.set_ylabel("Flame Spread Rate [mm/s] (log)")
-ax.set_title("FSR vs Oxygen Concentration (colored by Pressure)")
-save(fig, "30_fsr_vs_oxygen.png")
+    sub=fs.dropna(subset=["gravity","flow"])
+    fig,ax=plt.subplots(figsize=(10,7)); sc=ax.scatter(sub["gravity"],sub["fsr_mm_s"],c=sub["flow"],cmap="coolwarm",s=18,alpha=.55)
+    ax.set_yscale("log"); ax.set(xlabel="Gravity (g)",ylabel="FSR (mm/s, log)",title="Flame Spread Rate vs Gravity and Signed Flow"); fig.colorbar(sc,ax=ax,label="Flow velocity (m/s)")
+    writer.save(fig,"fsr","04_fsr_vs_gravity_flow.png")
 
-# 31. FSR vs gravity
-fig, ax = plt.subplots(figsize=(10, 7))
-sc = ax.scatter(fs[COL["gravity"]], fs["fsr_num"], s=14, alpha=0.5,
-                c=fs[COL["o2"]], cmap="viridis")
-fig.colorbar(sc, ax=ax, label="O2 mole fraction")
-ax.set_yscale("log")
-ax.set_xlabel("Gravity [g/g_earth]")
-ax.set_ylabel("Flame Spread Rate [mm/s] (log)")
-ax.set_title("FSR vs Gravity Level (colored by O2 Concentration)")
-save(fig, "31_fsr_vs_gravity.png")
+    fig,axes=plt.subplots(1,2,figsize=(13,5.5))
+    for ax,col,label in [(axes[0],"reynolds","Reynolds"),(axes[1],"peclet","Peclet")]:
+        sub=fs.dropna(subset=[col]); sub=sub[sub[col]>0]
+        ax.scatter(sub[col],sub["fsr_mm_s"],s=15,alpha=.4,color="#2563eb"); ax.set_xscale("log"); ax.set_yscale("log")
+        corr=sub[[col,"fsr_mm_s"]].corr(method="spearman").iloc[0,1]
+        ax.set(xlabel=f"{label} number (log)",ylabel="FSR (mm/s, log)",title=f"FSR vs {label} (Spearman r={corr:.2f})")
+    fig.suptitle("FSR Across Dimensionless Transport Regimes",fontsize=15,weight="bold"); fig.tight_layout()
+    writer.save(fig,"fsr","05_fsr_vs_dimensionless_transport.png")
 
-# 32. FSR vs fuel density
-fig, ax = plt.subplots(figsize=(10, 7))
-ax.scatter(fs[COL["fuel_rho"]], fs["fsr_num"], s=14, alpha=0.5, c="#1f77b4",
-           edgecolors="none")
-ax.set_yscale("log")
-ax.set_xlabel("Fuel Density [kg/m3]")
-ax.set_ylabel("Flame Spread Rate [mm/s] (log)")
-ax.set_title("FSR vs Fuel Density")
-save(fig, "32_fsr_vs_fuel_density.png")
+    mat=fs.groupby("material",observed=True)["fsr_mm_s"].agg(["median","count",lambda x:x.quantile(.25),lambda x:x.quantile(.75)])
+    mat.columns=["median","count","q25","q75"]; mat=mat[mat["count"]>=20].sort_values("median")
+    fig,ax=plt.subplots(figsize=(11,max(6,.4*len(mat))))
+    y=np.arange(len(mat)); ax.errorbar(mat["median"],y,xerr=[mat["median"]-mat["q25"],mat["q75"]-mat["median"]],fmt="o",color="#7c3aed",ecolor="#a78bfa",capsize=3)
+    ax.set_xscale("log"); ax.set_yticks(y,[f"{str(name)[:48]} (n={int(row['count'])})" for name,row in mat.iterrows()],fontsize=7)
+    ax.set(xlabel="Median FSR and interquartile range (mm/s, log)",title="Material-Level Flame Spread Summary (n >= 20)")
+    writer.save(fig,"fsr","06_fsr_by_material.png")
 
-# 33. FSR boxplot by geometry
-fig, ax = plt.subplots(figsize=(9, 6))
-groups, labels = [], []
-for gname, gdf in fs.groupby("geom_clean"):
-    if len(gdf) >= 10:
-        groups.append(gdf["fsr_num"].values)
-        labels.append(f"{gname}\n(n={len(gdf)})")
-ax.boxplot(groups, tick_labels=labels, showfliers=False)
-ax.set_yscale("log")
-ax.set_ylabel("Flame Spread Rate [mm/s] (log)")
-ax.set_title("FSR Distribution by Sample Geometry (boxplot, outliers hidden)")
-save(fig, "33_fsr_boxplot_by_geometry.png")
+    groups=[]; labels=[]
+    for regime in GRAVITY_ORDER:
+        vals=fs.loc[fs["gravity_regime"]==regime,"fsr_mm_s"].dropna()
+        if len(vals)>=10: groups.append(vals); labels.append(f"{regime}\n(n={len(vals):,})")
+    fig,ax=plt.subplots(figsize=(11,6)); ax.boxplot(groups,tick_labels=labels,showfliers=False); ax.set_yscale("log")
+    ax.set(ylabel="FSR (mm/s, log)",title="FSR by Gravity Regime (outliers hidden)"); ax.tick_params(axis="x",rotation=10)
+    writer.save(fig,"fsr","07_fsr_by_gravity_regime.png")
 
-# 34. FSR boxplot by gravity regime
-fig, ax = plt.subplots(figsize=(9, 6))
-fs_reg = pd.cut(fs[COL["gravity"]], bins=[-0.001, 0.01, 0.9, 1.1, 100],
-                labels=["Micro-g", "Partial g", "Normal g", "Hyper-g"])
-groups, labels = [], []
-for gname in ["Micro-g", "Partial g", "Normal g", "Hyper-g"]:
-    vals = fs.loc[fs_reg == gname, "fsr_num"].values
-    if len(vals) >= 5:
-        groups.append(vals)
-        labels.append(f"{gname}\n(n={len(vals)})")
-ax.boxplot(groups, tick_labels=labels, showfliers=False)
-ax.set_yscale("log")
-ax.set_ylabel("Flame Spread Rate [mm/s] (log)")
-ax.set_title("FSR Distribution by Gravity Regime (boxplot, outliers hidden)")
-save(fig, "34_fsr_boxplot_by_gravity_regime.png")
+    variables=["o2","pressure_kpa","gravity","flow","reynolds","peclet","fuel_density","fuel_k","fuel_cp","length","half_thickness"]
+    total=[]; within=[]
+    log_fsr=np.log10(fs["fsr_mm_s"])
+    for col in variables:
+        total.append(fs[col].corr(log_fsr,method="spearman"))
+        demeaned=fs[col]-fs.groupby("paper",observed=True)[col].transform("mean")
+        within.append(demeaned.corr(log_fsr-fs.groupby("paper",observed=True)["fsr_mm_s"].transform(lambda x:np.log10(x).mean()),method="spearman"))
+    fig,ax=plt.subplots(figsize=(11,6)); x=np.arange(len(variables)); width=.38
+    ax.bar(x-width/2,total,width,label="Across all rows",color="#2563eb"); ax.bar(x+width/2,within,width,label="Within-paper (demeaned)",color="#f59e0b")
+    ax.axhline(0,color="black",lw=.8); ax.set_xticks(x,variables,rotation=35,ha="right"); ax.set(ylabel="Spearman correlation with log10(FSR)",title="Total vs Within-Paper FSR Associations"); ax.legend()
+    writer.save(fig,"fsr","08_total_vs_within_paper_associations.png")
 
-# ================================================================
-# FUEL PROPERTY SPACE
-# ================================================================
-# 35. fuel density vs conductivity scatter
-m3 = df[COL["fuel_rho"]].notna() & df[COL["fuel_k"]].notna()
-fig, ax = plt.subplots(figsize=(10, 7))
-s = df[m3]
-sc = ax.scatter(s[COL["fuel_rho"]], s[COL["fuel_k"]], s=14, alpha=0.5,
-                c=s[COL["fuel_cp"]], cmap="cividis")
-fig.colorbar(sc, ax=ax, label="Fuel cp [J/kg-K]")
-ax.set_yscale("log")
-ax.set_xlabel("Fuel Density [kg/m3]")
-ax.set_ylabel("Fuel Conductivity [W/m-K] (log)")
-ax.set_title("Fuel Property Space: Density vs Conductivity (colored by cp)")
-save(fig, "35_fuel_property_space.png")
 
-# 36. unique fuels tested per paper
-fuels_pp = df.groupby(COL["paper"])[COL["fuel_rho"]].nunique().sort_values()
-fig, ax = plt.subplots(figsize=(9, 5))
-ax.hist(fuels_pp, bins=range(0, fuels_pp.max() + 2), color="#ff7f0e", edgecolor="k")
-ax.set_xlabel("Unique fuel densities tested in a paper")
-ax.set_ylabel("Number of papers")
-ax.set_title("Number of Distinct Fuels (by density) Tested per Paper")
-save(fig, "36_unique_fuels_per_paper.png")
+def quality_metrics(df: pd.DataFrame, writer: PlotWriter) -> None:
+    features=["fuel_density","fuel_k","fuel_cp","o2","pressure","flow","gravity","facility","ignition_method","reynolds","peclet","ignition_power","ignition_time","fsr"]
+    available=df[features].notna().astype(float)
+    matrix=(available.T @ available).to_numpy(dtype=float)
+    denom=np.sqrt(np.outer(np.diag(matrix),np.diag(matrix))); similarity=np.divide(matrix,denom,out=np.zeros_like(matrix),where=denom>0)
+    fig,ax=plt.subplots(figsize=(10,8)); im=ax.imshow(similarity,cmap="Blues",vmin=0,vmax=1)
+    ax.set_xticks(range(len(features)),features,rotation=45,ha="right"); ax.set_yticks(range(len(features)),features)
+    for i in range(len(features)):
+        for j in range(len(features)): ax.text(j,i,f"{similarity[i,j]:.2f}",ha="center",va="center",fontsize=6,color="white" if similarity[i,j]>.65 else "black")
+    fig.colorbar(im,ax=ax,label="Cosine co-availability"); ax.set_title("Feature Co-Availability (can fields be modeled together?)")
+    writer.save(fig,"quality","01_feature_coavailability.png")
 
-# ================================================================
-# DATA COMPLETENESS
-# ================================================================
-# 37. missingness per column
-core_cols = [COL[k] for k in ["fuel_rho", "fuel_k", "fuel_cp", "o2", "diluent",
-                              "pressure", "flow", "gravity", "facility", "geom",
-                              "ign_method", "ignition", "hrr"]] + ["fsr_num", "flame_len_num"]
-nice = ["Fuel density", "Fuel k", "Fuel cp", "O2", "Diluent", "Pressure",
-        "Flow velocity", "Gravity", "Facility", "Geometry", "Ignition method",
-        "Ignition label", "HRR", "FSR (numeric)", "Flame length (numeric)"]
-comp = [(100 * df[c].notna().mean()) for c in core_cols]
-fig, ax = plt.subplots(figsize=(10, 6))
-order = np.argsort(comp)
-ax.barh([nice[i] for i in order], [comp[i] for i in order], color="#1f77b4", edgecolor="k")
-for i, o in enumerate(order):
-    ax.text(comp[o] + 0.5, i, f"{comp[o]:.1f}%", va="center", fontsize=8)
-ax.set_xlabel("% of rows with a value")
-ax.set_xlim(0, 108)
-ax.set_title("Data Completeness by Field (% non-missing)")
-save(fig, "37_data_completeness_by_field.png")
+    numeric=["half_thickness","length","fuel_density","fuel_k","fuel_cp","fuel_pyrolysis_t","fuel_alpha","o2","pressure_kpa","flow","gravity","reynolds","peclet","prandtl","diffusion_time","ignition_power","ignition_time","fsr_mm_s"]
+    cm=df[numeric].corr(method="spearman")
+    fig,ax=plt.subplots(figsize=(12,10)); im=ax.imshow(cm,cmap="RdBu_r",vmin=-1,vmax=1)
+    ax.set_xticks(range(len(cm)),cm.columns,rotation=50,ha="right"); ax.set_yticks(range(len(cm)),cm.columns)
+    for i in range(len(cm)):
+        for j in range(len(cm)):
+            value=cm.iloc[i,j]
+            if abs(value)>=.45: ax.text(j,i,f"{value:.2f}",ha="center",va="center",fontsize=6,color="white" if abs(value)>.7 else "black")
+    fig.colorbar(im,ax=ax,label="Spearman correlation"); ax.set_title("Numeric Feature Correlations (labels shown for |r| >= 0.45)")
+    writer.save(fig,"quality","02_numeric_correlation_heatmap.png")
 
-# 38. correlation heatmap of numeric variables
-num_cols = {COL["fuel_rho"]: "fuel_rho", COL["fuel_k"]: "fuel_k",
-            COL["fuel_cp"]: "fuel_cp", COL["o2"]: "O2", COL["pressure"]: "P",
-            COL["flow"]: "flow_v", COL["gravity"]: "gravity",
-            "fsr_num": "FSR", "flame_len_num": "flame_len"}
-cm = df[list(num_cols)].rename(columns=num_cols).corr(method="spearman")
-fig, ax = plt.subplots(figsize=(8.5, 7))
-im = ax.imshow(cm, cmap="RdBu_r", vmin=-1, vmax=1)
-ax.set_xticks(range(len(cm))); ax.set_xticklabels(cm.columns, rotation=45, ha="right")
-ax.set_yticks(range(len(cm))); ax.set_yticklabels(cm.columns)
-for i in range(len(cm)):
-    for j in range(len(cm)):
-        ax.text(j, i, f"{cm.iloc[i, j]:.2f}", ha="center", va="center", fontsize=8,
-                color="white" if abs(cm.iloc[i, j]) > 0.5 else "black")
-fig.colorbar(im, ax=ax, label="Spearman correlation")
-ax.set_title("Spearman Correlation Between Numeric Variables")
-save(fig, "38_correlation_heatmap.png")
+    exact_cols=["material","geometry","o2","diluent","pressure","flow","gravity","ignition_method"]
+    condition_counts=df.groupby(exact_cols,dropna=False,observed=True).size()
+    repeated_rows=int(condition_counts[condition_counts>1].sum()); unique_conditions=len(condition_counts)
+    duplicate_rows=int(df.duplicated(subset=[COL[k] for k in ["paper","material","o2","pressure","flow","gravity","fsr"]],keep=False).sum())
+    metrics=pd.Series({"Rows":len(df),"Unique experimental conditions":unique_conditions,"Rows in repeated conditions":repeated_rows,"Rows in exact source/target duplicates":duplicate_rows})
+    fig,ax=plt.subplots(figsize=(10,5)); bars=ax.bar(metrics.index,metrics.values,color=["#2563eb","#0f766e","#f59e0b","#dc2626"]); annotate_bars(ax)
+    ax.set(ylabel="Rows / groups",title="Replication and Potential Duplication Audit"); ax.tick_params(axis="x",rotation=16)
+    writer.save(fig,"quality","03_replication_duplicate_audit.png")
 
-# ================================================================
-# PARAMETER COVERAGE PER PAPER (span of key variables)
-# ================================================================
-# 39. O2 span per paper (range plot, top 30 papers)
-fig, ax = plt.subplots(figsize=(10, 10))
-rng = df.groupby("paper_id")[COL["o2"]].agg(["min", "max", "count"])
-rng = rng.loc[top30].sort_values("count")
-for i, (name, row) in enumerate(rng.iterrows()):
-    ax.plot([row["min"], row["max"]], [i, i], lw=3, color="#1f77b4", alpha=0.7)
-    ax.plot([row["min"], row["max"]], [i, i], "o", ms=4, color="#1f77b4")
-ax.set_yticks(range(len(rng))); ax.set_yticklabels(rng.index, fontsize=7)
-ax.set_xlabel("Oxygen Concentration [mole fraction]")
-ax.set_title("O2 Range Explored by Each Paper (top 30 papers)")
-save(fig, "39_o2_span_per_paper.png")
+    core=["material","geometry","fuel_density","fuel_k","fuel_cp","o2","pressure","gravity","facility","ignition_method","reynolds","peclet"]
+    paper=df.groupby("paper_id",observed=True).agg(rows=("paper","size"),fsr=("fsr","count"),materials=("material","nunique"),o2_unique=("o2","nunique"),pressure_unique=("pressure","nunique"))
+    paper["core_completeness"]=df[core].notna().groupby(df["paper_id"],observed=True).mean().mean(axis=1)*100
+    paper["fsr_share"]=100*paper["fsr"]/paper["rows"]
+    paper=paper.sort_values("rows",ascending=False).head(35)
+    fig,ax=plt.subplots(figsize=(10,7)); sc=ax.scatter(paper["core_completeness"],paper["fsr_share"],s=25+paper["rows"]*.22,c=paper["materials"],cmap="viridis",alpha=.75,edgecolor="white")
+    for name,row in paper.nlargest(10,"rows").iterrows(): ax.annotate(name,(row["core_completeness"],row["fsr_share"]),fontsize=6,xytext=(3,3),textcoords="offset points")
+    ax.set(xlabel="Mean core-feature completeness (%)",ylabel="Rows with numeric FSR (%)",title="Source Readiness for FSR Modeling (35 largest papers)")
+    fig.colorbar(sc,ax=ax,label="Distinct materials; bubble size = rows")
+    writer.save(fig,"quality","04_paper_modeling_readiness.png")
 
-# 40. pressure span per paper
-fig, ax = plt.subplots(figsize=(10, 10))
-rng = df.groupby("paper_id")[COL["pressure"]].agg(["min", "max", "count"])
-rng = rng.loc[top30].dropna().sort_values("count")
-for i, (name, row) in enumerate(rng.iterrows()):
-    ax.plot([row["min"], row["max"]], [i, i], lw=3, color="#d62728", alpha=0.7)
-    ax.plot([row["min"], row["max"]], [i, i], "o", ms=4, color="#d62728")
-ax.set_xscale("log")
-ax.set_yticks(range(len(rng))); ax.set_yticklabels(rng.index, fontsize=7)
-ax.set_xlabel("Pressure [kPa] (log)")
-ax.set_title("Pressure Range Explored by Each Paper (top 30 papers)")
-save(fig, "40_pressure_span_per_paper.png")
+    # Quantify source dominance with effective sample size from source weights.
+    sizes=df.groupby("paper",observed=True).size().to_numpy(dtype=float); weights=sizes/sizes.sum(); ess=1/np.square(weights).sum()
+    fs_sizes=df[df["fsr"].notna()].groupby("paper",observed=True).size().to_numpy(dtype=float); fs_weights=fs_sizes/fs_sizes.sum(); fs_ess=1/np.square(fs_weights).sum()
+    actual=[len(sizes),len(fs_sizes)]; effective=[ess,fs_ess]
+    fig,ax=plt.subplots(figsize=(8,5)); x=np.arange(2); width=.36
+    ax.bar(x-width/2,actual,width,label="Observed papers",color="#94a3b8"); ax.bar(x+width/2,effective,width,label="Effective papers after row imbalance",color="#dc2626")
+    ax.set_xticks(x,["Full database","Numeric FSR subset"]); ax.set(ylabel="Number of papers",title="Effective Source Diversity"); ax.legend(); annotate_bars(ax,fmt=".1f")
+    writer.save(fig,"quality","05_effective_source_diversity.png")
 
-# ================================================================
-# GAP TABLE FIGURE - top gaps of every key variable
-# ================================================================
-def top_gaps_text(vals, label, unit, n=3, log=False):
-    v = pd.to_numeric(vals, errors="coerce").dropna()
-    if log:
-        v = v[v > 0]
-    u = np.sort(v.unique())
-    if len(u) < 2:
-        return []
-    gaps = np.diff(np.log10(u)) if log else np.diff(u)
-    idx = np.argsort(gaps)[::-1][:n]
-    return [f"{label}: {u[i]:.4g} -> {u[i+1]:.4g} {unit}" for i in sorted(idx)]
 
-gap_lines = []
-gap_lines += top_gaps_text(df[COL["fuel_rho"]], "Fuel density", "kg/m3")
-gap_lines += top_gaps_text(df[COL["fuel_k"]], "Fuel k", "W/mK", log=True)
-gap_lines += top_gaps_text(df[COL["o2"]], "O2", "mol frac")
-gap_lines += top_gaps_text(df[COL["pressure"]], "Pressure", "kPa", log=True)
-gap_lines += top_gaps_text(df[COL["gravity"]], "Gravity", "g")
-gap_lines += top_gaps_text(df["fsr_num"], "FSR", "mm/s", log=True)
-fig, ax = plt.subplots(figsize=(9, 7))
-ax.axis("off")
-ax.set_title("Largest Untested Gaps in Key Variables (top 3 each)", fontsize=13)
-for i, line in enumerate(gap_lines):
-    ax.text(0.02, 0.95 - i * 0.052, "- " + line, fontsize=10, va="top",
-            family="monospace")
-save(fig, "41_largest_gaps_summary_table.png")
+def main() -> int:
+    args=parse_args()
+    df=load_database(args.input.resolve())
+    writer=PlotWriter(args.output,args.clean)
+    overview_metrics(df,writer)
+    coverage_metrics(df,writer)
+    ignition_metrics(df,writer)
+    fsr_metrics(df,writer)
+    quality_metrics(df,writer)
+    print(f"\nDone: generated {len(writer.saved)} PNG files in {writer.root}")
+    return 0
 
-# ================================================================
-# 42. points per paper vs ignition fraction bubble
-# ================================================================
-agg = df.groupby(COL["paper"]).agg(
-    n=("ign_clean", "size"),
-    ign_frac=("ign_clean", lambda s: (s == "Yes").mean()),
-    o2_span=(COL["o2"], lambda s: s.max() - s.min()),
-)
-fig, ax = plt.subplots(figsize=(10, 6))
-sc = ax.scatter(agg["n"], agg["ign_frac"] * 100, s=30 + 600 * agg["o2_span"].fillna(0),
-                alpha=0.55, c=agg["o2_span"], cmap="viridis", edgecolors="k", linewidths=0.4)
-fig.colorbar(sc, ax=ax, label="O2 span explored (mole fraction)")
-ax.set_xscale("log")
-ax.set_xlabel("Points in paper (log)")
-ax.set_ylabel("% Ignition = Yes")
-ax.set_title("Paper Size vs Ignition Fraction (bubble size = O2 span explored)")
-save(fig, "42_paper_size_vs_ignition_fraction.png")
 
-print(f"\nDone. {len(saved)} figures saved to {OUT}")
+if __name__ == "__main__":
+    raise SystemExit(main())
