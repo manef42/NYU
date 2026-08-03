@@ -1,12 +1,14 @@
 """Derived result tables and the Slurm-array shard merge step.
 
-``fsr_evaluate.py`` writes one shard per model family (one Slurm array task).
+``fsr_evaluate.py`` writes one shard per candidate under
+``<evaluation>/<family>/<candidate_id>/``.
 This module owns every table that is computed *from* those shards - fold
 summaries, per-paper breakdowns, paired tests, bootstrap intervals, the
 interpolation/extrapolation generalization gap and the augmentation effect - so
 that a single shard and the merged whole are summarized by exactly the same code.
 
-Run as a script it merges ``<evaluation>/model_*`` shards into one evaluation
+Run as a script it merges all candidate shards found two levels deep under
+``--evaluation`` (i.e. ``<evaluation>/*/*``) into one merged evaluation
 directory and recomputes all derived tables over the union.
 """
 from __future__ import annotations
@@ -47,6 +49,24 @@ def read_table(path: str | Path) -> pd.DataFrame:
         return pd.read_csv(path)
     except pd.errors.EmptyDataError:
         return pd.DataFrame()
+
+
+def _discover_shards(evaluation: Path, shard_glob: str) -> list[Path]:
+    """Find candidate shard directories.
+
+    Supports three layouts:
+      1. New: <evaluation>/<family>/<candidate_id>/   (glob = '*/*')
+      2. Old: <evaluation>/model_*/                  (glob = 'model_*')
+      3. Explicit glob passed via --shard-glob
+    """
+    # Try the supplied glob first
+    shards = sorted(p for p in evaluation.glob(shard_glob) if p.is_dir())
+    if shards:
+        return shards
+    # Fall back to two-level deep discovery (new layout)
+    shards = sorted(p for p in evaluation.glob("*/*") if p.is_dir()
+                    and (p / "fold_metrics.csv").is_file())
+    return shards
 
 
 def summarize(fold_metrics: pd.DataFrame) -> pd.DataFrame:
@@ -256,17 +276,20 @@ def _merge_integrity(shards: list[Path]) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evaluation", required=True,
-                        help="Directory that contains the per-family model_* shards.")
+                        help="Root evaluation directory (contains <family>/<candidate>/ shards).")
     parser.add_argument("--out", required=True, help="Merged evaluation directory.")
-    parser.add_argument("--shard-glob", default="model_*")
+    parser.add_argument("--shard-glob", default="model_*",
+                        help="Glob relative to --evaluation. Ignored when the new "
+                             "<family>/<candidate> layout is auto-detected.")
     parser.add_argument("--bootstrap-iterations", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     evaluation, out = Path(args.evaluation), Path(args.out)
-    shards = sorted(path for path in evaluation.glob(args.shard_glob) if path.is_dir())
+    shards = _discover_shards(evaluation, args.shard_glob)
     if not shards:
         raise FileNotFoundError(
-            f"No evaluation shards matching {args.shard_glob!r} under {evaluation}")
+            f"No evaluation shards found under {evaluation}. "
+            f"Tried glob '{args.shard_glob}' and two-level deep '*/*' discovery.")
     out.mkdir(parents=True, exist_ok=True)
     merged: dict[str, pd.DataFrame] = {}
     for name, subset in SHARD_FRAMES.items():
@@ -309,7 +332,7 @@ def main() -> None:
     metadata_shards = [json.loads((shard / "evaluation_metadata.json").read_text("utf-8"))
                        for shard in shards if (shard / "evaluation_metadata.json").is_file()]
     (out / "evaluation_metadata.json").write_text(json.dumps({
-        "merged_shards": [shard.name for shard in shards],
+        "merged_shards": [str(shard.relative_to(evaluation)) for shard in shards],
         "shard_metadata": metadata_shards,
         "bootstrap_iterations": args.bootstrap_iterations,
         "derived_table_rows": counts,
