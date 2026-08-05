@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
+import joblib
+
 from fable_common import MODEL_FAMILIES, configure_torch, load_data
 from fable_models import make_model
 from fable_search import classification_metrics, nested_search
@@ -210,10 +212,11 @@ def _per_paper_metrics(predictions: pd.DataFrame) -> pd.DataFrame:
 
 
 def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: pd.DataFrame,
-                        search_iterations: int,inner_group_folds: int,candidate_number: int,candidate_total: int,total_folds: int,) -> tuple[
+                        search_iterations: int,inner_group_folds: int,candidate_number: int,candidate_total: int,total_folds: int,
+                        explainability_dir: Path | None = None,) -> tuple[
                             list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]],
                             list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]],
-                            list[dict[str, Any]]]:
+                            list[dict[str, Any]], list[dict[str, Any]]]:
     indexed = df.set_index("row_id", drop=False)
     fold_metrics: list[dict[str, Any]] = []
     selected_rows: list[dict[str, Any]] = []
@@ -222,6 +225,8 @@ def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: 
     search_history_rows: list[dict[str, Any]] = []
     inner_oof_rows: list[dict[str, Any]] = []
     protocol_status_rows: list[dict[str, Any]] = []
+    explainability_rows: list[dict[str, Any]] = []
+    explained = False
     completed_folds = 0
     for protocol, protocol_frame in assignments.groupby("protocol", sort=False):
         protocol_errors: list[str] = []
@@ -259,6 +264,22 @@ def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: 
                 if not np.all(np.isfinite(probability)) or np.any((probability < 0) | (probability > 1)):
                     protocol_valid = False
                     raise ValueError("Model produced invalid probabilities")
+
+                if (explainability_dir is not None and
+                        not explained and
+                        protocol == "extrapolation_grouped" and
+                        candidate["model_family"] == "xgboost"):
+                    explainability_dir.mkdir(parents=True, exist_ok=True)
+                    model_path = explainability_dir / f"{candidate['candidate_id']}.joblib"
+                    joblib.dump(final_model, model_path, compress=3)
+                    explainability_rows.append({
+                        "model_id": candidate["candidate_id"],
+                        "split_id": split_id,
+                        "model_path": f"explainability_models/{candidate['candidate_id']}.joblib",
+                        "held_out_row_ids": json.dumps(test_df["row_id"].tolist()),
+                        "held_out_paper_ids": json.dumps(sorted(test_df["paper_id"].unique().tolist())),
+                    })
+                    explained = True
 
                 metrics = classification_metrics(test_df["ignition_binary"].to_numpy(), probability, 0.5)
                 fold_metrics.append({
@@ -353,6 +374,7 @@ def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: 
         search_history_rows,
         inner_oof_rows,
         protocol_status_rows,
+        explainability_rows,
     )
 
 
@@ -364,7 +386,8 @@ def _write_csv(frame: pd.DataFrame, path: Path) -> None:
 def _write_family_outputs(out_dir: Path, candidates: list[dict[str, Any]], fold_rows: list[dict[str, Any]],
                           selected_rows: list[dict[str, Any]], prediction_rows: list[dict[str, Any]],
                           per_paper_rows: list[dict[str, Any]], search_history_rows: list[dict[str, Any]],
-                          inner_oof_rows: list[dict[str, Any]], protocol_status_rows: list[dict[str, Any]]) -> None:
+                          inner_oof_rows: list[dict[str, Any]], protocol_status_rows: list[dict[str, Any]],
+                          explainability_rows: list[dict[str, Any]] | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     candidate_frame = _candidate_manifest(candidates)
@@ -392,6 +415,8 @@ def _write_family_outputs(out_dir: Path, candidates: list[dict[str, Any]], fold_
     _write_csv(per_paper_frame, out_dir / "per_paper_metrics.csv")
     _write_csv(search_history_frame, out_dir / "search_history.csv")
     _write_csv(inner_oof_frame, out_dir / "inner_oof_predictions.csv")
+    if explainability_rows is not None:
+        _write_csv(pd.DataFrame(explainability_rows), out_dir / "explainability_index.csv")
     prediction_frame.to_parquet(out_dir / "outer_fold_predictions.parquet", index=False)
     (out_dir / "integrity_checks.json").write_text(json.dumps(integrity, indent=2), encoding="utf-8")
 
@@ -456,7 +481,12 @@ def main() -> None:
         search_history_rows: list[dict[str, Any]] = []
         inner_oof_rows: list[dict[str, Any]] = []
         protocol_status_rows: list[dict[str, Any]] = []
+        explainability_rows: list[dict[str, Any]] = []
         total_folds = int(assignments[["split_id", "seed", "fold"]].drop_duplicates().shape[0])
+        target_out = out_root if direct_output else out_root / output_key
+        explainability_dir = (
+            target_out / "explainability_models" if family == "xgboost" else None
+        )
         
         
         for candidate_number, candidate in enumerate(family_candidates, start=1):
@@ -468,6 +498,7 @@ def main() -> None:
                 candidate_search_history_rows,
                 candidate_inner_oof_rows,
                 candidate_protocol_status_rows,
+                candidate_explainability_rows,
             ) = _evaluate_candidate(
                 candidate,
                 data,
@@ -477,6 +508,7 @@ def main() -> None:
                 candidate_number,
                 len(family_candidates),
                 total_folds,
+                explainability_dir=explainability_dir,
             )
             fold_rows.extend(candidate_fold_rows)
             selected_rows.extend(candidate_selected_rows)
@@ -485,12 +517,13 @@ def main() -> None:
             search_history_rows.extend(candidate_search_history_rows)
             inner_oof_rows.extend(candidate_inner_oof_rows)
             protocol_status_rows.extend(candidate_protocol_status_rows)
+            explainability_rows.extend(candidate_explainability_rows)
 
-        target_out = out_root if direct_output else out_root / output_key
         _write_family_outputs(
             target_out, family_candidates, fold_rows, selected_rows,
             prediction_rows, per_paper_rows, search_history_rows,
-            inner_oof_rows, protocol_status_rows)
+            inner_oof_rows, protocol_status_rows, explainability_rows)
+
 
         print(json.dumps({
             "family": family,

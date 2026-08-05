@@ -1,0 +1,52 @@
+feature,mean_absolute_shap
+numeric__oxygen,0.5973569
+numeric__prandtl,0.4541004
+numeric__gas_molar_mass,0.3561648
+numeric__flow_speed_abs_m_s,0.29746103
+numeric__fuel_pyrolysis_t_k,0.21886502
+numeric__flow_velocity_m_s,0.21295439
+numeric__ignition_time_s,0.19649069
+numeric__sample_dim_3_m,0.17081092
+numeric__reynolds,0.14603004
+numeric__gas_density_kg_m3,0.1442966
+numeric__thermal_diffusion_time_s,0.12520985
+numeric__peclet,0.11218938
+numeric__gravity_g,0.10582465
+numeric__fuel_cp_j_kgk,0.099245414
+numeric__sample_dim_1_m,0.090854965
+numeric__fuel_alpha_m2_s,0.08134862
+numeric__gas_alpha_m2_s,0.07588941
+numeric__fuel_density_kg_m3,0.055879023
+numeric__gas_k_w_mk,0.055007555
+numeric__gas_cp_j_kgk,0.052754942
+numeric__sample_dim_2_m,0.048936088
+numeric__pressure_pa,0.044525374
+numeric__half_thickness_m,0.039381318
+categorical__gravity_regime_cat_Earth,0.036713235
+numeric__fuel_volumetric_heat_capacity_j_m3k,0.03401651
+numeric__fuel_k_w_mk,0.033884395
+numeric__ignition_power_w,0.033777706
+numeric__gas_nu_m2_s,0.032738317
+numeric__core_cp_j_kgk,0.028177995
+numeric__characteristic_length_m,0.027152192
+categorical__gravity_regime_cat_Microgravity,0.023751346
+numeric__core_density_kg_m3,0.017606782
+numeric__core_volumetric_heat_capacity_j_m3k,0.012665615
+categorical__geometry_cat_Cylindrical,0.011214129
+categorical__gravity_regime_cat_Partial,0.00968871
+numeric__core_k_w_mk,0.009308208
+categorical__ignition_method_cat_Open Flame,0.0080405725
+categorical__flow_direction_cat_Coflow,0.006793048
+categorical__flow_direction_cat_Counterflow,0.0031462011
+categorical__gravity_regime_cat_Hyper / Unknown,0.0028499954
+categorical__ignition_method_cat_Wire / Coil,0.0020114058
+categorical__geometry_cat_Wire,0.001722214
+categorical__flow_direction_cat_Quiescent,0.0013309215
+categorical__ignition_method_cat_Radiative Heater,0.0007623508
+categorical__geometry_cat_Flat,0.0
+categorical__geometry_cat_Spherical,0.0
+categorical__diluent_cat_He,0.0
+categorical__diluent_cat_N2,0.0
+categorical__diluent_cat_Ar,0.0
+categorical__diluent_cat_CO2,0.0
+categorical__ignition_method_cat_Unknown,0.0

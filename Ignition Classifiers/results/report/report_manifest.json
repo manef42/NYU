@@ -585,12 +585,21 @@
       "Thresholds are objective-specific and are not universally optimal."
     ]
   },
-  "xgboost_explained": "xgb_baseline",
+  "xgboost_explained": [
+    "xgb_paper_sqrt",
+    "xgb_baseline"
+  ],
   "figures": [
     "champion_calibration.png",
     "champion_threshold_performance.png",
+    "extrapolation_xgboost_permutation_importance.png",
+    "extrapolation_xgboost_shap_bar.png",
+    "extrapolation_xgboost_shap_beeswarm.png",
     "five_model_family_comparison.png",
     "interpolation_extrapolation_drop.png",
+    "interpolation_xgboost_permutation_importance.png",
+    "interpolation_xgboost_shap_bar.png",
+    "interpolation_xgboost_shap_beeswarm.png",
     "paired_model_deltas.png",
     "per_paper_extrapolation_histogram.png",
     "pr_auc_fold_uncertainty.png",
@@ -598,5 +607,9 @@
     "xgboost_permutation_importance.png",
     "xgboost_shap_bar.png",
     "xgboost_shap_beeswarm.png"
-  ]
+  ],
+  "xgboost_explained_by_champion": {
+    "interpolation": "xgb_paper_sqrt",
+    "extrapolation": "xgb_baseline"
+  }
 }

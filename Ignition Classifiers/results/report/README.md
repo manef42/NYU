@@ -11,7 +11,7 @@ protect the distinction.
 - Extrapolation: `xgb_baseline`
 
 These champions answer different scientific questions. Fold uncertainty, paired deltas, per-paper
-variation, and calibration figures must be considered with point estimates. LOPO is a robustness
+variation, and calibration figures must be considered with point estimates. Permutation importance and SHAP are produced for both champions when they are XGBoost models (`interpolation_*` and `extrapolation_*` explainability artifacts). LOPO is a robustness
 analysis, not the sole selection basis. Database heterogeneity, sparse features, campaign effects,
 and observational sampling limit causal or universal claims.
 

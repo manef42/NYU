@@ -226,15 +226,48 @@ def _threshold_plot(table: pd.DataFrame, path: Path) -> None:
     plt.close(chart.figure)
 
 
+def _explainability_stem(champion: str | None, artifact: str) -> str:
+    """Name explainability artifacts with an optional champion prefix."""
+    if champion:
+        return f"{champion}_{artifact}"
+    return artifact
+
+
+def _resolve_explainability_targets(selection: dict, extrapolation: pd.DataFrame) -> list[dict]:
+    """Return one entry per champion that should receive permutation/SHAP analysis."""
+    eligible = set(extrapolation["model_id"])
+    targets = []
+    for role in ("interpolation", "extrapolation"):
+        champion = selection[f"{role}_champion"]
+        model_id = champion["candidate_id"]
+        if champion.get("model_family") != "xgboost":
+            continue
+        if model_id not in eligible:
+            continue
+        targets.append({"champion": role, "model_id": model_id})
+    if targets:
+        return targets
+    eligible_xgb = extrapolation[extrapolation["model_family"] == "xgboost"]
+    if eligible_xgb.empty:
+        return []
+    return [{"champion": "extrapolation", "model_id": eligible_xgb.iloc[0]["model_id"]}]
+
+
 def _explainability(data: pd.DataFrame, evaluation: Path, xgb_id: str, out: Path,
-                    random_state: int = 42) -> None:
+                    champion: str | None = None, random_state: int = 42) -> dict:
     index = _load_and_concat_csv(evaluation, "explainability_index.csv")
     row = index[index["model_id"] == xgb_id]
     if row.empty:
         raise RuntimeError(f"No persisted held-out-paper XGBoost model for {xgb_id}")
     row = row.iloc[0]
     model_dir = evaluation / row["_model_dir"]
-    model = joblib.load(model_dir / row["model_path"])
+    model_path = model_dir / row["model_path"]
+    if not model_path.exists():
+        raise RuntimeError(
+            f"Missing explainability model at {model_path}. "
+            "Re-run evaluation for XGBoost or rebuild explainability_models."
+        )
+    model = joblib.load(model_path)
     held_out_ids = set(json.loads(row["held_out_row_ids"]))
     held_out = data[data["row_id"].isin(held_out_ids)].copy()
     y = held_out["ignition_binary"].to_numpy()
@@ -249,16 +282,22 @@ def _explainability(data: pd.DataFrame, evaluation: Path, xgb_id: str, out: Path
         importance.append({
             "feature": feature, "importance_mean": np.mean(drops),
             "importance_std": np.std(drops, ddof=1), "held_out_roc_auc": baseline,
+            "champion": champion, "model_id": xgb_id,
         })
     importance = pd.DataFrame(importance).sort_values("importance_mean", ascending=False)
-    _save_table(importance, "xgboost_permutation_importance", out)
+    perm_stem = _explainability_stem(champion, "xgboost_permutation_importance")
+    _save_table(importance.drop(columns=["champion", "model_id"], errors="ignore"),
+                perm_stem, out)
+    color = "#0072B2" if champion == "interpolation" else "#D55E00"
     top = importance.head(20).sort_values("importance_mean")
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.barh(top["feature"], top["importance_mean"], xerr=top["importance_std"], color="#0072B2")
+    ax.barh(top["feature"], top["importance_mean"], xerr=top["importance_std"], color=color)
     ax.axvline(0, color="black", linewidth=.8)
+    title_id = f"{champion}: {xgb_id}" if champion else xgb_id
+    ax.set_title(f"{title_id}: permutation importance")
     ax.set_xlabel("Held-out-paper ROC-AUC decrease")
     fig.tight_layout()
-    fig.savefig(out / "xgboost_permutation_importance.png", dpi=300)
+    fig.savefig(out / f"{perm_stem}.png", dpi=300)
     plt.close(fig)
     try:
         import shap
@@ -277,27 +316,29 @@ def _explainability(data: pd.DataFrame, evaluation: Path, xgb_id: str, out: Path
         ranking = pd.DataFrame({
             "feature": names, "mean_absolute_shap": np.abs(values).mean(axis=0),
         }).sort_values("mean_absolute_shap", ascending=False)
-        _save_table(ranking, "xgboost_shap_ranking", out)
+        shap_stem = _explainability_stem(champion, "xgboost_shap_ranking")
+        _save_table(ranking, shap_stem, out)
         shap.summary_plot(values, transformed, feature_names=names, show=False, max_display=20)
-        plt.title(f"{xgb_id}: SHAP on held-out papers")
+        plt.title(f"{title_id}: SHAP on held-out papers")
         plt.tight_layout()
-        plt.savefig(out / "xgboost_shap_beeswarm.png", dpi=300, bbox_inches="tight")
+        beeswarm = _explainability_stem(champion, "xgboost_shap_beeswarm")
+        plt.savefig(out / f"{beeswarm}.png", dpi=300, bbox_inches="tight")
         plt.close()
         shap.summary_plot(values, transformed, feature_names=names, plot_type="bar",
                           show=False, max_display=20)
-        plt.title(f"{xgb_id}: mean absolute SHAP")
+        plt.title(f"{title_id}: mean absolute SHAP")
         plt.tight_layout()
-        plt.savefig(out / "xgboost_shap_bar.png", dpi=300, bbox_inches="tight")
+        bar = _explainability_stem(champion, "xgboost_shap_bar")
+        plt.savefig(out / f"{bar}.png", dpi=300, bbox_inches="tight")
         plt.close()
-        status = {"success": True, "model_id": xgb_id, "split_id": row["split_id"],
-                  "held_out_rows": len(held_out),
+        status = {"success": True, "champion": champion, "model_id": xgb_id,
+                  "split_id": row["split_id"], "held_out_rows": len(held_out),
                   "held_out_papers": held_out["paper_id"].nunique()}
-        (out / "explainability_status.json").write_text(json.dumps(status, indent=2))
+        return status
     except Exception as exc:
-        status = {"success": False, "model_id": xgb_id, "error": str(exc),
+        status = {"success": False, "champion": champion, "model_id": xgb_id, "error": str(exc),
                   "required_action": "Install/fix SHAP; report generation is non-successful."}
-        (out / "explainability_status.json").write_text(json.dumps(status, indent=2))
-        raise RuntimeError(f"Required SHAP explanation failed: {exc}") from exc
+        raise RuntimeError(f"Required SHAP explanation failed for {title_id}: {exc}") from exc
 
 
 def main() -> None:
@@ -360,23 +401,50 @@ def main() -> None:
     thresholds = _threshold_table(predictions, selection)
     _save_table(thresholds, "champion_threshold_performance", out)
     _threshold_plot(thresholds, out / "champion_threshold_performance.png")
-    eligible_extrapolation = set(extrapolation["model_id"])
-    if selection["extrapolation_champion"]["model_family"] == "xgboost":
-        xgb_id = extrap_id
-    elif (selection["interpolation_champion"]["model_family"] == "xgboost" and
-          selection["interpolation_champion"]["candidate_id"] in eligible_extrapolation):
-        xgb_id = selection["interpolation_champion"]["candidate_id"]
-    else:
-        eligible_xgb = extrapolation[extrapolation["model_family"] == "xgboost"]
-        if eligible_xgb.empty:
-            status = {
-                "success": False,
-                "reason": "No eligible XGBoost candidate has held-out-paper evaluation evidence.",
-            }
-            (out / "explainability_status.json").write_text(json.dumps(status, indent=2))
-            raise RuntimeError(status["reason"])
-        xgb_id = eligible_xgb.iloc[0]["model_id"]
-    _explainability(data, evaluation, xgb_id, out)
+    explain_targets = _resolve_explainability_targets(selection, extrapolation)
+    if not explain_targets:
+        status = {
+            "success": False,
+            "reason": "No eligible XGBoost candidate has held-out-paper evaluation evidence.",
+        }
+        (out / "explainability_status.json").write_text(json.dumps(status, indent=2))
+        raise RuntimeError(status["reason"])
+    explain_statuses = []
+    try:
+        for target in explain_targets:
+            explain_statuses.append(
+                _explainability(data, evaluation, target["model_id"], out,
+                                champion=target["champion"]))
+    except Exception as exc:
+        status_payload = {
+            "success": False,
+            "champions": explain_statuses,
+            "error": str(exc),
+            "required_action": "Install/fix SHAP and ensure explainability_models exist.",
+        }
+        (out / "explainability_status.json").write_text(json.dumps(status_payload, indent=2))
+        raise
+    # Preserve legacy unprefixed names as copies of the extrapolation champion outputs.
+    legacy_map = {
+        "xgboost_permutation_importance": "extrapolation_xgboost_permutation_importance",
+        "xgboost_shap_ranking": "extrapolation_xgboost_shap_ranking",
+        "xgboost_shap_beeswarm.png": "extrapolation_xgboost_shap_beeswarm.png",
+        "xgboost_shap_bar.png": "extrapolation_xgboost_shap_bar.png",
+    }
+    for legacy, source in legacy_map.items():
+        for suffix in (("",) if source.endswith(".png") else (".csv", ".md", ".png")):
+            src = out / f"{source}{suffix}"
+            dst = out / f"{legacy}{suffix}"
+            if src.exists():
+                dst.write_bytes(src.read_bytes())
+    status_payload = {
+        "success": all(item.get("success") for item in explain_statuses),
+        "champions": explain_statuses,
+        # Backward-compatible top-level fields from the extrapolation (or sole) run.
+        **{k: v for k, v in explain_statuses[-1].items() if k != "champion"},
+    }
+    (out / "explainability_status.json").write_text(json.dumps(status_payload, indent=2))
+    xgb_explained = [target["model_id"] for target in explain_targets]
     commands = """cd "Ignition Classifiers"
 python fable_splits.py --data Microgravity_Database.csv --out results/splits --n-seeds 3 --n-group-folds 5 --n-row-folds 5
 python fable_evaluate.py --data Microgravity_Database.csv --splits results/splits --config configs/candidates.yaml --out results/evaluation --search-iterations 40 --inner-group-folds 3
@@ -397,7 +465,9 @@ protect the distinction.
 - Extrapolation: `{selection['extrapolation_champion']['candidate_id']}`
 
 These champions answer different scientific questions. Fold uncertainty, paired deltas, per-paper
-variation, and calibration figures must be considered with point estimates. LOPO is a robustness
+variation, and calibration figures must be considered with point estimates. Permutation importance
+and SHAP are produced for both champions when they are XGBoost models
+(`interpolation_*` and `extrapolation_*` explainability artifacts). LOPO is a robustness
 analysis, not the sole selection basis. Database heterogeneity, sparse features, campaign effects,
 and observational sampling limit causal or universal claims.
 
@@ -419,10 +489,19 @@ deployable models, not unbiased evaluation evidence.
     (out / "report_manifest.json").write_text(json.dumps({
         "interpolation_model_card": cards["interpolation"],
         "extrapolation_model_card": cards["extrapolation"],
-        "xgboost_explained": xgb_id,
+        "xgboost_explained": xgb_explained,
+        "xgboost_explained_by_champion": {
+            target["champion"]: target["model_id"] for target in explain_targets
+        },
         "figures": sorted(path.name for path in out.glob("*.png")),
     }, indent=2), encoding="utf-8")
-    print(json.dumps({"report": str(out), "xgboost_explained": xgb_id}, indent=2))
+    print(json.dumps({
+        "report": str(out),
+        "xgboost_explained": xgb_explained,
+        "xgboost_explained_by_champion": {
+            target["champion"]: target["model_id"] for target in explain_targets
+        },
+    }, indent=2))
 
 
 if __name__ == "__main__":
