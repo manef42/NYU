@@ -16,12 +16,14 @@ Classifiers/results/evaluation/dt/outer_fold_predictions.csv
 Ignition Classifiers/results/evaluation/knn/inner_oof_predictions.csv
 Ignition
 Classifiers/results/evaluation/knn/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/mlp/inner_oof_predictions.csv
+Ignition Classifiers/results/evaluation/mlp_weighted_sqrt/inner_oof_predictions.csv
 Ignition
-Classifiers/results/evaluation/mlp/outer_fold_predictions.csv
+Classifiers/results/evaluation/mlp_weighted_sqrt/outer_fold_predictions.csv
 Ignition Classifiers/results/evaluation/svm/inner_oof_predictions.csv
 Ignition
 Classifiers/results/evaluation/svm/outer_fold_predictions.csv
 Ignition Classifiers/results/evaluation/xgb/inner_oof_predictions.csv
 Ignition
 Classifiers/results/evaluation/xgb/outer_fold_predictions.csv
+Ignition Classifiers/results/evaluation/xgb/outer_fold_predictions.csv
+Ignition Classifiers/results/evaluation/mlp/mlp_weighted_sqrt/inner_oof_predictions.csv
