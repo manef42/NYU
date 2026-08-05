@@ -1,26 +1,26 @@
 {
   "base_seed": 42,
-  "data_version": "fable-data-v4",
-  "dataset_sha256": "aa3aa03fab497e2355df315075df9e39d8d72428118cab7d8900cc17c8314032",
+  "data_version": "fable-data-v5",
+  "dataset_sha256": "d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6",
   "integrity": {
     "failures": [],
     "passed": true,
-    "splits_checked": 119
+    "splits_checked": 120
   },
   "label_counts": {
-    "0": 1105,
-    "1": 3396
+    "0": 1104,
+    "1": 3383
   },
-  "label_prevalence": 0.7544990002221729,
+  "label_prevalence": 0.7539558725206151,
   "n_group_folds": 5,
   "n_row_folds": 5,
   "n_seeds": 3,
-  "paper_count": 86,
+  "paper_count": 87,
   "protocol_split_counts": {
     "extrapolation_grouped": 15,
     "interpolation_holdout": 3,
     "interpolation_stratified": 15,
-    "lopo": 86
+    "lopo": 87
   },
-  "row_count": 4501
+  "row_count": 4487
 }

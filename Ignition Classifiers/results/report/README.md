@@ -7,8 +7,8 @@ protect the distinction.
 
 ## Selected models
 
-- Interpolation: `xgb_all_unweighted`
-- Extrapolation: `xgb_all_unweighted`
+- Interpolation: `xgb_paper_sqrt`
+- Extrapolation: `xgb_baseline`
 
 These champions answer different scientific questions. Fold uncertainty, paired deltas, per-paper
 variation, and calibration figures must be considered with point estimates. LOPO is a robustness
@@ -18,18 +18,18 @@ and observational sampling limit causal or universal claims.
 ## Integrity
 
 Evaluation integrity overall: `True`. Failed candidate/protocol combinations are
-excluded and documented across each `../evaluation/model_*/integrity_checks.json`.
+excluded and documented across each `../evaluation/<family>/integrity_checks.json`.
 
 ## Exact commands
 
 ```bash
 cd "Ignition Classifiers"
-python fable_splits.py --data ../Microgravity_Database_reduced.csv --out results/splits --n-seeds 3 --n-group-folds 5 --n-row-folds 5
-python fable_evaluate.py --data ../Microgravity_Database_reduced.csv --splits results/splits --config configs/candidates.yaml --out results/evaluation --search-iterations 40 --inner-group-folds 3
+python fable_splits.py --data Microgravity_Database.csv --out results/splits --n-seeds 3 --n-group-folds 5 --n-row-folds 5
+python fable_evaluate.py --data Microgravity_Database.csv --splits results/splits --config configs/candidates.yaml --out results/evaluation --search-iterations 40 --inner-group-folds 3
 python fable_select.py --evaluation results/evaluation --policy configs/selection_policy.yaml --out results/selection.json
-python fable_refit.py --data ../Microgravity_Database_reduced.csv --selection results/selection.json --champion interpolation --out artifacts/interpolation_champion
-python fable_refit.py --data ../Microgravity_Database_reduced.csv --selection results/selection.json --champion extrapolation --out artifacts/extrapolation_champion
-python fable_report.py --data ../Microgravity_Database_reduced.csv --evaluation results/evaluation --selection results/selection.json --artifacts artifacts --out results/report
+python fable_refit.py --data Microgravity_Database.csv --selection results/selection.json --champion interpolation --out artifacts/interpolation_champion
+python fable_refit.py --data Microgravity_Database.csv --selection results/selection.json --champion extrapolation --out artifacts/extrapolation_champion
+python fable_report.py --data Microgravity_Database.csv --evaluation results/evaluation --selection results/selection.json --artifacts artifacts --out results/report
 ```
 
 Evaluation artifacts are unbiased comparison evidence, not deployable models. Refit artifacts are

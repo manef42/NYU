@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "protocol_status": [
+    {
+      "candidate_id": "mlp_baseline",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "mlp_baseline",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "mlp_baseline",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "mlp_baseline",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    }
+  ]
+}

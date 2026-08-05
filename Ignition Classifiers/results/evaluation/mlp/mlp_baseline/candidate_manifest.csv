@@ -1,0 +1,2 @@
+candidate_id,model_id,model_family,paper_weight,class_weight,fixed_params
+mlp_baseline,mlp_baseline,mlp,none,False,{}

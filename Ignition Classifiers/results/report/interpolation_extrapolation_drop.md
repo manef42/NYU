@@ -1,17 +1,28 @@
-| model_id                                     | model_family   | feature_set   |   extrapolation_grouped |   interpolation_stratified |   roc_auc_drop |
-|:---------------------------------------------|:---------------|:--------------|------------------------:|---------------------------:|---------------:|
-| xgb_all_focal_class_paper_weighted           | xgboost        | all           |                0.490376 |                   0.481381 |    -0.00899487 |
-| xgb_physics_focal_class_paper_weighted       | xgboost        | physics       |                0.453868 |                   0.483181 |     0.0293131  |
-| knn_physics                                  | knn            | physics       |                0.702463 |                   0.829386 |     0.126923   |
-| svm_physics                                  | svm            | physics       |                0.698753 |                   0.842372 |     0.143619   |
-| xgb_physics_paper_bagging                    | xgboost        | physics       |                0.717619 |                   0.875823 |     0.158204   |
-| mlp_physics                                  | mlp            | physics       |                0.692088 |                   0.857223 |     0.165135   |
-| xgb_physics_unweighted                       | xgboost        | physics       |                0.722525 |                   0.897297 |     0.174771   |
-| xgb_physics_class_paper_weighted_monotone_o2 | xgboost        | physics       |                0.713239 |                   0.894988 |     0.181749   |
-| xgb_all_unweighted                           | xgboost        | all           |                0.720102 |                   0.913307 |     0.193204   |
-| xgb_all_class_paper_weighted                 | xgboost        | all           |                0.718996 |                   0.912703 |     0.193708   |
-| decision_tree_physics                        | decision_tree  | physics       |                0.640245 |                   0.834353 |     0.194107   |
-| mlp_all                                      | mlp            | all           |                0.67998  |                   0.878635 |     0.198655   |
-| svm_all                                      | svm            | all           |                0.660016 |                   0.864018 |     0.204002   |
-| knn_all                                      | knn            | all           |                0.614507 |                   0.824839 |     0.210331   |
-| decision_tree_all                            | decision_tree  | all           |                0.635421 |                   0.849214 |     0.213793   |
+| model_id             | model_family   |   extrapolation_grouped |   interpolation_stratified |   roc_auc_drop |
+|:---------------------|:---------------|------------------------:|---------------------------:|---------------:|
+| xgb_focal_inverse    | xgboost        |                0.499737 |                   0.49874  |    -0.00099753 |
+| xgb_focal_sqrt       | xgboost        |                0.480192 |                   0.496004 |     0.0158126  |
+| svm_linear_inverse   | svm            |                0.680955 |                   0.75555  |     0.0745951  |
+| svm_linear_sqrt      | svm            |                0.67239  |                   0.757868 |     0.0854782  |
+| knn_baseline         | knn            |                0.665146 |                   0.822354 |     0.157208   |
+| svm_baseline         | svm            |                0.664082 |                   0.822181 |     0.1581     |
+| svm_weighted_inverse | svm            |                0.693404 |                   0.856721 |     0.163318   |
+| knn_weighted_sqrt    | knn            |                0.668827 |                   0.83247  |     0.163643   |
+| knn_distance_sqrt    | knn            |                0.663346 |                   0.83187  |     0.168524   |
+| mlp_weighted_sqrt    | mlp            |                0.692781 |                   0.866058 |     0.173277   |
+| svm_weighted_sqrt    | svm            |                0.67925  |                   0.860816 |     0.181566   |
+| mlp_weighted_inverse | mlp            |                0.669154 |                   0.853885 |     0.18473    |
+| knn_distance_inverse | knn            |                0.639557 |                   0.8251   |     0.185543   |
+| mlp_focal_sqrt       | mlp            |                0.674062 |                   0.860896 |     0.186834   |
+| xgb_baseline         | xgboost        |                0.718274 |                   0.905762 |     0.187489   |
+| mlp_baseline         | mlp            |                0.681435 |                   0.870762 |     0.189327   |
+| mlp_focal_inverse    | mlp            |                0.657191 |                   0.846625 |     0.189434   |
+| knn_weighted_inverse | knn            |                0.630924 |                   0.827098 |     0.196174   |
+| xgb_class_only       | xgboost        |                0.703626 |                   0.905525 |     0.201899   |
+| xgb_paper_sqrt       | xgboost        |                0.700355 |                   0.907603 |     0.207249   |
+| xgb_paper_inverse    | xgboost        |                0.693417 |                   0.900808 |     0.207391   |
+| dt_weighted_inverse  | decision_tree  |                0.629832 |                   0.837629 |     0.207796   |
+| xgb_weighted_inverse | xgboost        |                0.679681 |                   0.900979 |     0.221298   |
+| xgb_weighted_sqrt    | xgboost        |                0.684212 |                   0.905672 |     0.22146    |
+| dt_weighted_sqrt     | decision_tree  |                0.626325 |                   0.848088 |     0.221763   |
+| dt_baseline          | decision_tree  |                0.61168  |                   0.853093 |     0.241413   |

@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "protocol_status": [
+    {
+      "candidate_id": "mlp_baseline",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    }
+  ]
+}

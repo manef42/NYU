@@ -1,0 +1,13 @@
+candidate_id,model_id,model_family,protocol,metric,ci_low,ci_high,mean
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,interpolation_holdout,roc_auc,0.8489877487183944,0.8743358040864339,0.8657650311573327
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,interpolation_holdout,pr_auc,0.947855123485494,0.9578466695922335,0.9527390386744073
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,interpolation_holdout,brier,0.14501337869904754,0.15466438153596512,0.14991927802838823
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,interpolation_stratified,roc_auc,0.8604331737672801,0.8719794527296222,0.866058498413825
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,interpolation_stratified,pr_auc,0.9515554401687203,0.9568716977315331,0.9542402760918811
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,interpolation_stratified,brier,0.14898805751596697,0.15926887809692114,0.1544276359321313
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,extrapolation_grouped,roc_auc,0.6645570689129442,0.7241878800384836,0.6927810182961995
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,extrapolation_grouped,pr_auc,0.8436933506356715,0.877886578255119,0.8607257565811037
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,extrapolation_grouped,brier,0.21990092048253815,0.2565404056399379,0.23625731350237217
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,lopo,roc_auc,0.6157564499117298,0.7413100992019532,0.6810210092349839
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,lopo,pr_auc,0.7566673637876715,0.8682730745675149,0.8122381379697241
+mlp_weighted_sqrt,mlp_weighted_sqrt,mlp,lopo,brier,0.1336712892615194,0.20729742047577232,0.16887686393594772

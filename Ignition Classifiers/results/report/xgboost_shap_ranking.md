@@ -1,69 +1,53 @@
 | feature                                           |   mean_absolute_shap |
 |:--------------------------------------------------|---------------------:|
-| numeric__oxygen_fraction                          |           1.77805    |
-| numeric__gas_density_kg_m3                        |           0.919433   |
-| numeric__flow_velocity_mm_s                       |           0.891142   |
-| numeric__flow_speed_abs_mm_s                      |           0.559928   |
-| numeric__sample_dim_3_mm                          |           0.530357   |
-| numeric__ignition_time_s                          |           0.459581   |
-| numeric__gas_k_w_mk                               |           0.399394   |
-| numeric__fuel_cp_j_kgk                            |           0.343538   |
-| numeric__internal_dim_1_mm                        |           0.341271   |
-| numeric__gravity_g                                |           0.308602   |
-| numeric__internal_dim_2_mm                        |           0.307599   |
-| numeric__gas_cp_j_kgk                             |           0.291998   |
-| numeric__ignition_energy_j                        |           0.284613   |
-| numeric__fuel_pyrolysis_t_k                       |           0.254994   |
-| numeric__sample_dim_mean_mm                       |           0.247356   |
-| numeric__sample_dim_1_mm                          |           0.236988   |
-| numeric__gas_molar_mass                           |           0.209919   |
-| categorical__facility_cat_Parabolic Aircraft      |           0.179297   |
-| numeric__internal_dim_3_mm                        |           0.175736   |
-| numeric__internal_dim_mean_mm                     |           0.174644   |
-| numeric__core_density_kg_m3                       |           0.128655   |
-| numeric__fuel_alpha_m2_s                          |           0.127071   |
-| categorical__gravity_regime_cat_Earth             |           0.116371   |
-| numeric__fuel_density_kg_m3                       |           0.11351    |
-| numeric__sample_dim_min_mm                        |           0.112846   |
-| categorical__geometry_cat_Wire                    |           0.109398   |
-| numeric__core_cp_j_kgk                            |           0.092587   |
-| numeric__fuel_k_w_mk                              |           0.083894   |
-| numeric__sample_dim_2_mm                          |           0.0826857  |
-| numeric__core_diameter_mm                         |           0.0800311  |
-| numeric__pressure_kpa                             |           0.0799287  |
-| categorical__gravity_regime_cat_Partial           |           0.0782601  |
-| numeric__ignition_power_w                         |           0.0570269  |
-| categorical__internal_geometry_cat_Unknown        |           0.0476252  |
-| numeric__sample_dim_max_mm                        |           0.0440431  |
-| numeric__gas_alpha_m2_s                           |           0.0347011  |
-| categorical__facility_cat_Drop Tower              |           0.0307029  |
-| categorical__facility_cat_Ground                  |           0.0285556  |
-| categorical__ignition_method_cat_Wire / Coil      |           0.0259011  |
-| categorical__internal_geometry_cat_Cylindrical    |           0.0181134  |
-| numeric__gas_nu_m2_s                              |           0.0151043  |
-| categorical__ignition_method_cat_Open Flame       |           0.0120565  |
-| categorical__internal_geometry_cat_Rectangular    |           0.0120087  |
-| numeric__core_k_w_mk                              |           0.0119839  |
-| categorical__facility_cat_Centrifuge              |           0.0107954  |
-| categorical__internal_geometry_cat_Other          |           0.00982114 |
-| categorical__geometry_cat_Cylindrical             |           0.00975942 |
-| categorical__facility_cat_Spacecraft              |           0.00942386 |
-| categorical__diluent_cat_N2                       |           0.00181923 |
-| categorical__flow_direction_cat_Coflow            |           0.00150578 |
-| numeric__log10_gravity_g                          |           0          |
-| numeric__outer_diameter_mm                        |           0          |
-| numeric__insulation_thickness_mm                  |           0          |
-| numeric__sample_dim_count                         |           0          |
-| categorical__gravity_regime_cat_Microgravity      |           0          |
-| categorical__flow_direction_cat_Counterflow       |           0          |
-| categorical__diluent_cat_Ar                       |           0          |
-| categorical__diluent_cat_CO2                      |           0          |
-| categorical__diluent_cat_He                       |           0          |
-| categorical__geometry_cat_Flat                    |           0          |
-| categorical__gravity_regime_cat_Hyper / Unknown   |           0          |
-| categorical__flow_direction_cat_Unknown           |           0          |
-| categorical__flow_direction_cat_Quiescent         |           0          |
-| categorical__facility_cat_Unknown                 |           0          |
-| categorical__facility_cat_Sounding Rocket         |           0          |
-| categorical__ignition_method_cat_Radiative Heater |           0          |
-| categorical__ignition_method_cat_Unknown          |           0          |
+| numeric__oxygen                                   |          0.35909     |
+| numeric__flow_speed_abs_m_s                       |          0.250013    |
+| numeric__prandtl                                  |          0.249741    |
+| numeric__gas_molar_mass                           |          0.204682    |
+| numeric__fuel_pyrolysis_t_k                       |          0.204386    |
+| numeric__ignition_time_s                          |          0.163815    |
+| numeric__flow_velocity_m_s                        |          0.127105    |
+| numeric__gravity_g                                |          0.114954    |
+| numeric__peclet                                   |          0.109607    |
+| numeric__gas_density_kg_m3                        |          0.100135    |
+| numeric__sample_dim_3_m                           |          0.0771643   |
+| numeric__gas_cp_j_kgk                             |          0.0768902   |
+| numeric__thermal_diffusion_time_s                 |          0.0691174   |
+| numeric__fuel_alpha_m2_s                          |          0.0619457   |
+| numeric__fuel_cp_j_kgk                            |          0.0613984   |
+| numeric__reynolds                                 |          0.0531453   |
+| numeric__sample_dim_1_m                           |          0.0431853   |
+| numeric__fuel_density_kg_m3                       |          0.0329414   |
+| numeric__gas_k_w_mk                               |          0.0314824   |
+| numeric__half_thickness_m                         |          0.027535    |
+| numeric__ignition_power_w                         |          0.0272213   |
+| numeric__fuel_volumetric_heat_capacity_j_m3k      |          0.0221818   |
+| numeric__gas_nu_m2_s                              |          0.0206045   |
+| numeric__sample_dim_2_m                           |          0.0196151   |
+| numeric__gas_alpha_m2_s                           |          0.0191322   |
+| numeric__pressure_pa                              |          0.0168042   |
+| numeric__core_cp_j_kgk                            |          0.0137698   |
+| numeric__characteristic_length_m                  |          0.0135604   |
+| numeric__core_density_kg_m3                       |          0.0127764   |
+| numeric__fuel_k_w_mk                              |          0.0116027   |
+| categorical__geometry_cat_Cylindrical             |          0.00903783  |
+| categorical__gravity_regime_cat_Partial           |          0.00768515  |
+| categorical__gravity_regime_cat_Microgravity      |          0.00754121  |
+| numeric__core_k_w_mk                              |          0.00579382  |
+| categorical__ignition_method_cat_Open Flame       |          0.00526164  |
+| categorical__gravity_regime_cat_Earth             |          0.00462472  |
+| categorical__flow_direction_cat_Coflow            |          0.00444084  |
+| categorical__ignition_method_cat_Wire / Coil      |          0.00326577  |
+| numeric__core_volumetric_heat_capacity_j_m3k      |          0.00307477  |
+| categorical__flow_direction_cat_Counterflow       |          0.00223886  |
+| categorical__gravity_regime_cat_Hyper / Unknown   |          0.0011246   |
+| categorical__ignition_method_cat_Radiative Heater |          0.000589517 |
+| categorical__geometry_cat_Flat                    |          0           |
+| categorical__geometry_cat_Spherical               |          0           |
+| categorical__diluent_cat_N2                       |          0           |
+| categorical__flow_direction_cat_Quiescent         |          0           |
+| categorical__diluent_cat_He                       |          0           |
+| categorical__diluent_cat_Ar                       |          0           |
+| categorical__geometry_cat_Wire                    |          0           |
+| categorical__diluent_cat_CO2                      |          0           |
+| categorical__ignition_method_cat_Unknown          |          0           |

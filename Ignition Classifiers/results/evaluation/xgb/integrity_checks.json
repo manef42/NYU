@@ -1,0 +1,261 @@
+{
+  "passed": true,
+  "protocol_status": [
+    {
+      "candidate_id": "xgb_baseline",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_baseline",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_baseline",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_baseline",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_paper_sqrt",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_paper_sqrt",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_paper_sqrt",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_paper_sqrt",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_paper_inverse",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_paper_inverse",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_paper_inverse",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_paper_inverse",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_class_only",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_class_only",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_class_only",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_class_only",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_weighted_sqrt",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_weighted_sqrt",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_weighted_sqrt",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_weighted_sqrt",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_weighted_inverse",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_weighted_inverse",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_weighted_inverse",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_weighted_inverse",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_focal_sqrt",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_focal_sqrt",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_focal_sqrt",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_focal_sqrt",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "xgb_focal_inverse",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_focal_inverse",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "xgb_focal_inverse",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "xgb_focal_inverse",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    }
+  ]
+}

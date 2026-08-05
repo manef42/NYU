@@ -1,0 +1,2 @@
+candidate_id,model_id,model_family,paper_weight,class_weight,fixed_params
+mlp_focal_inverse,mlp_focal_inverse,mlp,inverse,False,"{""focal_gamma"": 2.0, ""loss_variant"": ""focal""}"
