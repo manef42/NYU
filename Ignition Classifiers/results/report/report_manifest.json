@@ -585,7 +585,10 @@
       "Thresholds are objective-specific and are not universally optimal."
     ]
   },
-  "xgboost_explained": "xgb_baseline",
+  "xgboost_explained": {
+    "extrapolation_champion": "xgb_baseline",
+    "interpolation_champion": "xgb_paper_sqrt"
+  },
   "figures": [
     "champion_calibration.png",
     "champion_threshold_performance.png",

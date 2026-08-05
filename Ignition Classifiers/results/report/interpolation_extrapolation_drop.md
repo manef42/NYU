@@ -9,14 +9,9 @@
 | svm_weighted_inverse | svm            |                0.693404 |                   0.856721 |     0.163318   |
 | knn_weighted_sqrt    | knn            |                0.668827 |                   0.83247  |     0.163643   |
 | knn_distance_sqrt    | knn            |                0.663346 |                   0.83187  |     0.168524   |
-| mlp_weighted_sqrt    | mlp            |                0.692781 |                   0.866058 |     0.173277   |
 | svm_weighted_sqrt    | svm            |                0.67925  |                   0.860816 |     0.181566   |
-| mlp_weighted_inverse | mlp            |                0.669154 |                   0.853885 |     0.18473    |
 | knn_distance_inverse | knn            |                0.639557 |                   0.8251   |     0.185543   |
-| mlp_focal_sqrt       | mlp            |                0.674062 |                   0.860896 |     0.186834   |
 | xgb_baseline         | xgboost        |                0.718274 |                   0.905762 |     0.187489   |
-| mlp_baseline         | mlp            |                0.681435 |                   0.870762 |     0.189327   |
-| mlp_focal_inverse    | mlp            |                0.657191 |                   0.846625 |     0.189434   |
 | knn_weighted_inverse | knn            |                0.630924 |                   0.827098 |     0.196174   |
 | xgb_class_only       | xgboost        |                0.703626 |                   0.905525 |     0.201899   |
 | xgb_paper_sqrt       | xgboost        |                0.700355 |                   0.907603 |     0.207249   |

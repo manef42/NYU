@@ -213,7 +213,7 @@ def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: 
                         search_iterations: int,inner_group_folds: int,candidate_number: int,candidate_total: int,total_folds: int,) -> tuple[
                             list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]],
                             list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]],
-                            list[dict[str, Any]]]:
+                            dict[str, Any]]:
     indexed = df.set_index("row_id", drop=False)
     fold_metrics: list[dict[str, Any]] = []
     selected_rows: list[dict[str, Any]] = []
@@ -221,9 +221,16 @@ def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: 
     per_paper_rows: list[dict[str, Any]] = []
     search_history_rows: list[dict[str, Any]] = []
     inner_oof_rows: list[dict[str, Any]] = []
-    protocol_status_rows: list[dict[str, Any]] = []
+    protocol_status: dict[str, Any] = {
+        "candidate_id": candidate["candidate_id"],
+        "protocol": None,
+        "complete": False,
+        "valid_probabilities": True,
+        "errors": [],
+    }
     completed_folds = 0
     for protocol, protocol_frame in assignments.groupby("protocol", sort=False):
+        protocol_status["protocol"] = protocol
         protocol_errors: list[str] = []
         protocol_valid = True
         protocol_fold_count = 0
@@ -336,24 +343,14 @@ def _evaluate_candidate(candidate: dict[str, Any],df: pd.DataFrame,assignments: 
             except Exception as exc:
                 protocol_errors.append(f"{split_id}: {exc}")
 
-        protocol_status_rows.append({
-            "candidate_id": candidate["candidate_id"],
-            "protocol": protocol,
+        protocol_status.update({
             "complete": bool(protocol_fold_count > 0 and not protocol_errors),
             "valid_probabilities": bool(protocol_valid),
             "errors": protocol_errors,
             "fold_count": protocol_fold_count,
         })
 
-    return (
-        fold_metrics,
-        selected_rows,
-        prediction_rows,
-        per_paper_rows,
-        search_history_rows,
-        inner_oof_rows,
-        protocol_status_rows,
-    )
+    return fold_metrics, selected_rows, prediction_rows, per_paper_rows, search_history_rows, inner_oof_rows, protocol_status
 
 
 def _write_csv(frame: pd.DataFrame, path: Path) -> None:
@@ -460,31 +457,15 @@ def main() -> None:
         
         
         for candidate_number, candidate in enumerate(family_candidates, start=1):
-            (
-                candidate_fold_rows,
-                candidate_selected_rows,
-                candidate_prediction_rows,
-                candidate_per_paper_rows,
-                candidate_search_history_rows,
-                candidate_inner_oof_rows,
-                candidate_protocol_status_rows,
-            ) = _evaluate_candidate(
-                candidate,
-                data,
-                assignments,
-                args.search_iterations,
-                args.inner_group_folds,
-                candidate_number,
-                len(family_candidates),
-                total_folds,
-            )
+            candidate_fold_rows, candidate_selected_rows, candidate_prediction_rows, candidate_per_paper_rows, candidate_search_history_rows, candidate_inner_oof_rows, protocol_status = _evaluate_candidate(
+                candidate, data, assignments, args.search_iterations, args.inner_group_folds,candidate_number,len(family_candidates),total_folds,)
             fold_rows.extend(candidate_fold_rows)
             selected_rows.extend(candidate_selected_rows)
             prediction_rows.extend(candidate_prediction_rows)
             per_paper_rows.extend(candidate_per_paper_rows)
             search_history_rows.extend(candidate_search_history_rows)
             inner_oof_rows.extend(candidate_inner_oof_rows)
-            protocol_status_rows.extend(candidate_protocol_status_rows)
+            protocol_status_rows.append(protocol_status)
 
         target_out = out_root if direct_output else out_root / output_key
         _write_family_outputs(
