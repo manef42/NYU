@@ -1,0 +1,10 @@
+{
+  "thresholds": {
+    "mcc": 0.7859001755714417,
+    "f1": 0.28043119112650555,
+    "balanced_accuracy": 0.7859001755714417,
+    "youden_j": 0.7859001755714417
+  },
+  "source": "extrapolation full-data out-of-fold predictions",
+  "warning": "Each threshold optimizes a different operational objective."
+}

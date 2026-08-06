@@ -1,0 +1,7 @@
+{
+  "dataset_sha256": "d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6",
+  "data_version": "fable-data-v5",
+  "training_row_ids_sha256": "53122e8a1967babb3752714ddbd4b6b7759b43182bd7f0d89a68e1b59113cfa9",
+  "training_rows": 4487,
+  "training_papers": 87
+}

@@ -1,0 +1,153 @@
+{
+  "data_version": "fable-data-v5",
+  "features": [
+    {
+      "feature": "fuel_density_kg_m3",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_k_w_mk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_cp_j_kgk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_pyrolysis_t_k",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_alpha_m2_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_j_m3k",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_k_w_mk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_cp_j_kgk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_j_m3k",
+      "kind": "numeric"
+    },
+    {
+      "feature": "oxygen",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_molar_mass",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_cp_j_kgk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_k_w_mk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_density_kg_m3",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_alpha_m2_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_nu_m2_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "reynolds",
+      "kind": "numeric"
+    },
+    {
+      "feature": "peclet",
+      "kind": "numeric"
+    },
+    {
+      "feature": "prandtl",
+      "kind": "numeric"
+    },
+    {
+      "feature": "thermal_diffusion_time_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "pressure_pa",
+      "kind": "numeric"
+    },
+    {
+      "feature": "flow_velocity_m_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "flow_speed_abs_m_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gravity_g",
+      "kind": "numeric"
+    },
+    {
+      "feature": "ignition_power_w",
+      "kind": "numeric"
+    },
+    {
+      "feature": "ignition_time_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "half_thickness_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "characteristic_length_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "sample_dim_1_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "sample_dim_2_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "sample_dim_3_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "geometry_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "diluent_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "flow_direction_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "gravity_regime_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "ignition_method_cat",
+      "kind": "categorical"
+    }
+  ]
+}
