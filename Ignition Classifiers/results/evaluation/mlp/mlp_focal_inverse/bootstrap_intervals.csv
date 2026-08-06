@@ -1,0 +1,13 @@
+candidate_id,model_id,model_family,protocol,metric,ci_low,ci_high,mean
+mlp_focal_inverse,mlp_focal_inverse,mlp,interpolation_holdout,roc_auc,0.826303160737082,0.8536630195766524,0.8431372549019608
+mlp_focal_inverse,mlp_focal_inverse,mlp,interpolation_holdout,pr_auc,0.9405997947506695,0.950834885569685,0.9462643113353555
+mlp_focal_inverse,mlp_focal_inverse,mlp,interpolation_holdout,brier,0.13846723196599436,0.15809737840082097,0.14844972047666252
+mlp_focal_inverse,mlp_focal_inverse,mlp,interpolation_stratified,roc_auc,0.839033569064275,0.8533357514592315,0.8466247778205745
+mlp_focal_inverse,mlp_focal_inverse,mlp,interpolation_stratified,pr_auc,0.9400055101094789,0.9482110133397356,0.9444651885709228
+mlp_focal_inverse,mlp_focal_inverse,mlp,interpolation_stratified,brier,0.13927744623582528,0.1490866797343953,0.14399604618219355
+mlp_focal_inverse,mlp_focal_inverse,mlp,extrapolation_grouped,roc_auc,0.6211363333470632,0.6928628107055045,0.6571911177413087
+mlp_focal_inverse,mlp_focal_inverse,mlp,extrapolation_grouped,pr_auc,0.8276488824908679,0.8708779896214316,0.8487229998549976
+mlp_focal_inverse,mlp_focal_inverse,mlp,extrapolation_grouped,brier,0.21728432899601705,0.2559871091251882,0.23595611884001494
+mlp_focal_inverse,mlp_focal_inverse,mlp,lopo,roc_auc,0.5686664956479134,0.6997212916856251,0.6355259882433888
+mlp_focal_inverse,mlp_focal_inverse,mlp,lopo,pr_auc,0.7421422946485497,0.8575694776367216,0.8019093132803689
+mlp_focal_inverse,mlp_focal_inverse,mlp,lopo,brier,0.11207289394299154,0.1863758554604545,0.14923297764120072

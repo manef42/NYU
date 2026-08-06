@@ -1,0 +1,6 @@
+candidate_id,model_id,model_family,paper_weight,class_weight,fixed_params
+svm_baseline,svm_baseline,svm,none,False,{}
+svm_weighted_sqrt,svm_weighted_sqrt,svm,sqrt,True,{}
+svm_weighted_inverse,svm_weighted_inverse,svm,inverse,True,{}
+svm_linear_sqrt,svm_linear_sqrt,svm,sqrt,True,"{""kernel"": ""linear""}"
+svm_linear_inverse,svm_linear_inverse,svm,inverse,True,"{""kernel"": ""linear""}"

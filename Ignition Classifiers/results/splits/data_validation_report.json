@@ -1,0 +1,281 @@
+{
+  "blank_row_count": 29,
+  "blank_source_rows": [
+    5060,
+    5061,
+    5062,
+    5063,
+    5064,
+    5065,
+    5066,
+    5067,
+    5068,
+    5069,
+    5070,
+    5071,
+    5072,
+    5073,
+    5074,
+    5075,
+    5076,
+    5077,
+    5078,
+    5079,
+    5080,
+    5081,
+    5082,
+    5083,
+    5084,
+    5085,
+    5086,
+    5087,
+    5088
+  ],
+  "data_version": "fable-data-v5",
+  "dataset_path": "/home/me3144/Ignition Classifiers/Microgravity_Database.csv",
+  "dataset_sha256": "d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6",
+  "duplicate_count": 570,
+  "encoding": "cp1252",
+  "feature_availability": {
+    "characteristic_length_m": true,
+    "core_cp_j_kgk": true,
+    "core_density_kg_m3": true,
+    "core_k_w_mk": true,
+    "core_volumetric_heat_capacity_j_m3k": true,
+    "diluent_cat": true,
+    "flow_direction_cat": true,
+    "flow_speed_abs_m_s": true,
+    "flow_velocity_m_s": true,
+    "fuel_alpha_m2_s": true,
+    "fuel_cp_j_kgk": true,
+    "fuel_density_kg_m3": true,
+    "fuel_k_w_mk": true,
+    "fuel_pyrolysis_t_k": true,
+    "fuel_volumetric_heat_capacity_j_m3k": true,
+    "gas_alpha_m2_s": true,
+    "gas_cp_j_kgk": true,
+    "gas_density_kg_m3": true,
+    "gas_k_w_mk": true,
+    "gas_molar_mass": true,
+    "gas_nu_m2_s": true,
+    "geometry_cat": true,
+    "gravity_g": true,
+    "gravity_regime_cat": true,
+    "half_thickness_m": true,
+    "ignition_method_cat": true,
+    "ignition_power_w": true,
+    "ignition_time_s": true,
+    "oxygen": true,
+    "peclet": true,
+    "prandtl": true,
+    "pressure_pa": true,
+    "reynolds": true,
+    "sample_dim_1_m": true,
+    "sample_dim_2_m": true,
+    "sample_dim_3_m": true,
+    "thermal_diffusion_time_s": true
+  },
+  "feature_manifest": [
+    {
+      "feature": "fuel_density_kg_m3",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_k_w_mk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_cp_j_kgk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_pyrolysis_t_k",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_alpha_m2_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_j_m3k",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_k_w_mk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_cp_j_kgk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_j_m3k",
+      "kind": "numeric"
+    },
+    {
+      "feature": "oxygen",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_molar_mass",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_cp_j_kgk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_k_w_mk",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_density_kg_m3",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_alpha_m2_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gas_nu_m2_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "reynolds",
+      "kind": "numeric"
+    },
+    {
+      "feature": "peclet",
+      "kind": "numeric"
+    },
+    {
+      "feature": "prandtl",
+      "kind": "numeric"
+    },
+    {
+      "feature": "thermal_diffusion_time_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "pressure_pa",
+      "kind": "numeric"
+    },
+    {
+      "feature": "flow_velocity_m_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "flow_speed_abs_m_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "gravity_g",
+      "kind": "numeric"
+    },
+    {
+      "feature": "ignition_power_w",
+      "kind": "numeric"
+    },
+    {
+      "feature": "ignition_time_s",
+      "kind": "numeric"
+    },
+    {
+      "feature": "half_thickness_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "characteristic_length_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "sample_dim_1_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "sample_dim_2_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "sample_dim_3_m",
+      "kind": "numeric"
+    },
+    {
+      "feature": "geometry_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "diluent_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "flow_direction_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "gravity_regime_cat",
+      "kind": "categorical"
+    },
+    {
+      "feature": "ignition_method_cat",
+      "kind": "categorical"
+    }
+  ],
+  "label_counts": {
+    "0": 1104,
+    "1": 3383
+  },
+  "missing_target_count": 0,
+  "missingness_by_model_feature": {
+    "characteristic_length_m": 0,
+    "core_cp_j_kgk": 0,
+    "core_density_kg_m3": 1,
+    "core_k_w_mk": 0,
+    "core_volumetric_heat_capacity_j_m3k": 1,
+    "diluent_cat": 0,
+    "flow_direction_cat": 0,
+    "flow_speed_abs_m_s": 897,
+    "flow_velocity_m_s": 897,
+    "fuel_alpha_m2_s": 0,
+    "fuel_cp_j_kgk": 0,
+    "fuel_density_kg_m3": 0,
+    "fuel_k_w_mk": 0,
+    "fuel_pyrolysis_t_k": 0,
+    "fuel_volumetric_heat_capacity_j_m3k": 0,
+    "gas_alpha_m2_s": 48,
+    "gas_cp_j_kgk": 0,
+    "gas_density_kg_m3": 48,
+    "gas_k_w_mk": 0,
+    "gas_molar_mass": 0,
+    "gas_nu_m2_s": 48,
+    "geometry_cat": 0,
+    "gravity_g": 54,
+    "gravity_regime_cat": 0,
+    "half_thickness_m": 0,
+    "ignition_method_cat": 0,
+    "ignition_power_w": 3606,
+    "ignition_time_s": 2400,
+    "oxygen": 0,
+    "peclet": 48,
+    "prandtl": 48,
+    "pressure_pa": 48,
+    "reynolds": 48,
+    "sample_dim_1_m": 0,
+    "sample_dim_2_m": 39,
+    "sample_dim_3_m": 2049,
+    "thermal_diffusion_time_s": 0
+  },
+  "paper_count": 87,
+  "post_outcome_columns_excluded": [
+    "Flame Length",
+    "FSR",
+    "HRR",
+    "Smoke/ Areosols"
+  ],
+  "raw_row_count": 5086,
+  "row_count": 4487
+}

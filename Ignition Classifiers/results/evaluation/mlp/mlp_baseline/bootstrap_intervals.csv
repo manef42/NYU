@@ -1,0 +1,13 @@
+candidate_id,model_id,model_family,protocol,metric,ci_low,ci_high,mean
+mlp_baseline,mlp_baseline,mlp,interpolation_holdout,roc_auc,0.8564401104152605,0.8899991311147798,0.8713247826116017
+mlp_baseline,mlp_baseline,mlp,interpolation_holdout,pr_auc,0.9469249961279577,0.9585914019174115,0.9513669691796632
+mlp_baseline,mlp_baseline,mlp,interpolation_holdout,brier,0.12384147253453896,0.14839798284049308,0.13547438147296678
+mlp_baseline,mlp_baseline,mlp,interpolation_stratified,roc_auc,0.8630605472864251,0.8791448307227544,0.8707616757846163
+mlp_baseline,mlp_baseline,mlp,interpolation_stratified,pr_auc,0.9469842472287315,0.9548518361441437,0.9508739106745545
+mlp_baseline,mlp_baseline,mlp,interpolation_stratified,brier,0.12667896804224363,0.136525077491027,0.13178772732308086
+mlp_baseline,mlp_baseline,mlp,extrapolation_grouped,roc_auc,0.648213601186636,0.7123060821440222,0.6814345149502865
+mlp_baseline,mlp_baseline,mlp,extrapolation_grouped,pr_auc,0.8364182339853588,0.8752083980743383,0.8561978500262654
+mlp_baseline,mlp_baseline,mlp,extrapolation_grouped,brier,0.21569308997627706,0.24817551217345707,0.23209856938369888
+mlp_baseline,mlp_baseline,mlp,lopo,roc_auc,0.6168526364265429,0.7492442581515186,0.685106721596365
+mlp_baseline,mlp_baseline,mlp,lopo,pr_auc,0.7675739726023669,0.8731754837387428,0.8210388836292897
+mlp_baseline,mlp_baseline,mlp,lopo,brier,0.11044216551814562,0.18353290491181573,0.14697750413981855

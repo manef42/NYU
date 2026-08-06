@@ -1,0 +1,208 @@
+{
+  "passed": true,
+  "dataset_hash_matches_splits": true,
+  "protocol_status": [
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "lopo",
+      "expected_folds": 87,
+      "completed_folds": 87,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "lopo",
+      "expected_folds": 87,
+      "completed_folds": 87,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "lopo",
+      "expected_folds": 87,
+      "completed_folds": 87,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "lopo",
+      "expected_folds": 87,
+      "completed_folds": 87,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "interpolation_holdout",
+      "expected_folds": 3,
+      "completed_folds": 3,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "interpolation_stratified",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 15,
+      "completed_folds": 15,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "lopo",
+      "expected_folds": 87,
+      "completed_folds": 87,
+      "valid_probabilities": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    }
+  ],
+  "failures": [],
+  "failed_result_policy": "Failed candidate/protocol results are excluded from result tables."
+}

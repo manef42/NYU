@@ -1,0 +1,165 @@
+{
+  "passed": true,
+  "protocol_status": [
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_baseline",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_weighted_sqrt",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_weighted_inverse",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "extrapolation_grouped",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "interpolation_holdout",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 3
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "interpolation_stratified",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 15
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "lopo",
+      "complete": true,
+      "valid_probabilities": true,
+      "errors": [],
+      "fold_count": 87
+    }
+  ]
+}
