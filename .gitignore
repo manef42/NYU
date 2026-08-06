@@ -1,31 +1,4 @@
-__pycache__/
-*.pyc
-artifacts/
-artifacts_v2/
-presentation/figures/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-*.joblib
-*.parquet
-
-# Large evaluation prediction artifacts
-Ignition Classifiers/results/evaluation/dt/inner_oof_predictions.csv
-Ignition
-Classifiers/results/evaluation/dt/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/knn/inner_oof_predictions.csv
-Ignition
-Classifiers/results/evaluation/knn/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/mlp_weighted_sqrt/inner_oof_predictions.csv
-Ignition
-Classifiers/results/evaluation/mlp_weighted_sqrt/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/svm/inner_oof_predictions.csv
-Ignition
-Classifiers/results/evaluation/svm/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/xgb/inner_oof_predictions.csv
-Ignition
-Classifiers/results/evaluation/xgb/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/xgb/outer_fold_predictions.csv
-Ignition Classifiers/results/evaluation/mlp/mlp_weighted_sqrt/inner_oof_predictions.csv
-FSR Regressors/results/evaluation/merged/inner_oof_predictions.csv
-FSR Regressors/results/evaluation/merged/outer_fold_predictions.csv
+outer_fold_predictions.parquet
+inner_oof_predictions.parquet
+outer_fold_predictions.csv
+inner_oof_predictions.csv
