@@ -1,12 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=fsr-candidates
 #SBATCH --account=torch_pr_1163_tandon_advanced
-#SBATCH --array=0-29
+#SBATCH --array=0-33
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:1
 #SBATCH --time=2-00:00:00
 #SBATCH --output=logs/%A_%a_eval_output.log
 #SBATCH --error=logs/%A_%a_eval_error.log
@@ -42,6 +41,10 @@
 # 27  svr_rbf                   (svr)
 # 28  svr_rbf_sqrt              (svr)
 # 29  svr_rbf_inverse           (svr)
+# 30  rf_absoluteerror_sqrt     (random_forest)
+# 31  rf_absoluteerror_inverse  (random_forest)
+# 32  rf_log_target_sqrt        (random_forest)
+# 33  rf_log_target_inverse     (random_forest)
 #
 # Each task tunes and benchmarks its single candidate on every persisted split
 # and writes a self-contained shard under results/evaluation/<family>/<candidate_id>.
@@ -70,6 +73,7 @@ FAMILIES=(
     knn knn knn knn knn knn
     mlp mlp mlp mlp mlp
     svr svr svr svr svr svr
+    random_forest random_forest random_forest random_forest
 )
 CANDIDATES=(
     xgb_baseline
@@ -102,6 +106,10 @@ CANDIDATES=(
     svr_rbf
     svr_rbf_sqrt
     svr_rbf_inverse
+    rf_absoluteerror_sqrt
+    rf_absoluteerror_inverse
+    rf_log_target_sqrt
+    rf_log_target_inverse
 )
 
 FAMILY="${FAMILIES[${SLURM_ARRAY_TASK_ID}]}"
@@ -120,12 +128,7 @@ unset PYTHONHOME
 unset PYTHONPATH
 unset VIRTUAL_ENV
 
-export CUDA_MPS_PIPE_DIRECTORY="/tmp/nvidia-mps-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID}"
-export CUDA_MPS_LOG_DIRECTORY="/tmp/nvidia-log-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID}"
-mkdir -p "${CUDA_MPS_PIPE_DIRECTORY}" "${CUDA_MPS_LOG_DIRECTORY}"
-nvidia-cuda-mps-control -d
-
-singularity exec --nv \
+singularity exec \
     --overlay "${OVERLAY}:ro" \
     --bind "${REPO_DIR}:${REPO_DIR}" \
     "${IMAGE}" \
@@ -143,5 +146,3 @@ singularity exec --nv \
             --bootstrap-iterations '"${BOOTSTRAP_ITERATIONS}"' \
             --augmentations rd,rd_bt \
             --candidate-id "'"${CANDIDATE_ID}"'"'
-
-echo quit | nvidia-cuda-mps-control

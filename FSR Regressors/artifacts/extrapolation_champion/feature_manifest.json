@@ -1,0 +1,206 @@
+{
+  "data_version": "fsr-data-v2",
+  "selected_feature_set": "all",
+  "model_features": [
+    "Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m)",
+    "half_thickness",
+    "characteristic_length_m",
+    "fuel_density_kg_m3",
+    "fuel_k_W_mK",
+    "fuel_cp_J_kgK",
+    "fuel_pyrolysis_T_K",
+    "fuel_alpha_m2_s",
+    "fuel_volumetric_heat_capacity_J_m3K",
+    "core_density_kg_m3",
+    "core_k_W_mK",
+    "core_cp_J_kgK",
+    "core_volumetric_heat_capacity_J_m3K",
+    "Oxygen Concentration",
+    "gas_M",
+    "gas_cp_mass",
+    "gas_k",
+    "gas_density_kg_m3",
+    "gas_alpha_m2_s",
+    "gas_nu_m2_s",
+    "Reynolds",
+    "Peclet",
+    "Prandtl",
+    "thermal_diffusion_time",
+    "Pressure (Pa)",
+    "Flow Velocity (m/s)",
+    "Gravity",
+    "Ignition Power (W)",
+    "Ignition Time (s)",
+    "Geometry of Sample",
+    "diluent",
+    "Ignition Method",
+    "Ignition"
+  ],
+  "features": [
+    {
+      "feature": "Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "half_thickness",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "characteristic_length_m",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_pyrolysis_T_K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Oxygen Concentration",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_M",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_cp_mass",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_k",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_nu_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Reynolds",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Peclet",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Prandtl",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "thermal_diffusion_time",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Pressure (Pa)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Flow Velocity (m/s)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Gravity",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Power (W)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition Time (s)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Geometry of Sample",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "diluent",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Method",
+      "kind": "categorical",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition",
+      "kind": "categorical",
+      "role": "apparatus"
+    }
+  ]
+}

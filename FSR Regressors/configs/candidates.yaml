@@ -79,7 +79,7 @@ candidates:
 
 
   # =====================================================
-  # RANDOM FOREST (3)
+  # RANDOM FOREST (7)
   # =====================================================
 
   - candidate_id: rf_baseline
@@ -93,6 +93,28 @@ candidates:
   - candidate_id: rf_paper_inverse
     model_family: random_forest
     paper_weight: inverse
+
+  - candidate_id: rf_absoluteerror_sqrt
+    model_family: random_forest
+    paper_weight: sqrt
+    fixed_params:
+      criterion: absolute_error
+
+  - candidate_id: rf_absoluteerror_inverse
+    model_family: random_forest
+    paper_weight: inverse
+    fixed_params:
+      criterion: absolute_error
+
+  - candidate_id: rf_log_target_sqrt
+    model_family: random_forest
+    paper_weight: sqrt
+    target_transform: signed_log1p
+
+  - candidate_id: rf_log_target_inverse
+    model_family: random_forest
+    paper_weight: inverse
+    target_transform: signed_log1p
 
 
   # =====================================================

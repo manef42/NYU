@@ -3,9 +3,8 @@
 #SBATCH --account=torch_pr_1163_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
-#SBATCH --gres=gpu:1
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/%j_finalize_output.log
 #SBATCH --error=logs/%j_finalize_error.log
