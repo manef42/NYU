@@ -1,0 +1,2 @@
+candidate_id,model_family,paper_weight,target_transform,fixed_params,accelerator,weighting_policy
+xgb_log_target_sqrt,xgboost,sqrt,signed_log1p,"{""objective_variant"": ""squarederror""}",gpu,"{""paper_weight"": ""sqrt"", ""unsupported_fit_weight_strategy"": ""deterministic_weighted_resampling""}"

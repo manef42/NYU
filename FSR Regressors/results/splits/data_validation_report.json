@@ -1,0 +1,234 @@
+{
+  "data_version": "fsr-data-v2",
+  "dataset_path": "/home/me3144/FSR Regressors/Microgravity_Database.csv",
+  "dataset_sha256": "6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8",
+  "duplicate_count": 59,
+  "feature_manifest": [
+    {
+      "feature": "Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "half_thickness",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "characteristic_length_m",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_pyrolysis_T_K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Oxygen Concentration",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_M",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_cp_mass",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_k",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_nu_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Reynolds",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Peclet",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Prandtl",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "thermal_diffusion_time",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Pressure (Pa)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Flow Velocity (m/s)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Gravity",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Power (W)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition Time (s)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Geometry of Sample",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "diluent",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Method",
+      "kind": "categorical",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition",
+      "kind": "categorical",
+      "role": "apparatus"
+    }
+  ],
+  "group_column": "Article (MLA)",
+  "leakage_columns_excluded": [
+    "Authors",
+    "DOI",
+    "Flame Length",
+    "HRR",
+    "Smoke/ Areosols"
+  ],
+  "missing_target_count": 2467,
+  "missingness_by_feature": {
+    "Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m)": 0,
+    "Flow Velocity (m/s)": 709,
+    "Geometry of Sample": 0,
+    "Gravity": 30,
+    "Ignition": 0,
+    "Ignition Method": 40,
+    "Ignition Power (W)": 2198,
+    "Ignition Time (s)": 1725,
+    "Oxygen Concentration": 0,
+    "Peclet": 33,
+    "Prandtl": 33,
+    "Pressure (Pa)": 33,
+    "Reynolds": 33,
+    "characteristic_length_m": 0,
+    "core_cp_J_kgK": 0,
+    "core_density_kg_m3": 0,
+    "core_k_W_mK": 0,
+    "core_volumetric_heat_capacity_J_m3K": 0,
+    "diluent": 0,
+    "fuel_alpha_m2_s": 0,
+    "fuel_cp_J_kgK": 0,
+    "fuel_density_kg_m3": 0,
+    "fuel_k_W_mK": 0,
+    "fuel_pyrolysis_T_K": 0,
+    "fuel_volumetric_heat_capacity_J_m3K": 0,
+    "gas_M": 0,
+    "gas_alpha_m2_s": 33,
+    "gas_cp_mass": 0,
+    "gas_density_kg_m3": 33,
+    "gas_k": 0,
+    "gas_nu_m2_s": 33,
+    "half_thickness": 0,
+    "thermal_diffusion_time": 0
+  },
+  "paper_count": 66,
+  "parse_source": "skiprows=1; encoding=cp1252",
+  "raw_row_count": 5057,
+  "row_count": 2531,
+  "rows_per_paper": {
+    "maximum": 193,
+    "mean": 38.34848484848485,
+    "median": 22.5,
+    "minimum": 1
+  },
+  "target_column": "FSR (m/s)",
+  "target_summary": {
+    "maximum": 0.211,
+    "mean": 0.008774112998814698,
+    "minimum": 0.0,
+    "std": 0.01725197920574012
+  }
+}

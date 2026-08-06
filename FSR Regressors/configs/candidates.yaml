@@ -1,0 +1,226 @@
+version: 3
+random_state: 42
+
+# New database contains only physics-based features.
+# No feature_set distinction.
+
+# Bootstrap rows added to training partitions under the rd_bt augmentation.
+bootstrap_rows: 1000
+
+candidates:
+
+
+  # =====================================================
+  # XGBOOST (10)
+  # =====================================================
+
+  - candidate_id: xgb_baseline
+    model_family: xgboost
+    paper_weight: none
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_paper_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_paper_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_absoluteerror_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    fixed_params:
+      objective_variant: absoluteerror
+
+  - candidate_id: xgb_absoluteerror_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    fixed_params:
+      objective_variant: absoluteerror
+
+  - candidate_id: xgb_pseudohuber_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    fixed_params:
+      objective_variant: pseudohuber
+
+  - candidate_id: xgb_pseudohuber_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    fixed_params:
+      objective_variant: pseudohuber
+
+  - candidate_id: xgb_log_target_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    target_transform: signed_log1p
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_log_target_inverse
+    model_family: xgboost
+    paper_weight: inverse
+    target_transform: signed_log1p
+    fixed_params:
+      objective_variant: squarederror
+
+  - candidate_id: xgb_paper_bagging_sqrt
+    model_family: xgboost
+    paper_weight: sqrt
+    paper_bagging: 10
+    fixed_params:
+      objective_variant: squarederror
+
+
+  # =====================================================
+  # RANDOM FOREST (7)
+  # =====================================================
+
+  - candidate_id: rf_baseline
+    model_family: random_forest
+    paper_weight: none
+
+  - candidate_id: rf_paper_sqrt
+    model_family: random_forest
+    paper_weight: sqrt
+
+  - candidate_id: rf_paper_inverse
+    model_family: random_forest
+    paper_weight: inverse
+
+  - candidate_id: rf_absoluteerror_sqrt
+    model_family: random_forest
+    paper_weight: sqrt
+    fixed_params:
+      criterion: absolute_error
+
+  - candidate_id: rf_absoluteerror_inverse
+    model_family: random_forest
+    paper_weight: inverse
+    fixed_params:
+      criterion: absolute_error
+
+  - candidate_id: rf_log_target_sqrt
+    model_family: random_forest
+    paper_weight: sqrt
+    target_transform: signed_log1p
+
+  - candidate_id: rf_log_target_inverse
+    model_family: random_forest
+    paper_weight: inverse
+    target_transform: signed_log1p
+
+
+  # =====================================================
+  # KNN (6)
+  # =====================================================
+
+  - candidate_id: knn_uniform
+    model_family: knn
+    paper_weight: none
+    fixed_params:
+      weights: uniform
+
+  - candidate_id: knn_uniform_sqrt
+    model_family: knn
+    paper_weight: sqrt
+    fixed_params:
+      weights: uniform
+
+  - candidate_id: knn_uniform_inverse
+    model_family: knn
+    paper_weight: inverse
+    fixed_params:
+      weights: uniform
+
+  - candidate_id: knn_distance
+    model_family: knn
+    paper_weight: none
+    fixed_params:
+      weights: distance
+
+  - candidate_id: knn_distance_sqrt
+    model_family: knn
+    paper_weight: sqrt
+    fixed_params:
+      weights: distance
+
+  - candidate_id: knn_distance_inverse
+    model_family: knn
+    paper_weight: inverse
+    fixed_params:
+      weights: distance
+
+
+  # =====================================================
+  # MLP (5)
+  # =====================================================
+
+  - candidate_id: mlp_baseline
+    model_family: mlp
+    paper_weight: none
+
+  - candidate_id: mlp_paper_sqrt
+    model_family: mlp
+    paper_weight: sqrt
+
+  - candidate_id: mlp_paper_inverse
+    model_family: mlp
+    paper_weight: inverse
+
+  - candidate_id: mlp_log_target_sqrt
+    model_family: mlp
+    paper_weight: sqrt
+    target_transform: signed_log1p
+
+  - candidate_id: mlp_log_target_inverse
+    model_family: mlp
+    paper_weight: inverse
+    target_transform: signed_log1p
+
+
+  # =====================================================
+  # SVR (6)
+  # =====================================================
+
+  - candidate_id: svr_linear
+    model_family: svr
+    paper_weight: none
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svr_linear_sqrt
+    model_family: svr
+    paper_weight: sqrt
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svr_linear_inverse
+    model_family: svr
+    paper_weight: inverse
+    fixed_params:
+      kernel: linear
+
+  - candidate_id: svr_rbf
+    model_family: svr
+    paper_weight: none
+    fixed_params:
+      kernel: rbf
+
+  - candidate_id: svr_rbf_sqrt
+    model_family: svr
+    paper_weight: sqrt
+    fixed_params:
+      kernel: rbf
+
+  - candidate_id: svr_rbf_inverse
+    model_family: svr
+    paper_weight: inverse
+    fixed_params:
+      kernel: rbf

@@ -1,0 +1,54 @@
+version: 1
+required_integrity_pass: true
+required_complete_folds: true
+required_valid_predictions: true
+# A candidate whose RMSE swings this much between repeats is not a defensible
+# champion, however good its mean happens to look.
+instability:
+  metric: RMSE
+  maximum_rmse_coefficient_of_variation: 0.45
+# A candidate that cannot beat this floor does not explain the target at all.
+minimum_r2: -0.25
+# RMSE differences smaller than this fraction of the best RMSE are treated as ties
+# and resolved by the declared tie-breakers instead of by noise.
+tie_tolerance_fraction: 0.02
+refit_hyperparameter_rule: modal outer-fold selected configuration with lexical tie resolution
+# Simplicity order for tie-breaking: leftmost = simplest.
+# random_forest < knn < svr < xgboost < mlp
+simplicity_order:
+  - random_forest
+  - knn
+  - svr
+  - xgboost
+  - mlp
+augmentation_policy:
+  compare_conditions: [rd, rd_bt]
+  rule: >-
+    Bootstrap augmentation is treated as part of the candidate, so the condition
+    is selected by the same RMSE rule as the model family. Ties keep the plain
+    real-data condition.
+selections:
+  interpolation_champion:
+    primary_protocol: interpolation_random
+    primary_metric: RMSE
+    tie_breakers:
+      - higher_r2
+      - lower_uncertainty
+      - no_augmentation
+      - simpler_model
+      - fewer_features
+  extrapolation_champion:
+    primary_protocol: extrapolation_grouped
+    primary_metric: RMSE
+    tie_breakers:
+      - higher_r2
+      - lower_uncertainty
+      - smaller_generalization_gap
+      - physics_only
+      - no_augmentation
+      - simpler_model
+reporting_policy:
+  primary_scientific_result: extrapolation_grouped
+  interpolation_claim: >-
+    Random-split scores are an interpolation baseline only. They must never be
+    reported as evidence of generalization to unseen papers, campaigns or rigs.

@@ -1,0 +1,9 @@
+{
+  "dataset_sha256": "6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8",
+  "data_version": "fsr-data-v2",
+  "training_row_ids_sha256": "4c6662751ce0b069ed31521b53ea7e5c130ea2d238b19a63c702f12d98914e29",
+  "training_rows": 2531,
+  "training_papers": 66,
+  "target_column": "FSR (m/s)",
+  "group_column": "Article (MLA)"
+}

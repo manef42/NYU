@@ -1,0 +1,3 @@
+model_id,model_family,feature_set,protocol,rd_mean,rd_std,rd_bt_mean,rd_bt_std,delta_RMSE_bt_minus_rd_mean,delta_RMSE_bt_minus_rd_std
+xgb_pseudohuber_inverse,xgboost,all,extrapolation_grouped,0.013166913537957101,0.0042367280711730765,0.013204272407084586,0.004299850389784157,3.7358869127485093e-05,0.0007344394838401649
+xgb_pseudohuber_inverse,xgboost,all,interpolation_random,0.00683446753686349,0.0010771358713116265,0.006767874884105541,0.0009682544796312645,-6.659265275794834e-05,0.0002716119970874363

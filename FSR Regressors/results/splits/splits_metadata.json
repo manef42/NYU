@@ -1,0 +1,193 @@
+{
+  "base_seed": 42,
+  "data_version": "fsr-data-v2",
+  "dataset_sha256": "6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8",
+  "feature_manifest": [
+    {
+      "feature": "Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "half_thickness",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "characteristic_length_m",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_pyrolysis_T_K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Oxygen Concentration",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_M",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_cp_mass",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_k",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_nu_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Reynolds",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Peclet",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Prandtl",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "thermal_diffusion_time",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Pressure (Pa)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Flow Velocity (m/s)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Gravity",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Power (W)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition Time (s)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Geometry of Sample",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "diluent",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Method",
+      "kind": "categorical",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition",
+      "kind": "categorical",
+      "role": "apparatus"
+    }
+  ],
+  "group_column": "Article (MLA)",
+  "integrity": {
+    "failures": [],
+    "passed": true,
+    "splits_checked": 20
+  },
+  "n_repeats": 10,
+  "paper_count": 66,
+  "protocol_split_counts": {
+    "extrapolation_grouped": 10,
+    "interpolation_random": 10
+  },
+  "protocols": [
+    "interpolation_random",
+    "extrapolation_grouped"
+  ],
+  "row_count": 2531,
+  "split_candidates": 50,
+  "target_bins": 6,
+  "target_column": "FSR (m/s)",
+  "test_size": 0.2
+}

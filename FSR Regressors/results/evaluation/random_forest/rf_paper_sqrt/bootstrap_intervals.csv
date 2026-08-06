@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+rf_paper_sqrt,random_forest,all,extrapolation_grouped,rd,RMSE,0.012210256294297664,0.00693109513838603,0.0179817710321974,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,extrapolation_grouped,rd,MAE,0.004676229605887856,0.003045993937762488,0.006717426480903916,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,extrapolation_grouped,rd,R2,0.4592574155662428,0.25601092420036997,0.6968224304429118,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,extrapolation_grouped,rd_bt,RMSE,0.01215150701518761,0.0069500201888959105,0.017612107116713047,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,extrapolation_grouped,rd_bt,MAE,0.004625441151837124,0.0029827701362968783,0.0066861350141998975,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,extrapolation_grouped,rd_bt,R2,0.4644484304474411,0.2625910836957979,0.7098130757790185,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,interpolation_random,rd,RMSE,0.0057910529749901655,0.004663392250242718,0.007046451735149122,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,interpolation_random,rd,MAE,0.0018853031933623583,0.0016756109197463074,0.0021126713652697394,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,interpolation_random,rd,R2,0.8907335097547039,0.8436959451130144,0.9247845602472854,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,interpolation_random,rd_bt,RMSE,0.00565972669086983,0.00438737714019986,0.006990008664714566,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,interpolation_random,rd_bt,MAE,0.0018031171880072737,0.0015954468227713612,0.002047949409505502,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_paper_sqrt,random_forest,all,interpolation_random,rd_bt,R2,0.8956330872589756,0.8499297335624446,0.9309309814953074,0.95,2000,unique_row_id,mean prediction per row before resampling

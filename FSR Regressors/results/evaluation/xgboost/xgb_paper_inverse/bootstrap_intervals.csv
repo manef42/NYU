@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+xgb_paper_inverse,xgboost,all,extrapolation_grouped,rd,RMSE,0.012748672919515912,0.007734511970079037,0.01803087272400292,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,extrapolation_grouped,rd,MAE,0.005152321517950898,0.0033920650872239617,0.007542414892792099,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,extrapolation_grouped,rd,R2,0.41051742694677296,0.15097012472924945,0.6652437640739218,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,extrapolation_grouped,rd_bt,RMSE,0.013391409845392404,0.007584506217676376,0.01907230277499784,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,extrapolation_grouped,rd_bt,MAE,0.0052724044065378724,0.0032471162522773375,0.008001140910302013,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,extrapolation_grouped,rd_bt,R2,0.34958040554227765,-0.05065422297074316,0.6632770357689509,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,interpolation_random,rd,RMSE,0.0059159269961782225,0.004822361062648748,0.007027025184962645,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,interpolation_random,rd,MAE,0.0022127786376389667,0.0019954637872734195,0.0024520660620582606,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,interpolation_random,rd,R2,0.8859704186306344,0.8442672120842225,0.9180801873597089,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,interpolation_random,rd_bt,RMSE,0.005765059355588714,0.00465262426207945,0.006889182302633447,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,interpolation_random,rd_bt,MAE,0.0021478371998848405,0.0019367676188686458,0.002379749458378659,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_paper_inverse,xgboost,all,interpolation_random,rd_bt,R2,0.8917122116474611,0.8534374165939418,0.9232183140320783,0.95,2000,unique_row_id,mean prediction per row before resampling

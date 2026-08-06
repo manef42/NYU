@@ -1,0 +1,2 @@
+candidate_id,model_family,paper_weight,fixed_params,accelerator,weighting_policy
+rf_paper_inverse,random_forest,inverse,{},cpu,"{""paper_weight"": ""inverse"", ""unsupported_fit_weight_strategy"": ""deterministic_weighted_resampling""}"

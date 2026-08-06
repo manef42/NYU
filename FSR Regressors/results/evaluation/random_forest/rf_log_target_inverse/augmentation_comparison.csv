@@ -1,0 +1,3 @@
+model_id,model_family,feature_set,protocol,rd_mean,rd_std,rd_bt_mean,rd_bt_std,delta_RMSE_bt_minus_rd_mean,delta_RMSE_bt_minus_rd_std
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,0.01267988462343983,0.003958921906714137,0.01264433419838414,0.004164811396940563,-3.5550425055689854e-05,0.00045432337245798537
+rf_log_target_inverse,random_forest,all,interpolation_random,0.00712796272775155,0.0011835877516493567,0.007109421661773192,0.0011309792663780488,-1.854106597835789e-05,0.00024213359488418546

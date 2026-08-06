@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+rf_baseline,random_forest,all,extrapolation_grouped,rd,RMSE,0.01186651881734756,0.006606423658338136,0.01806747896128104,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_baseline,random_forest,all,extrapolation_grouped,rd,MAE,0.004482044079959392,0.0029209537864501966,0.006686861051861464,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_baseline,random_forest,all,extrapolation_grouped,rd,R2,0.48927434150690674,0.28538525340611837,0.7243287943204,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_baseline,random_forest,all,extrapolation_grouped,rd_bt,RMSE,0.011728879054980152,0.006390299398433895,0.017272631593370426,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_baseline,random_forest,all,extrapolation_grouped,rd_bt,MAE,0.0044792115581887455,0.0029062561239827996,0.006539848967738027,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_baseline,random_forest,all,extrapolation_grouped,rd_bt,R2,0.5010534448386204,0.3051254818623963,0.7433843598043102,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_baseline,random_forest,all,interpolation_random,rd,RMSE,0.00595474826138436,0.004753302171554564,0.007160047878526283,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_baseline,random_forest,all,interpolation_random,rd,MAE,0.0019734548819935038,0.0017549367337346018,0.002213539273841061,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_baseline,random_forest,all,interpolation_random,rd,R2,0.8844689473583226,0.8468239162961099,0.9194349484409419,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_baseline,random_forest,all,interpolation_random,rd_bt,RMSE,0.005878814553545119,0.004785131002780163,0.007044420535972619,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_baseline,random_forest,all,interpolation_random,rd_bt,MAE,0.0019546992583898185,0.0017457041848434156,0.002191747908572709,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_baseline,random_forest,all,interpolation_random,rd_bt,R2,0.8873966168372192,0.84875234800445,0.9195947227003748,0.95,2000,unique_row_id,mean prediction per row before resampling

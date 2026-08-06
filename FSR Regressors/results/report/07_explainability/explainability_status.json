@@ -1,0 +1,111 @@
+{
+  "requested_shap": true,
+  "permutation_importance_model": "rf_baseline",
+  "held_out_papers": 14,
+  "held_out_rows": 526,
+  "top_permutation_features": [
+    {
+      "feature": "Oxygen Concentration",
+      "importance_mean": 0.0022756131974799375,
+      "importance_std": 0.0003489529233768793,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "Flow Velocity (m/s)",
+      "importance_mean": 0.001485688435338191,
+      "importance_std": 0.0007816785816051507,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "gas_k",
+      "importance_mean": 0.001137168717206443,
+      "importance_std": 8.255767224285324e-05,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "thermal_diffusion_time",
+      "importance_mean": 0.0009670425749261453,
+      "importance_std": 0.0006824917855918405,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "Prandtl",
+      "importance_mean": 0.0002712424035061098,
+      "importance_std": 1.9690116602746772e-05,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "gas_cp_mass",
+      "importance_mean": 0.00015616397366112635,
+      "importance_std": 1.7448689697664915e-05,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "Reynolds",
+      "importance_mean": 0.00015449521459755654,
+      "importance_std": 8.689214694409586e-05,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "gas_M",
+      "importance_mean": 9.316856818178398e-05,
+      "importance_std": 1.1001050738767526e-05,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "Gravity",
+      "importance_mean": 8.222239065065404e-06,
+      "importance_std": 5.986328950339684e-06,
+      "held_out_rmse": 0.010919211060217721
+    },
+    {
+      "feature": "characteristic_length_m",
+      "importance_mean": 3.3261708787753893e-06,
+      "importance_std": 6.308012421578981e-06,
+      "held_out_rmse": 0.010919211060217721
+    }
+  ],
+  "shap": true,
+  "top_features": [
+    {
+      "feature": "thermal_diffusion_time",
+      "mean_absolute_shap": 0.005292899448006346
+    },
+    {
+      "feature": "Oxygen Concentration",
+      "mean_absolute_shap": 0.0031053343011936668
+    },
+    {
+      "feature": "gas_k",
+      "mean_absolute_shap": 0.0014411949607626541
+    },
+    {
+      "feature": "Flow Velocity (m/s)",
+      "mean_absolute_shap": 0.0010890073762099472
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_J_m3K",
+      "mean_absolute_shap": 0.0010335577362872708
+    },
+    {
+      "feature": "fuel_density_kg_m3",
+      "mean_absolute_shap": 0.0009494462747026123
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_J_m3K",
+      "mean_absolute_shap": 0.0008522643770479532
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "mean_absolute_shap": 0.0007869725684584508
+    },
+    {
+      "feature": "fuel_k_W_mK",
+      "mean_absolute_shap": 0.0005674430681410287
+    },
+    {
+      "feature": "half_thickness",
+      "mean_absolute_shap": 0.0005175879614838833
+    }
+  ]
+}

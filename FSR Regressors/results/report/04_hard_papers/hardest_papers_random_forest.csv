@@ -1,0 +1,11 @@
+paper_id,RMSE,MAE,R2,Geometry
+doi::10.1016/j.combustflame.2020.12.005,0.1331260557055117,0.1253576642142927,-13.347335930141282,Flat
+doi::10.1007/s10694-019-00878-w,0.07728558071806,0.0651504947119445,-1.0601263890275625,Flat
+doi::10.1080/00102200490276773,0.0208222075875632,0.0167518514647431,-0.7236956245191442,Flat
+citation::son youngjin paul d ronney and suleyman gokoglu comparison of carbon dioxide and helium as fire extinguishing agents for spacecraft nasa cp 2004 213205 vol2 2004 pp 409 418,0.0201796398111543,0.0147561464822607,0.0429562268671124,Flat
+citation::kimzey john howard flammability during weightlessness nasa technical memorandum nasa tm x 58001 may 1966,0.0201244396477324,0.0141376620847484,-5.567213155504012,Cylindrical
+doi::10.1016/s1540-7489(02)80315-7,0.0194065046379826,0.0164630845620891,-0.1806118003408692,Flat
+citation::andracchio charles r and thomas h cochran burning of solids in oxygen rich environments in normal and reduced gravity nasa technical memorandum x 3055 national aeronautics and space administration may 1974,0.0184408024710533,0.0133971984449704,0.5780401222768572,Flat
+doi::10.1016/j.combustflame.2009.01.015,0.017883588189428,0.0126315391607554,-0.9409661527327228,Flat
+citation::grayson g d k r sacksteder p v ferkul and j s t ien flame spreading over a thin solid in low speed concurrent flow drop tower experimental results and comparison with theory 0 science and technology vii 2 1994,0.0156944744963891,0.0084914619920359,-50.82614058703592,Flat
+citation::mell w e s l olson and t kashiwagi flame spread along free edges of thermally thin samples in 0 proceedings of the combustion institute vol 28 no 2 2000 pp 2843 2849,0.0145176433342385,0.0111119800423602,-724.5248399886033,Flat

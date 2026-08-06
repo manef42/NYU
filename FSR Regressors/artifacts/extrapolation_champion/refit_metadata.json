@@ -1,0 +1,63 @@
+{
+  "champion": "extrapolation",
+  "candidate": {
+    "candidate_id": "rf_baseline",
+    "model_family": "random_forest",
+    "feature_set": "all",
+    "paper_weight": "none",
+    "target_transform": "identity",
+    "monotone_oxygen": false,
+    "paper_bagging": 0,
+    "fixed_params": {}
+  },
+  "hyperparameters": {
+    "max_depth": 12,
+    "max_features": 0.5,
+    "min_samples_leaf": 8,
+    "min_samples_split": 2,
+    "n_estimators": 500
+  },
+  "augmentation": "rd",
+  "bootstrap_rows": 1000,
+  "random_state": 42,
+  "oof_protocol": "GroupKFold(5) over paper clusters repeated over 3 seeds",
+  "out_of_fold_metrics": {
+    "R2": 0.525919851678388,
+    "RMSE": 0.011876240918973862,
+    "MAE": 0.005096606144753528,
+    "MAPE": 272.93448981291476,
+    "MBE": 0.00022592998274237778,
+    "NRMSE": 1.3535545895725565,
+    "n": 2531
+  },
+  "evaluation_provenance": {
+    "dataset_sha256": "6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8",
+    "merged_shards": [
+      "knn/knn_distance",
+      "knn/knn_distance_inverse",
+      "knn/knn_distance_sqrt",
+      "knn/knn_uniform",
+      "knn/knn_uniform_inverse",
+      "knn/knn_uniform_sqrt",
+      "mlp/mlp_log_target_inverse",
+      "mlp/mlp_log_target_sqrt",
+      "random_forest/rf_baseline",
+      "random_forest/rf_paper_inverse",
+      "random_forest/rf_paper_sqrt",
+      "svr/svr_linear",
+      "svr/svr_rbf",
+      "svr/svr_rbf_inverse",
+      "svr/svr_rbf_sqrt",
+      "xgboost/xgb_absoluteerror_inverse",
+      "xgboost/xgb_absoluteerror_sqrt",
+      "xgboost/xgb_baseline",
+      "xgboost/xgb_log_target_inverse",
+      "xgboost/xgb_log_target_sqrt",
+      "xgboost/xgb_paper_bagging_sqrt",
+      "xgboost/xgb_paper_inverse",
+      "xgboost/xgb_paper_sqrt",
+      "xgboost/xgb_pseudohuber_inverse",
+      "xgboost/xgb_pseudohuber_sqrt"
+    ]
+  }
+}

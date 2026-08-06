@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "dataset_hash_matches_splits": true,
+  "protocol_status": [
+    {
+      "candidate_id": "mlp_paper_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_paper_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    }
+  ],
+  "failures": [],
+  "failed_result_policy": "Failed candidate/protocol combinations are excluded from every result table."
+}

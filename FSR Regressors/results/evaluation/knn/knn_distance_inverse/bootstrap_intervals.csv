@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+knn_distance_inverse,knn,all,extrapolation_grouped,rd,RMSE,0.014313485883227393,0.009605173968273532,0.019864387556971366,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_inverse,knn,all,extrapolation_grouped,rd,MAE,0.0057840134445045245,0.0037731038498227828,0.008240410280410362,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_inverse,knn,all,extrapolation_grouped,rd,R2,0.25692638518029787,-0.023582506766043877,0.4969455181623981,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_inverse,knn,all,extrapolation_grouped,rd_bt,RMSE,0.013810940898979272,0.009144191836728885,0.019034444308207676,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_inverse,knn,all,extrapolation_grouped,rd_bt,MAE,0.005647185264878712,0.0037152898252305073,0.00805316897074401,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_inverse,knn,all,extrapolation_grouped,rd_bt,R2,0.3081888677900476,0.05331980243630627,0.5209178984866842,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_inverse,knn,all,interpolation_random,rd,RMSE,0.008753255141670668,0.007766677014421829,0.009751987921131852,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_inverse,knn,all,interpolation_random,rd,MAE,0.003420038425903241,0.003090411010559853,0.0037485738847192057,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_inverse,knn,all,interpolation_random,rd,R2,0.750361771012855,0.6828946936331053,0.8000349687263858,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_inverse,knn,all,interpolation_random,rd_bt,RMSE,0.008357120657472607,0.007419029501240476,0.009244352162055422,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_inverse,knn,all,interpolation_random,rd_bt,MAE,0.003229566084270348,0.0029142450845132794,0.003546198261569684,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_inverse,knn,all,interpolation_random,rd_bt,R2,0.7724455868142718,0.7206568801672242,0.8166583943186123,0.95,2000,unique_row_id,mean prediction per row before resampling

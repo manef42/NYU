@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+xgb_baseline,xgboost,all,extrapolation_grouped,rd,RMSE,0.012553316895422151,0.007229636693233882,0.01814189325755577,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_baseline,xgboost,all,extrapolation_grouped,rd,MAE,0.005082765923283959,0.0034298488621560272,0.0073130435374997894,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_baseline,xgboost,all,extrapolation_grouped,rd,R2,0.42844504111956294,0.22071506338068597,0.6821625358292471,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_baseline,xgboost,all,extrapolation_grouped,rd_bt,RMSE,0.012889049880731843,0.007555209669213019,0.018396566037700426,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_baseline,xgboost,all,extrapolation_grouped,rd_bt,MAE,0.005322165512644544,0.003583633199113829,0.007639309810517383,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_baseline,xgboost,all,extrapolation_grouped,rd_bt,R2,0.39746424784529544,0.18942918301123546,0.6518097216375185,0.95,2000,canonical_paper,mean prediction per row before resampling
+xgb_baseline,xgboost,all,interpolation_random,rd,RMSE,0.0056968919469847674,0.004691848262986035,0.006793006026974331,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_baseline,xgboost,all,interpolation_random,rd,MAE,0.0021007264337819156,0.0018879921511642988,0.002334048926116455,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_baseline,xgboost,all,interpolation_random,rd,R2,0.8942579118744782,0.8609706303277909,0.9212786097596398,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_baseline,xgboost,all,interpolation_random,rd_bt,RMSE,0.005667908904073656,0.004637615653898338,0.0067589242200022746,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_baseline,xgboost,all,interpolation_random,rd_bt,MAE,0.0020684533888779845,0.0018610562839597733,0.0022966690613826827,0.95,2000,unique_row_id,mean prediction per row before resampling
+xgb_baseline,xgboost,all,interpolation_random,rd_bt,R2,0.8953311046179253,0.8602016410537259,0.9239733606856187,0.95,2000,unique_row_id,mean prediction per row before resampling

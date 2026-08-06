@@ -1,0 +1,203 @@
+{
+  "data_version": "fsr-data-v2",
+  "dataset_sha256": "6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8",
+  "target_column": "FSR (m/s)",
+  "group_column": "Article (MLA)",
+  "row_count": 2531,
+  "paper_count": 66,
+  "candidate_count": 1,
+  "candidate_id_filter": "mlp_paper_sqrt",
+  "model_id": null,
+  "model_family_filter": null,
+  "search_iterations": 40,
+  "inner_folds": 5,
+  "search_jobs": 16,
+  "augmentations": [
+    "rd",
+    "rd_bt"
+  ],
+  "bootstrap_rows": 1000,
+  "bootstrap_iterations": 2000,
+  "protocols": [
+    "extrapolation_grouped",
+    "interpolation_random"
+  ],
+  "tuning_policy": "Hyper-parameters are tuned inside each outer training partition only; extrapolation uses paper-disjoint GroupKFold inner folds and interpolation uses shuffled KFold folds.",
+  "augmentation_policy": "Bootstrap rows are drawn with replacement from the training partition only and inherit the paper of their source row; test rows are never augmented.",
+  "derived_table_rows": {
+    "summary_metrics": 4,
+    "per_paper_metrics": 268,
+    "paired_model_comparisons": 0,
+    "bootstrap_intervals": 12,
+    "generalization_gap": 2,
+    "augmentation_comparison": 2,
+    "metric_stability": 4
+  },
+  "feature_manifest": [
+    {
+      "feature": "Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "half_thickness",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "characteristic_length_m",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_pyrolysis_T_K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "fuel_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_k_W_mK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_cp_J_kgK",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "core_volumetric_heat_capacity_J_m3K",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Oxygen Concentration",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_M",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_cp_mass",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_k",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_density_kg_m3",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_alpha_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "gas_nu_m2_s",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Reynolds",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Peclet",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Prandtl",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "thermal_diffusion_time",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Pressure (Pa)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Flow Velocity (m/s)",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Gravity",
+      "kind": "numeric",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Power (W)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition Time (s)",
+      "kind": "numeric",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Geometry of Sample",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "diluent",
+      "kind": "categorical",
+      "role": "physics"
+    },
+    {
+      "feature": "Ignition Method",
+      "kind": "categorical",
+      "role": "apparatus"
+    },
+    {
+      "feature": "Ignition",
+      "kind": "categorical",
+      "role": "apparatus"
+    }
+  ]
+}
