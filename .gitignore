@@ -27,3 +27,5 @@ Ignition
 Classifiers/results/evaluation/xgb/outer_fold_predictions.csv
 Ignition Classifiers/results/evaluation/xgb/outer_fold_predictions.csv
 Ignition Classifiers/results/evaluation/mlp/mlp_weighted_sqrt/inner_oof_predictions.csv
+FSR Regressors/results/evaluation/merged/inner_oof_predictions.csv
+FSR Regressors/results/evaluation/merged/outer_fold_predictions.csv
