@@ -283,13 +283,13 @@ def _explainability(data: pd.DataFrame, evaluation: Path, xgb_id: str, out: Path
             "feature": names, "mean_absolute_shap": np.abs(values).mean(axis=0),
         }).sort_values("mean_absolute_shap", ascending=False)
         _save_table(ranking, f"{champion_label}_xgboost_shap_ranking", out_champ)
-        shap.summary_plot(values, transformed, feature_names=names, show=False, max_display=20)
+        shap.summary_plot(values, transformed, feature_names=names, show=False, max_display=10)
         plt.title(f"{xgb_id}: SHAP on held-out papers")
         plt.tight_layout()
         plt.savefig(out_champ / "xgboost_shap_beeswarm.png", dpi=300, bbox_inches="tight")
         plt.close()
         shap.summary_plot(values, transformed, feature_names=names, plot_type="bar",
-                          show=False, max_display=20)
+                          show=False, max_display=10)
         plt.title(f"{xgb_id}: mean absolute SHAP")
         plt.tight_layout()
         plt.savefig(out_champ / "xgboost_shap_bar.png", dpi=300, bbox_inches="tight")
