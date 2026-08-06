@@ -1,0 +1,507 @@
+{
+  "passed": true,
+  "protocol_status": [
+    {
+      "candidate_id": "knn_distance",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_distance_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_uniform",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_uniform",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_uniform_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_uniform_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_uniform_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "knn_uniform_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_log_target_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_log_target_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_log_target_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "mlp_log_target_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "rf_baseline",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "rf_baseline",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "rf_paper_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "rf_paper_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "rf_paper_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "rf_paper_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_linear",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_linear",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_rbf",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_rbf",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_rbf_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_rbf_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_rbf_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "svr_rbf_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_absoluteerror_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_absoluteerror_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_absoluteerror_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_absoluteerror_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_baseline",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_baseline",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_log_target_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_log_target_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_log_target_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_log_target_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_paper_bagging_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_paper_bagging_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_paper_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_paper_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_paper_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_paper_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_pseudohuber_inverse",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_pseudohuber_inverse",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_pseudohuber_sqrt",
+      "protocol": "interpolation_random",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    },
+    {
+      "candidate_id": "xgb_pseudohuber_sqrt",
+      "protocol": "extrapolation_grouped",
+      "expected_folds": 10,
+      "completed_folds": 10,
+      "valid_predictions": true,
+      "passed": true,
+      "errors": [],
+      "complete": true
+    }
+  ],
+  "failures": [],
+  "failed_result_policy": "Failed candidate/protocol combinations are excluded from every result table."
+}

@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+knn_uniform_sqrt,knn,all,extrapolation_grouped,rd,RMSE,0.01530673241983383,0.009507066387378405,0.021096152185567332,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,extrapolation_grouped,rd,MAE,0.006050218190462749,0.0037491342712800946,0.00896185491903653,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,extrapolation_grouped,rd,R2,0.15022100269027827,-0.4571814736766162,0.4959987495024579,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,extrapolation_grouped,rd_bt,RMSE,0.014754012072381178,0.009222807131023072,0.020352709700837787,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,extrapolation_grouped,rd_bt,MAE,0.00582601051130398,0.0036325553441376784,0.008518428976492364,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,extrapolation_grouped,rd_bt,R2,0.21048337128106664,-0.24421736021643284,0.5257229627862627,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,interpolation_random,rd,RMSE,0.008722632718155137,0.007692747224927817,0.009731281666848921,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,interpolation_random,rd,MAE,0.003210939356903477,0.002872235547215943,0.0035570813171465856,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,interpolation_random,rd,R2,0.7521053865311893,0.6857025088081147,0.8030737902536011,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,interpolation_random,rd_bt,RMSE,0.008216750821074025,0.007341760544759556,0.009131623458366345,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,interpolation_random,rd_bt,MAE,0.003020719667241599,0.002721722443847839,0.003335578573483297,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_uniform_sqrt,knn,all,interpolation_random,rd_bt,R2,0.7800255950644792,0.7229055640146635,0.8220547463812973,0.95,2000,unique_row_id,mean prediction per row before resampling

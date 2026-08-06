@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,rd,RMSE,0.01196291222274657,0.006788566549268192,0.017587503569053475,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,rd,MAE,0.00451344945346042,0.0030087351665946363,0.006594859494572317,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,rd,R2,0.4809432479990433,0.2894270368750067,0.7166908266643174,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,rd_bt,RMSE,0.012102616906904529,0.00680593907699742,0.017763609167726277,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,rd_bt,MAE,0.00448421628558793,0.002920195766920378,0.0065697191242499306,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,extrapolation_grouped,rd_bt,R2,0.4687492141754007,0.26063580462184976,0.70906472045843,0.95,2000,canonical_paper,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,interpolation_random,rd,RMSE,0.006251858572392718,0.005028774854403535,0.007574563717255175,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,interpolation_random,rd,MAE,0.0020533713937444377,0.0018271484687826754,0.0023219488054556352,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,interpolation_random,rd,R2,0.8726525632955283,0.8230027703952633,0.9135773424329214,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,interpolation_random,rd_bt,RMSE,0.006150351004588978,0.004853247526543439,0.007449318656519845,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,interpolation_random,rd_bt,MAE,0.0019687869984021337,0.0017375669430183074,0.0022235044901100114,0.95,2000,unique_row_id,mean prediction per row before resampling
+rf_log_target_inverse,random_forest,all,interpolation_random,rd_bt,R2,0.8767543153623732,0.8258693490068192,0.9176165224484809,0.95,2000,unique_row_id,mean prediction per row before resampling

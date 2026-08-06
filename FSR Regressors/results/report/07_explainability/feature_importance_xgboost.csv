@@ -1,0 +1,44 @@
+feature,importance
+thermal_diffusion_time,0.12235278636217117
+Geometry of Sample_Flat,0.11668386310338974
+half_thickness,0.08353178203105927
+Flow Velocity (m/s),0.07522512972354889
+fuel_density_kg_m3,0.07097943127155304
+characteristic_length_m,0.05027350038290024
+fuel_k_W_mK,0.04901345446705818
+Dimensions of sample (Wire is L m x D m; Cylinder is Core Diameter m x Outer Diameter m; Flat is L m x H m x W m; Spherical is D m),0.04846993461251259
+gas_k,0.045210033655166626
+fuel_pyrolysis_T_K,0.0451902411878109
+Ignition Time (s),0.036872342228889465
+gas_M,0.03524216637015343
+Oxygen Concentration,0.027394825592637062
+fuel_volumetric_heat_capacity_J_m3K,0.02468263916671276
+Prandtl,0.02187785878777504
+core_volumetric_heat_capacity_J_m3K,0.020355990156531334
+Reynolds,0.016856515780091286
+Pressure (Pa),0.013245124369859695
+fuel_alpha_m2_s,0.013217460364103317
+core_density_kg_m3,0.01217561587691307
+Peclet,0.012128830887377262
+gas_density_kg_m3,0.011901402845978737
+gas_cp_mass,0.011249355971813202
+Ignition Method_Wire,0.007304299157112837
+Ignition Method_Unknown,0.004530480597168207
+Geometry of Sample_Cylindrical,0.0038266265764832497
+gas_nu_m2_s,0.003061506897211075
+Ignition Method_Radiative Heater,0.002778858644887805
+core_cp_J_kgK,0.002471292158588767
+gas_alpha_m2_s,0.0024013251531869173
+Gravity,0.0021352004259824753
+diluent_He,0.0013461669441312551
+Geometry of Sample_Wire,0.0012755885254591703
+diluent_Ar,0.001266277045942843
+core_k_W_mK,0.0009181313216686249
+fuel_cp_J_kgK,0.0008919176761992276
+Ignition Power (W),0.0007584627019241452
+diluent_N2,0.0005447063012979925
+diluent_CO2,0.00020093595958314836
+Ignition Method_Open flame,7.867515523685142e-05
+Ignition Method_Open Flame,4.4563701521838084e-05
+Ignition Method_open flame,3.475794073892757e-05
+Ignition_Yes,0.0

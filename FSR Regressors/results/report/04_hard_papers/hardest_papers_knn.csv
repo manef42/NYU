@@ -1,0 +1,11 @@
+paper_id,RMSE,MAE,R2,Geometry
+doi::10.1016/j.combustflame.2020.12.005,0.1368355621016347,0.1290617302405289,-14.158041737033274,Flat
+doi::10.1007/s10694-019-00878-w,0.0645575147229383,0.0542158438057995,-0.4374426351460632,Flat
+doi::10.1016/j.combustflame.2022.112009,0.0398297411908906,0.0163951481481481,-218.24160499569,Flat
+doi::10.1016/j.combustflame.2022.112559,0.0365857113856302,0.0217937705108033,-1354.4574962963418,Flat
+citation::kimzey john howard flammability during weightlessness nasa technical memorandum nasa tm x 58001 may 1966,0.0363397460931519,0.0241395747795876,-20.413975262621264,Cylindrical
+doi::10.1080/00102200490276773,0.0281551233244252,0.023736944543473,-2.151533321956378,Flat
+citation::andracchio charles r and thomas h cochran burning of solids in oxygen rich environments in normal and reduced gravity nasa technical memorandum x 3055 national aeronautics and space administration may 1974,0.0256054516274457,0.0218431740027617,0.1864646916055321,Flat
+citation::son youngjin paul d ronney and suleyman gokoglu comparison of carbon dioxide and helium as fire extinguishing agents for spacecraft nasa cp 2004 213205 vol2 2004 pp 409 418,0.0240480449370293,0.0175949438202247,-0.3591410546354376,Flat
+doi::10.1016/s1540-7489(02)80315-7,0.0221699918036783,0.0170806301051569,-0.5407903296457777,Flat
+citation::andracchio charles r and thomas h cochran gravity effects on flame spreading over solid surfaces nasa technical note d 8228 national aeronautics and space administration may 1976,0.021510221339048,0.0176092903452611,0.0926016119569606,Flat

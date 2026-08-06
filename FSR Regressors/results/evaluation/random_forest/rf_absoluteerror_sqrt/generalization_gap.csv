@@ -1,0 +1,3 @@
+model_id,model_family,feature_set,augmentation,random_RMSE_mean,random_RMSE_std,grouped_RMSE_mean,grouped_RMSE_std,generalization_gap_mean,generalization_gap_std
+rf_absoluteerror_sqrt,random_forest,all,rd_bt,0.006630211072239813,0.0006817398168092726,0.012939946593290886,0.0043172037547742695,0.006309735521051072,0.004175565352434157
+rf_absoluteerror_sqrt,random_forest,all,rd,0.006515439894121447,0.0007027871884642699,0.013046256495743263,0.004438056724239859,0.006530816601621817,0.004223772375339643

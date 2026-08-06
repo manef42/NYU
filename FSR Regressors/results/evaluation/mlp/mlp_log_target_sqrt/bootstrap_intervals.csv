@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+mlp_log_target_sqrt,mlp,all,extrapolation_grouped,rd,RMSE,0.017458048063507425,0.011110603171386832,0.023845366142971138,0.95,2000,canonical_paper,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,extrapolation_grouped,rd,MAE,0.008299621305024107,0.006011688652170262,0.01120308421044716,0.95,2000,canonical_paper,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,extrapolation_grouped,rd,R2,-0.10543289035054015,-0.833699181907068,0.2918615127754687,0.95,2000,canonical_paper,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,extrapolation_grouped,rd_bt,RMSE,0.016040812775560933,0.01002986300918934,0.02216068813759757,0.95,2000,canonical_paper,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,extrapolation_grouped,rd_bt,MAE,0.007372705382361171,0.005303722468062286,0.009876530288058608,0.95,2000,canonical_paper,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,extrapolation_grouped,rd_bt,R2,0.06675912480386459,-0.30341668345701495,0.34064941128995857,0.95,2000,canonical_paper,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,interpolation_random,rd,RMSE,0.011117294076067966,0.008501241344661525,0.014355745708046574,0.95,2000,unique_row_id,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,interpolation_random,rd,MAE,0.004918227411752074,0.004535892452386626,0.005337666748239692,0.95,2000,unique_row_id,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,interpolation_random,rd,R2,0.5973106856588206,0.3005947436096934,0.7545113590458594,0.95,2000,unique_row_id,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,interpolation_random,rd_bt,RMSE,0.009504364729675262,0.008396682888150002,0.010557819495433355,0.95,2000,unique_row_id,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,interpolation_random,rd_bt,MAE,0.00457987340714287,0.004222627517515321,0.004921189324259114,0.95,2000,unique_row_id,mean prediction per row before resampling
+mlp_log_target_sqrt,mlp,all,interpolation_random,rd_bt,R2,0.7056811311097702,0.6480483002407533,0.7546827697886812,0.95,2000,unique_row_id,mean prediction per row before resampling

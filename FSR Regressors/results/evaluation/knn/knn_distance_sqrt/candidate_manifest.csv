@@ -1,0 +1,2 @@
+candidate_id,model_family,paper_weight,fixed_params,accelerator,weighting_policy
+knn_distance_sqrt,knn,sqrt,"{""weights"": ""distance""}",gpu-optional,"{""paper_weight"": ""sqrt"", ""unsupported_fit_weight_strategy"": ""deterministic_weighted_resampling""}"

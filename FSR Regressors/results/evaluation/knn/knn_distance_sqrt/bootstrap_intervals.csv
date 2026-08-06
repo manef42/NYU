@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+knn_distance_sqrt,knn,all,extrapolation_grouped,rd,RMSE,0.01530673241983383,0.009485362819866741,0.02146613340789105,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,extrapolation_grouped,rd,MAE,0.006050218190462749,0.0036310189574312295,0.009134730016325273,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,extrapolation_grouped,rd,R2,0.15022100269027827,-0.39679036230311643,0.5003862222423634,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,extrapolation_grouped,rd_bt,RMSE,0.01395930110640561,0.009115446830823958,0.019184430300631296,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,extrapolation_grouped,rd_bt,MAE,0.005644377435963951,0.0037125897683286326,0.008146677012802294,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,extrapolation_grouped,rd_bt,R2,0.2932458570411678,0.0169474418971963,0.5281300055698774,0.95,2000,canonical_paper,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,interpolation_random,rd,RMSE,0.008831046682466736,0.007878782199905492,0.009875358334567938,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,interpolation_random,rd,MAE,0.0033257555502591595,0.003008762636903274,0.0036726422070172196,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,interpolation_random,rd,R2,0.7459049066131013,0.6788435774026976,0.7971731065875951,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,interpolation_random,rd_bt,RMSE,0.008474364601257677,0.007485299152233069,0.009463348656510991,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,interpolation_random,rd_bt,MAE,0.0031428200761550234,0.002824876988005368,0.0034689006783188547,0.95,2000,unique_row_id,mean prediction per row before resampling
+knn_distance_sqrt,knn,all,interpolation_random,rd_bt,R2,0.7660159746434685,0.7120331221649586,0.8117853448404908,0.95,2000,unique_row_id,mean prediction per row before resampling

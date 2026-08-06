@@ -1,0 +1,11 @@
+paper_id,RMSE,MAE,R2,Geometry
+citation::andracchio charles r and thomas h cochran burning of solids in oxygen rich environments in normal and reduced gravity nasa technical memorandum x 3055 national aeronautics and space administration may 1974,0.1465295106058591,0.0762859975566502,-25.6416871543651,Flat
+doi::10.1016/j.combustflame.2020.12.005,0.1372692715128321,0.1321037348495562,-14.254282859067914,Flat
+doi::10.1007/s10694-019-00878-w,0.0908205096522274,0.0737406565239254,-1.844885459131766,Flat
+doi::10.1016/j.combustflame.2022.112009,0.0403734459998389,0.0349131721403074,-224.26807230668237,Flat
+doi::10.1016/j.combustflame.2022.112559,0.0337379446710148,0.023622833028556,-1151.6571246829965,Flat
+citation::kimzey john howard flammability during weightlessness nasa technical memorandum nasa tm x 58001 may 1966,0.0323070546900248,0.0294832909120351,-15.924983472498,Cylindrical
+doi::10.1080/00102200490276773,0.0297279692101581,0.0230869388112043,-2.5134802811236536,Flat
+citation::andracchio charles r and thomas h cochran gravity effects on flame spreading over solid surfaces nasa technical note d 8228 national aeronautics and space administration may 1976,0.0291918067344349,0.0216899053504344,-0.6712068038003611,Flat
+citation::takahashi shuhei takeshi nagumo kazunori wakai and subrata bhattacharjee effects of ambient condition on flame spread over a thin pmma sheet jsme international journal series b 43 4 2000 556 562,0.0239111000600813,0.0094990890063111,-2.160107392881992,Flat
+doi::10.1016/j.combustflame.2009.01.015,0.0238538087037957,0.0191428486331176,-2.453218865690556,Flat

@@ -1,0 +1,13 @@
+model_id,model_family,feature_set,protocol,augmentation,metric,estimate,ci_low,ci_high,confidence_level,iterations,resampling_unit,repeat_aggregation
+svr_rbf_sqrt,svr,all,extrapolation_grouped,rd,RMSE,0.014647426858041344,0.01026563832447428,0.01987706778422707,0.95,2000,canonical_paper,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,extrapolation_grouped,rd,MAE,0.008344297178424293,0.006498198217562612,0.010483822270769171,0.95,2000,canonical_paper,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,extrapolation_grouped,rd,R2,0.22184934273838586,-0.03276513746573167,0.4134525213926242,0.95,2000,canonical_paper,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,extrapolation_grouped,rd_bt,RMSE,0.014932700753438189,0.010312578360694071,0.02013452114731347,0.95,2000,canonical_paper,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,extrapolation_grouped,rd_bt,MAE,0.008622808809114521,0.006674765282549805,0.010758977298779815,0.95,2000,canonical_paper,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,extrapolation_grouped,rd_bt,R2,0.19124358838458866,-0.1441288563580281,0.4035573289341934,0.95,2000,canonical_paper,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,interpolation_random,rd,RMSE,0.010254003141074898,0.009339022601788401,0.011192008439608265,0.95,2000,unique_row_id,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,interpolation_random,rd,MAE,0.006700063367535825,0.00639318031214354,0.007037001832894887,0.95,2000,unique_row_id,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,interpolation_random,rd,R2,0.6574225202418229,0.5805301652550001,0.7165207006377755,0.95,2000,unique_row_id,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,interpolation_random,rd_bt,RMSE,0.010036703214129321,0.009115573413010437,0.010991397199879736,0.95,2000,unique_row_id,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,interpolation_random,rd_bt,MAE,0.006623493053007913,0.006326598651781191,0.006939836229944594,0.95,2000,unique_row_id,mean prediction per row before resampling
+svr_rbf_sqrt,svr,all,interpolation_random,rd_bt,R2,0.671788282136745,0.5880113251435304,0.7339437272824494,0.95,2000,unique_row_id,mean prediction per row before resampling

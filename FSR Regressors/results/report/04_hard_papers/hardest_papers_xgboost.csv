@@ -1,0 +1,11 @@
+paper_id,RMSE,MAE,R2,Geometry
+doi::10.1016/j.combustflame.2020.12.005,0.1298293563949992,0.1231588189990726,-12.64554687872069,Flat
+doi::10.1007/s10694-019-00878-w,0.0834151975791173,0.0724320305875418,-1.3998675961642042,Flat
+citation::meyer florian jan hei meier hans christoph ries and christian eigenbrod sooting behavior in concurrent and upward burning of cylindrical pmma samples 52nd international conference on environmental systems ices 2023 171 calgary canada 16 20 july 2023,0.0454689284841509,0.0228102089057283,-8394.72296020103,Cylindrical
+doi::10.1080/00102200490276773,0.021948458958512,0.0165000560456542,-0.9152042708646178,Flat
+citation::son youngjin paul d ronney and suleyman gokoglu comparison of carbon dioxide and helium as fire extinguishing agents for spacecraft nasa cp 2004 213205 vol2 2004 pp 409 418,0.0213337248105285,0.0160939822677033,-0.069641782255547,Flat
+citation::andracchio charles r and thomas h cochran burning of solids in oxygen rich environments in normal and reduced gravity nasa technical memorandum x 3055 national aeronautics and space administration may 1974,0.0211042685444776,0.0144363525571922,0.4473475050997778,Flat
+doi::10.1016/j.combustflame.2022.112559,0.019024415065234,0.0134405818168073,-365.5097403284083,Flat
+doi::10.1016/s1540-7489(02)80315-7,0.0186762607776351,0.0155518075273334,-0.0934334050208645,Flat
+doi::10.1016/j.combustflame.2009.01.015,0.0183898117544574,0.0139693726823593,-1.0524056804936976,Flat
+doi::10.1016/j.combustflame.2022.112009,0.0178237176655408,0.0126763194890013,-42.90405080115165,Flat

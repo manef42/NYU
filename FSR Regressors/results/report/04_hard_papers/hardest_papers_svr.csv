@@ -1,0 +1,11 @@
+paper_id,RMSE,MAE,R2,Geometry
+doi::10.1016/j.combustflame.2020.12.005,0.1351429803113968,0.1297806945247693,-13.7853674377224,Flat
+doi::10.1007/s10694-019-00878-w,0.0805278199484118,0.0656271595255781,-1.2366024700493257,Flat
+citation::kimzey john howard flammability during weightlessness nasa technical memorandum nasa tm x 58001 may 1966,0.041360515322308,0.0336278680641634,-26.73993261527988,Cylindrical
+citation::andracchio charles r and thomas h cochran burning of solids in oxygen rich environments in normal and reduced gravity nasa technical memorandum x 3055 national aeronautics and space administration may 1974,0.0341810657927395,0.0277521091253134,-0.4497153136067435,Flat
+doi::10.1080/00102209108951711,0.0269515201035646,0.0204366921334829,-29.125919248399462,Flat
+doi::10.1016/j.combustflame.2022.112559,0.0267670780768874,0.0243367639770746,-724.5457911637374,Flat
+doi::10.1080/00102200490276773,0.0234422855501496,0.0169938040373128,-1.1847761137938164,Flat
+doi::10.1016/j.combustflame.2022.112009,0.0219734100218176,0.0177428799801165,-65.72720335744646,Flat
+citation::ferkul paul v an experimental study of opposed flow diffusion flame extinction over a thin fuel in 0 nasa cr 182185 1989,0.0218347520718342,0.0217828300061001,-99.71764144070627,Flat
+citation::andracchio charles r and thomas h cochran gravity effects on flame spreading over solid surfaces nasa technical note d 8228 national aeronautics and space administration may 1976,0.021500482627084,0.0167514715973458,0.0934230717602352,Flat
