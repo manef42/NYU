@@ -1,6 +1,6 @@
-# Ignition Classifiers (FABLE)
+# Ignition Classifiers
 
-Intern-facing entry point for the **binary ignition classification** pipeline.
+Entry point for the **binary ignition classification** pipeline.
 
 **Goal:** given experimental conditions (oxygen, pressure, material/fuel properties, gravity, flow, geometry, ignition method, …), predict whether a sample will ignite (`Yes` / `No`).
 
