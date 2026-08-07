@@ -1,6 +1,6 @@
 # FSR Regressors
 
-Intern-facing entry point for the **flame spread rate (FSR) regression** pipeline.
+Entry point for the **flame spread rate (FSR) regression** pipeline.
 
 **Goal:** given experimental conditions from the microgravity combustion literature database, predict continuous **flame spread rate** (`fsr`, typically in m/s).
 
