@@ -1,6 +1,5 @@
 # FSR Regression Pipeline — Full Guide
 
-Plain-language, script-by-script documentation for someone joining this project from scratch.
 
 If you only need commands, use [`README.md`](README.md). This document explains **what each stage does**, **why it exists**, and **what it writes**.
 
@@ -441,19 +440,3 @@ Override data / overlay / image / search budget with `FSR_DATA`, `FSR_OVERLAY`, 
 - [ ] Deployed `artifacts/` not described as nested-CV scores.
 - [ ] Dataset SHA-256 matches between splits and evaluate.
 
----
-
-## 15. Mental model for interns
-
-Think of the pipeline as a **sharded exam**:
-
-1. **Clean and fingerprint the textbook** — `fsr_common` / data validation.
-2. **Print the exam booklets once** — `fsr_splits`.
-3. **Each student (candidate) studies only on their practice pages** — nested search inside outer train (`fsr_search` via `fsr_evaluate`).
-4. **Grade on the sealed test pages**, twice (plain study set vs study set + bootstrap copies) — `rd` / `rd_bt`.
-5. **Collect every graded booklet into one gradebook** — `fsr_aggregate`.
-6. **Pick valedictorians with a written rubric** — `fsr_select` + `selection_policy.yaml`.
-7. **Hire the winners and give them the full textbook** — `fsr_refit`.
-8. **Publish the report card and use them on new homework** — `fsr_report` / `fsr_predict`.
-
-That order is the science. Peeking at outer test data during tuning, or quoting interpolation R² as paper-transfer performance, breaks the benchmark.
