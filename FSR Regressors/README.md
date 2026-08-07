@@ -1,254 +1,303 @@
-# FSR regression pipeline (paper-aware, GPU-parallel)
+# FSR Regressors
 
-This directory is the reconstruction of the single-script study in `../FSR Regression 3`
-as one reproducible, leakage-controlled, Slurm-parallel pipeline for predicting **flame
-spread rate (FSR)** from the microgravity-combustion literature database. The science is
-unchanged - four model families, two evaluation strategies, bootstrap augmentation - but
-every stage is now a separate, restartable script that writes immutable artifacts, and the
-expensive stage fans out over GPUs as a Slurm array.
+Intern-facing entry point for the **flame spread rate (FSR) regression** pipeline.
 
-Two deliberately different questions are answered and never conflated:
+**Goal:** given experimental conditions from the microgravity combustion literature database, predict continuous **flame spread rate** (`fsr`, typically in m/s).
 
-- **Interpolation** (`interpolation_random`) uses target-stratified row-level holdouts.
-  Test rows may come from papers that are also represented in training, so the model only
-  has to interpolate inside campaigns it has already partly seen. This is the optimistic
-  baseline.
-- **Extrapolation** (`extrapolation_grouped`) holds out complete canonical papers with a
-  balance-aware `GroupShuffleSplit`. No paper is ever split across partitions, so this is
-  the only evidence about transfer to a brand-new paper, campaign or rig. **This is the
-  primary scientific result.**
+This folder is self-contained: Python scripts, configs, SLURM launchers, the dataset CSV, and (when generated) evaluation / deployable artifacts. Start here, then read [`pipeline.md`](pipeline.md) for a stage-by-stage walkthrough of every script.
 
-## Scripts
+---
 
-| Script | Role |
-| --- | --- |
-| `fsr_common.py` | Dataset loading (Excel or CSV), canonical paper identity, automatic target/leakage/feature-role detection, preprocessing contract, paper weighting, bootstrap augmentation, metrics, GPU/Slurm helpers. |
-| `fsr_splits.py` | Materializes and validates all outer splits once (row coverage, partition emptiness, paper leakage) plus per-repeat balance diagnostics. |
-| `fsr_models.py` | Model registry and one wrapper: GPU XGBoost, cuML-or-scikit-learn KNN, decision tree, and a PyTorch MLP with single-GPU or NCCL `DistributedDataParallel` training. |
-| `fsr_search.py` | Nested random search on one outer training partition, parallelized over the (configuration x inner fold) grid with joblib. |
-| `fsr_evaluate.py` | The sole benchmark runner. `--model-id` restricts it to one family so the Slurm array can run the four families concurrently; writes a self-contained shard. |
-| `fsr_aggregate.py` | Owns every derived table (fold summaries, per-paper breakdown, paired tests, bootstrap intervals, generalization gap, augmentation effect, stability) and merges the array shards. |
-| `fsr_select.py` | Applies `configs/selection_policy.yaml` and picks the interpolation and extrapolation champions. Trains nothing. |
-| `fsr_refit.py` | Rebuilds a champion on all labelled rows, recomputes honest out-of-fold predictions, and packages a deployable artifact with a model card. |
-| `fsr_report.py` | Publication tables and figures, permutation importance and SHAP, built exclusively from persisted artifacts. |
-| `fsr_predict.py` | Inference for new conditions with a refitted champion. |
+## What this project is (and is not)
 
-Slurm entry points: `run_regressors_splits.slurm`, `run_regressors_array.slurm`
-(`--array=0-3`), `run_regressors_finalize.slurm`.
+| This project **is** | This project **is not** |
+|---|---|
+| A leakage-controlled benchmark of **34 candidates** across **5** model families | A single “best model forever” claim |
+| Two scientific questions: **interpolation** vs **extrapolation** | Proof of causal combustion mechanisms |
+| Restartable, shardable jobs with merge → select → refit → report | An excuse to mix train/test papers |
+| Evaluation of real data (`rd`) vs bootstrap-augmented training (`rd_bt`) | Creation of new physics via resampling |
 
-## Data assumptions
+- **Interpolation** (`interpolation_random`) — repeated target-stratified **row-level** 80/20 holdouts. Rows from the same paper may appear in both train and test. Optimistic baseline: “How well do we predict a new row from a campaign we have partly seen?”
+- **Extrapolation** (`extrapolation_grouped`) — repeated **paper-disjoint** holdouts (`GroupShuffleSplit`, balance-screened). **Primary scientific result:** “How well do we transfer to a brand-new paper / campaign?”
 
-The default dataset is `../Microgravity_Database.xlsm`; `../Microgravity_Database_reduced.csv`
-also works. The workbook stores a two-level "section / field" header and the CSV export
-stores a category banner above the real header, so both layouts are attempted and the parse
-that actually exposes a flame-spread-rate column wins. Text cells are normalized, the
-common missing tokens are mapped to `NaN`, and unit-laden cells such as `"101.3 kPa"` or
-`"305 mm diameter"` are parsed to numbers - but only when the cell *begins* with a number,
-so labels such as `N2` and `CO2` stay categorical instead of silently becoming `2`.
+Never present random-split / interpolation scores as unseen-paper generalization.
 
-Column roles are detected, not hard-coded:
+---
 
-- the target is the FSR-like column with the most numeric values;
-- the grouping column is the most complete citation-like column, and the canonical paper ID
-  is a normalized true DOI with normalized citation identity as fallback, so the same paper
-  written two ways is one group;
-- duplicate target representations, post-experiment outcomes (flame length, HRR, smoke,
-  extinction), free-text notes and paper fingerprints (authors, DOI, article) are dropped
-  before modelling;
-- remaining features are split into numeric and categorical, and each is tagged `physics`
-  (thermophysical, flow, gravity, geometry, gas composition) or `apparatus` (rig, facility,
-  internal duct geometry, ignition hardware). The `all` feature set uses both; the
-  `physics` feature set drops apparatus descriptors, which is the transferable subset.
+## Repository layout
 
-Numeric features are median-imputed (XGBoost keeps its native missing-value handling) and
-standardized for distance- and gradient-based models; categoricals use constant imputation
-and unknown-safe one-hot encoding so categories that appear only in held-out papers cannot
-break inference.
+```text
+FSR Regressors/
+├── Microgravity_Database.csv     # Default local dataset (category banner + header + data)
+├── requirements.txt
+├── configs/
+│   ├── candidates.yaml           # 34 candidates + bootstrap_rows
+│   ├── candidates.md             # Design rationale
+│   └── selection_policy.yaml     # How champions are chosen (no training)
+├── fsr_common.py                 # Load / detect roles / weights / metrics / GPU helpers
+├── fsr_models.py                 # XGBoost, RF, KNN, MLP, SVR wrappers
+├── fsr_splits.py                 # Freeze interpolation + extrapolation holdouts
+├── fsr_search.py                 # Nested hyperparameter search on one outer train fold
+├── fsr_evaluate.py               # Benchmark runner (one candidate or one family)
+├── fsr_aggregate.py              # Merge shards + derived tables
+├── fsr_select.py                 # Policy-based champion selection
+├── fsr_refit.py                  # Deployable champions on all labeled rows
+├── fsr_report.py                 # Numbered report folders + figures
+├── fsr_predict.py                # Inference with a refit artifact
+├── run_regressors_splits.slurm
+├── run_candidates_array.slurm    # Array 0–33: one candidate per task
+├── run_regressors_finalize.slurm # aggregate → select → refit → report
+├── results/                      # Generated
+└── artifacts/                    # Generated deployable models
+```
 
-## Protocol and leakage controls
+---
 
-`fsr_splits.py` writes exact row and paper assignments once, and every model family
-benchmarks the same partitions. The grouped holdout screens many candidate paper partitions
-and keeps the one whose train and test target distributions agree best, which removes the
-nuisance variance that makes single-shot grouped R2 swing between repeats without weakening
-the constraint that no paper is ever split.
+## Quick start (local)
 
-`fsr_evaluate.py` tunes hyper-parameters **inside each outer training partition only**.
-Extrapolation folds use paper-disjoint `GroupKFold` inner folds, interpolation folds use
-shuffled `KFold` inner folds, and imputation, scaling, one-hot vocabularies, weighting and
-fitting therefore never see an outer test row. Each selected configuration is then refit
-under two data conditions:
-
-- `rd` - the real training rows;
-- `rd_bt` - the real training rows plus `bootstrap_rows` rows drawn with replacement from
-  the training partition (Rivera et al., Sec. 3.3). Each copy inherits the paper of its
-  source row, and test rows are never augmented, so augmentation cannot leak unseen-paper
-  information.
-
-Paper weighting (`none`, `sqrt`, `inverse`, `log`) counteracts papers that contribute many
-correlated rows. XGBoost, decision trees and the PyTorch MLP consume sample weights at fit
-time; KNN cannot, so it receives a deterministic probability-proportional resample of its
-training fold. No model silently ignores the requested weighting policy.
-
-Failed candidate/protocol combinations are recorded in `integrity_checks.json` and excluded
-from every result table rather than partially reported.
-
-## Parallelization and GPU use
-
-- **Stage level**: split generation, the per-family benchmark, and finalization are separate
-  jobs, so a failure never forces a full re-run.
-- **Family level**: `run_regressors_array.slurm` runs `--array=0-3`, one GPU each, mapping
-  `0=XGBoost, 1=KNN, 2=Decision Tree, 3=MLP`. Each task writes
-  `results/evaluation/model_<task>` and `fsr_aggregate.py` merges the shards.
-- **Search level**: the (configuration x inner fold) grid is executed through joblib. CPU
-  families spread folds across the allocated cores; GPU families keep one fit at a time per
-  worker and the array script starts CUDA MPS so concurrent GPU work shares the device
-  predictably.
-- **Model level**: XGBoost uses the CUDA histogram builder when a GPU is visible, KNN uses
-  cuML when it is installed and compatible, and the MLP trains in PyTorch on one GPU or
-  across every visible GPU with NCCL `DistributedDataParallel`.
-
-Every accelerator path degrades to CPU automatically, so the exact same commands reproduce
-results off the cluster.
-
-## Installation
-
-Python 3.11 or newer is recommended. From this directory:
+Python **3.11+** recommended:
 
 ```bash
-python -m venv .venv
+cd "FSR Regressors"
+
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## Cluster run
+`torch` is required (MLP). GPU is optional; XGBoost / cuML / PyTorch fall back to CPU.
+
+### Full pipeline (order matters)
+
+Default data path below is the CSV **in this folder**. Excel (`.xlsm` / `.xlsx`) also works if you pass that path.
 
 ```bash
-cd "FSR Regressors"
-SPLITS=$(sbatch --parsable run_regressors_splits.slurm)
-ARRAY=$(sbatch --parsable --dependency=afterok:${SPLITS} run_regressors_array.slurm)
-sbatch --dependency=afterok:${ARRAY} run_regressors_finalize.slurm
-```
-
-Override the defaults with `FSR_DATA`, `FSR_N_REPEATS`, `FSR_SEARCH_ITERATIONS`,
-`FSR_INNER_FOLDS`, `FSR_BOOTSTRAP_ITERATIONS`, `FSR_OVERLAY` and `FSR_IMAGE`.
-
-## Local run (same pipeline, no Slurm)
-
-```bash
-cd "FSR Regressors"
-
+# 1) Freeze splits once (10 repeats × 2 protocols by default)
 python fsr_splits.py \
-  --data ../Microgravity_Database.xlsm \
+  --data Microgravity_Database.csv \
   --out results/splits \
-  --n-repeats 10 --test-size 0.2 --split-candidates 50
+  --n-repeats 10 \
+  --test-size 0.2 \
+  --split-candidates 50 \
+  --target-bins 6
 
-for MODEL_ID in 0 1 2 3; do
-  python fsr_evaluate.py \
-    --data ../Microgravity_Database.xlsm \
-    --splits results/splits \
-    --config configs/candidates.yaml \
-    --out "results/evaluation/model_${MODEL_ID}" \
-    --search-iterations 40 --inner-folds 5 \
-    --augmentations rd,rd_bt --model-id "${MODEL_ID}"
-done
+# 2) Evaluate candidates (expensive). Example: one candidate shard
+python fsr_evaluate.py \
+  --data Microgravity_Database.csv \
+  --splits results/splits \
+  --config configs/candidates.yaml \
+  --out results/evaluation/xgboost/xgb_baseline \
+  --candidate-id xgb_baseline \
+  --search-iterations 40 \
+  --inner-folds 5 \
+  --augmentations rd,rd_bt
 
-python fsr_aggregate.py --evaluation results/evaluation --out results/evaluation/merged
+# Or evaluate a whole family (legacy --model-id):
+#   0=xgboost, 1=random_forest, 2=knn, 3=mlp, 4=svr
+python fsr_evaluate.py \
+  --data Microgravity_Database.csv \
+  --splits results/splits \
+  --config configs/candidates.yaml \
+  --out results/evaluation/random_forest \
+  --model-id 1 \
+  --search-iterations 40 \
+  --inner-folds 5 \
+  --augmentations rd,rd_bt
 
+# Prefer looping all 34 candidates into family/candidate shards (matches Slurm):
+# for each candidate_id → --out results/evaluation/<family>/<candidate_id> --candidate-id ...
+
+# 3) Merge shards + derived tables
+python fsr_aggregate.py \
+  --evaluation results/evaluation \
+  --out results/evaluation/merged \
+  --bootstrap-iterations 2000
+
+# 4) Select champions (no training)
 python fsr_select.py \
   --evaluation results/evaluation/merged \
   --policy configs/selection_policy.yaml \
   --out results/selection.json
 
-python fsr_refit.py --data ../Microgravity_Database.xlsm \
-  --selection results/selection.json --evaluation results/evaluation/merged \
-  --champion interpolation --out artifacts/interpolation_champion
-python fsr_refit.py --data ../Microgravity_Database.xlsm \
-  --selection results/selection.json --evaluation results/evaluation/merged \
-  --champion extrapolation --out artifacts/extrapolation_champion
+# 5) Refit deployable models
+python fsr_refit.py \
+  --data Microgravity_Database.csv \
+  --selection results/selection.json \
+  --evaluation results/evaluation/merged \
+  --champion interpolation \
+  --out artifacts/interpolation_champion
 
-python fsr_report.py --data ../Microgravity_Database.xlsm \
-  --evaluation results/evaluation/merged --selection results/selection.json \
-  --artifacts artifacts --out results/report
+python fsr_refit.py \
+  --data Microgravity_Database.csv \
+  --selection results/selection.json \
+  --evaluation results/evaluation/merged \
+  --champion extrapolation \
+  --out artifacts/extrapolation_champion
+
+# 6) Publication report
+python fsr_report.py \
+  --data Microgravity_Database.csv \
+  --evaluation results/evaluation/merged \
+  --selection results/selection.json \
+  --artifacts artifacts \
+  --out results/report
 ```
 
-This is intentionally expensive: every candidate is tuned inside every outer training fold,
-both protocols and both data conditions are evaluated, and uncertainty uses paper-cluster
-bootstrap resampling. Runtime scales with paper count, candidate count, repeats and search
-iterations.
+`fsr_evaluate.py` refuses to run if the dataset SHA-256 differs from the one stored in `results/splits/splits_metadata.json`.
 
-## Reproducibility
-
-The seed is 42 everywhere; repeated splits use consecutive seeds. Split files store the
-dataset SHA-256, the target and grouping columns, the feature manifest and exact
-memberships, and `fsr_evaluate.py` refuses to run against a dataset whose fingerprint
-differs from the one used to build the splits. Candidate spaces live in `fsr_models.py`,
-sampled configurations and full search histories are persisted, and model, resampling,
-XGBoost, PyTorch and report seeds are recorded.
-
-## Output map
-
-```text
-results/
-├── splits/                    # assignments, diagnostics, metadata, data validation report
-├── evaluation/model_<task>/   # one shard per model family (Slurm array task)
-├── evaluation/merged/         # merged predictions, metrics, CIs, integrity, comparisons
-├── selection.json             # machine-readable champion decisions
-├── selection.md               # ranked human-readable decisions
-└── report/                    # publication CSV/Markdown tables and PNG figures
-artifacts/
-├── interpolation_champion/    # deployable model, card, manifest, fingerprint, OOF predictions
-└── extrapolation_champion/
-```
-
-Generated results, models and logs are ignored by Git; only `.gitkeep` placeholders are
-versioned.
-
-## Inference
+### Inference
 
 ```bash
 python fsr_predict.py \
-  --input ../new_conditions.csv \
+  --input /path/to/new_conditions.csv \
   --output predictions.csv \
   --champion extrapolation
 ```
 
-Use `--artifact /path/to/artifact` to override the artifact directory. The output has one
-row per input row with the predicted FSR, the observed FSR when present, paper identity, and
-model/fingerprint metadata.
+Optional: `--artifact /path/to/artifacts/extrapolation_champion`. Output includes `predicted_fsr`, optional `observed_fsr`, paper IDs, and model / fingerprint metadata.
 
-## What changed relative to `../FSR Regression 3`
+---
 
-The reconstruction preserves the study design and adds the following:
+## Script cheat sheet
 
-1. One 2,000-line script became ten focused modules plus three Slurm entry points, so the
-   heavy stage is restartable and shardable.
-2. The benchmark fans out over four GPUs as a Slurm array; searches parallelize over the
-   (configuration x fold) grid; XGBoost, KNN and the MLP now use the GPU.
-3. The scikit-learn MLP was replaced by a PyTorch MLP that trains on one GPU or on every
-   visible GPU with NCCL DDP, and that honours sample weights through a weighted MSE.
-4. Outer splits are materialized once, validated for coverage and paper leakage, and shared
-   by every family instead of being rebuilt inside each repeat.
-5. Hyper-parameters are tuned inside each protocol's own training partition. The original
-   script tuned once with grouped CV and reused those settings for the random-split
-   condition, which let information from the random split's test rows influence its own
-   model selection.
-6. Paper identity is canonical (normalized DOI with citation fallback) rather than raw
-   citation text, and near-duplicate rows are removed, so grouped splits cannot be defeated
-   by two spellings of one paper.
-7. Numeric detection only accepts cells that begin with a number, which keeps chemical
-   labels such as `N2` and `CO2` categorical.
-8. Candidates are declarative (`configs/candidates.yaml`): feature set, paper weighting,
-   target transform, XGBoost objective variant, monotone oxygen constraint and paper-cluster
-   bagging. Champion choice is a declarative policy (`configs/selection_policy.yaml`) with
-   explicit rejection rules and tie-breakers instead of a single hard-coded metric.
-9. Bootstrap augmentation is a first-class evaluated condition (`rd` versus `rd_bt`) whose
-   copies inherit the paper of their source row.
-10. Uncertainty uses paper-cluster bootstrap intervals and paired Wilcoxon comparisons over
-    identical outer folds, and refit artifacts ship a model card with data fingerprints and
-    documented limitations.
+| Script | Role | Trains? |
+|---|---|---|
+| `fsr_common.py` | Shared library: load Excel/CSV, detect target/group/leakage, feature manifest, weights, metrics, GPU helpers | Library |
+| `fsr_models.py` | Shared library: five families + preprocessing + target transforms | Library |
+| `fsr_splits.py` | Write frozen `interpolation_random` + `extrapolation_grouped` assignments | No |
+| `fsr_search.py` | Nested random search on one outer **train** partition | Yes (inner only) |
+| `fsr_evaluate.py` | Candidate × split × (`rd`/`rd_bt`) benchmark; writes a shard | Yes |
+| `fsr_aggregate.py` | Discover shards, merge tables, bootstrap CIs, gaps, stability | No |
+| `fsr_select.py` | Apply `selection_policy.yaml` → interpolation & extrapolation champions | No |
+| `fsr_refit.py` | Fit chosen config (+ optional `rd_bt`) on all labeled rows | Yes |
+| `fsr_report.py` | Numbered report directories, diagnostics, explainability | Reads artifacts |
+| `fsr_predict.py` | Score new files with a refit champion | Loads artifact |
 
-Evaluation artifacts are unbiased comparison evidence, not trained production models. Refit
-artifacts are trained production models, not unbiased evaluation evidence. Random-split
-results must never be presented as unseen-paper generalization.
+Full detail: [`pipeline.md`](pipeline.md).
+
+---
+
+## Candidates (34)
+
+Defined in `configs/candidates.yaml` (rationale in `configs/candidates.md` — note the YAML is authoritative if counts differ):
+
+| Family | Count | Themes |
+|---|---:|---|
+| XGBoost | 10 | Baseline, paper weights, absolute / Pseudo-Huber loss, `signed_log1p` target, paper bagging |
+| Random forest | 7 | Baseline, paper weights, absolute-error criterion, log target |
+| KNN | 6 | Uniform vs distance × paper weights |
+| MLP | 5 | Baseline, paper weights, log target |
+| SVR | 6 | Linear vs RBF × paper weights |
+
+Each candidate is a **recipe**: family + `paper_weight` (`none` / `sqrt` / `inverse`) + optional `target_transform`, `fixed_params`, `paper_bagging`.
+
+Augmentation is **not** a separate YAML candidate: every evaluated candidate is scored under both `rd` and `rd_bt` (1000 bootstrap training rows by default). Selection treats `(candidate, augmentation)` as the unit.
+
+---
+
+## Data assumptions (must know)
+
+- Default local file: `Microgravity_Database.csv` in this folder. Loader also accepts Excel and resolves paths via `locate_data_file`.
+- CSV layout: category banner row + real header; Excel may use a two-level header. The parse that exposes an FSR-like column wins.
+- Target: auto-detected FSR column → internal name `fsr`. Training drops rows without a numeric target.
+- Paper ID: normalized DOI (`doi::…`) else normalized citation (`citation::…`).
+- Dropped on load: Material of Sample, Rig Name, Internal Geometry, Internal Dimensions, Facility, Info.
+- Leakage columns auto-excluded (duplicate FSR fields, flame length, HRR, smoke, ignition yes/no, notes, author/DOI fingerprints, …).
+- Remaining columns → numeric vs categorical by leading-number parsing (`"101.3 kPa"` → number; `"N2"` stays categorical).
+- Data version: `fsr-data-v2`.
+- Feature roles (`physics` / `apparatus`) are still tagged in the manifest for reporting, but **`feature_lists` no longer filters by role** — every candidate sees the full physics database feature list.
+
+Numeric: median impute (XGBoost keeps native NaNs) + optional scaling. Categorical: constant impute + unknown-safe one-hot.
+
+---
+
+## Outputs
+
+```text
+results/
+├── splits/
+│   ├── split_assignments.csv|.parquet
+│   ├── split_diagnostics.csv
+│   ├── splits_metadata.json
+│   └── data_validation_report.json
+├── evaluation/
+│   ├── <family>/<candidate_id>/   # shards from evaluate / Slurm array
+│   └── merged/                    # aggregate output used by select/report
+│       ├── fold_metrics.csv, summary_metrics.csv, …
+│       ├── outer_fold_predictions.parquet
+│       ├── bootstrap_intervals.csv, generalization_gap.csv, …
+│       ├── integrity_checks.json
+│       └── explainability_models/
+├── selection.json
+├── selection.md
+└── report/
+    ├── 00_overview/ … 07_explainability/
+    ├── README.md
+    └── report_manifest.json
+
+artifacts/
+├── interpolation_champion/   # model.joblib, model_card.json, …
+└── extrapolation_champion/
+```
+
+**Evaluation / merged artifacts** = unbiased comparison evidence.  
+**Refit artifacts** = production models (not nested-CV scores).
+
+---
+
+## HPC (NYU Greene / Singularity)
+
+Scripts assume (overridable with env vars):
+
+| Variable | Typical default |
+|---|---|
+| `FSR_DATA` | Folder or repo `Microgravity_Database.csv` (check each `.slurm`) |
+| `FSR_OVERLAY` | `/scratch/me3144/ignition_hpc/ignition_python.ext3` |
+| `FSR_IMAGE` | `/share/apps/images/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif` |
+| `FSR_N_REPEATS` | `10` |
+| `FSR_SEARCH_ITERATIONS` | `40` |
+| `FSR_INNER_FOLDS` | `5` |
+| `FSR_BOOTSTRAP_ITERATIONS` | `2000` |
+
+Submit **from** the `FSR Regressors` directory:
+
+```bash
+mkdir -p logs
+
+SPLITS=$(sbatch --parsable run_regressors_splits.slurm)
+ARRAY=$(sbatch --parsable --dependency=afterok:${SPLITS} run_candidates_array.slurm)
+sbatch --dependency=afterok:${ARRAY} run_regressors_finalize.slurm
+```
+
+- `run_candidates_array.slurm` — `#SBATCH --array=0-33`, one task per candidate → `results/evaluation/<family>/<candidate_id>/`
+- `run_regressors_finalize.slurm` — `fsr_aggregate` → `fsr_select` → both `fsr_refit` → `fsr_report`
+
+---
+
+## Reproducibility
+
+- Seed **42** everywhere; repeats use consecutive seeds.
+- Splits store dataset SHA-256, target/group columns, feature manifest, exact memberships.
+- Evaluate aborts on dataset fingerprint mismatch.
+- Search histories, selected hyperparameters, and integrity failures are persisted per shard.
+
+---
+
+## Common pitfalls for new contributors
+
+1. **Wrong order** — splits → evaluate shards → **aggregate** → select → refit → report. Select/report need `results/evaluation/merged/`.
+2. **Confusing champions** — interpolation ≠ extrapolation. Extrapolation is the primary scientific claim.
+3. **Calling `rd_bt` “new data”** — bootstrap copies existing training rows (same papers); it does not invent physics.
+4. **Mixing datasets between splits and evaluate** — SHA-256 must match.
+5. **Presenting merged metrics as the deployed model** — only `artifacts/*_champion` are deployable.
+6. **Stale README mental model** — families are XGBoost / RF / KNN / MLP / SVR (not decision-tree-only); parallelism is **per candidate** (`0–33`), not only four family GPUs.
+
+---
+
+## Where to go next
+
+1. Read [`pipeline.md`](pipeline.md) once end-to-end.
+2. Skim [`configs/candidates.yaml`](configs/candidates.yaml) and [`configs/selection_policy.yaml`](configs/selection_policy.yaml).
+3. Run `fsr_splits.py` locally and inspect `results/splits/`.
+4. Run **one** `--candidate-id` evaluation with fewer `--search-iterations` before launching the full array.
