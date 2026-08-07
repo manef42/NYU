@@ -1,6 +1,5 @@
 # Ignition Classifier Pipeline — Full Guide
 
-Plain-language, script-by-script documentation for someone joining this project from scratch.
 
 If you only need commands, use [`README.md`](README.md). This document explains **what each stage does**, **why it exists**, and **what files it produces**.
 
@@ -518,18 +517,6 @@ Use this when reviewing a PR or a new experiment:
 - [ ] Interpolation and extrapolation champions are reported as answering **different** questions.
 - [ ] Deployed `artifacts/` models are not described as nested-CV scores.
 - [ ] Feature list matches `fable-data-v5` (32 numeric + 5 categorical); no post-outcome columns.
-
----
-
-## 14. Mental model for interns
-
-Think of the pipeline as a **funnel with a firewall**:
-
-1. **Clean once** — same features for everyone (`fable_common`).
-2. **Lock the exam questions** — frozen splits (`fable_splits`).
-3. **Study only on the practice set** — nested search inside each outer train fold (`fable_search` via `fable_evaluate`).
-4. **Grade on the held-out exam** — outer test predictions and metrics.
-5. **Pick winners from the grade book** — policy file, no re-training (`fable_select`).
 6. **Build the production copy** — refit on all labeled data (`fable_refit`).
 7. **Write the report and serve predictions** — `fable_report` / `fable_predict`.
 
