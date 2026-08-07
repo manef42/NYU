@@ -1,4 +1,4 @@
-# NYU Microgravity Combustion ML
+# Microgravity Database ML
 
 Entry point for this repository’s **main** branch.
 
