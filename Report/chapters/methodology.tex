@@ -375,3 +375,56 @@ Negative permutation importance means that random disruption happened to improve
 held-out performance under the realized sample, not that the variable is
 physically protective.  Explainability was consequently interpreted as evidence
 about model reliance and predictive associations only.
+
+\section{Reproducibility, estimands, and reporting conventions}
+\label{sec:method-reproducibility}
+
+Reproducibility was enforced at the level of data identity, partition membership,
+candidate definition, and randomization.  The default random seed was 42; repeated
+splits used consecutive integer seeds.  Split assignments stored the row and paper
+membership of every partition rather than relying on regeneration from an
+algorithm description.  Candidate manifests recorded model family, weighting,
+fixed parameters, and augmentation condition.  Search histories and selected
+hyperparameters preserved the choices made independently for each outer fold.
+Integrity files recorded failed fits or invalid outputs instead of replacing them
+with fabricated scores.  This persisted-state design permits the report to be
+regenerated from evaluation outputs and fitted artifacts without rerunning or
+altering hyperparameter optimization.
+
+The relevant estimand differs by protocol.  In a row split, observations are the
+resampling units and papers can be represented in both partitions.  Its performance
+is therefore conditional on the mixture of campaigns already present.  In a
+grouped split, the held-out units are papers; rows within a paper remain dependent
+and should not be counted as independent evidence for cross-paper uncertainty.
+The use of canonical-paper bootstrap resampling for grouped predictions reflects
+this distinction.  It does not eliminate all dependence---for example, multiple
+papers may share investigators, rigs, materials, or facilities---but it avoids the
+more serious error of assigning independent status to repeated rows from one
+publication.
+
+Fold means, fold standard deviations, and pooled-prediction bootstrap estimates
+were kept conceptually separate.  If \(m_k\) is a metric in outer fold \(k\), the
+reported fold summary is
+\begin{equation}
+  \bar m=\frac{1}{K}\sum_{k=1}^{K}m_k,\qquad
+  s_m=\sqrt{\frac{1}{K-1}\sum_{k=1}^{K}(m_k-\bar m)^2}.
+  \label{eq:fold-summary}
+\end{equation}
+This gives each repeat or fold one contribution.  The bootstrap tables instead
+average repeated predictions for a row, recompute a metric on the pooled
+predictions, and resample the appropriate row or paper units.  Because nonlinear
+metrics generally do not commute with averaging, a bootstrap point estimate need
+not reproduce \(\bar m\).  The former describes variability among the frozen
+outer evaluations; the latter supplies a sampling interval under the stated
+cluster-resampling scheme.
+
+All rates and errors were reported in the units of their persisted targets.
+Ignition discrimination metrics are dimensionless, and the Brier score is a mean
+squared probability error.  FSR RMSE, MAE, and MBE retain
+\(\mathrm{m\,s^{-1}}\); \(R^2\), MAPE, and NRMSE are dimensionless.  Candidate
+names such as \texttt{baseline}, \texttt{sqrt}, and \texttt{inverse} identify
+computational recipes rather than physical hypotheses.  Similarly,
+\texttt{rd\_bt} denotes duplicated training observations sampled with replacement,
+not a second experimental cohort.  These conventions prevent changes in
+evaluation protocol, aggregation, or units from being mistaken for changes in the
+underlying physical phenomenon.
