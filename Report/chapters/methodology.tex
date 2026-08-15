@@ -1,0 +1,377 @@
+\chapter{Methodology}
+\label{chap:methodology}
+
+\section{Study design and prediction tasks}
+\label{sec:method-study-design}
+
+This work treats the curated microgravity-combustion database as an observational,
+multi-study data set rather than as a collection of independent and identically
+distributed measurements.  An experimental paper commonly contributes a series of
+closely related rows obtained with the same apparatus, material preparation,
+diagnostic practice, and range of operating conditions.  Consequently, two rows
+from one paper can be substantially more similar than two rows drawn from different
+papers even when their tabulated physical variables overlap.  The methodology was
+therefore organized around two distinct prediction tasks.  The first was binary
+classification of whether ignition occurred.  The second was regression of flame
+spread rate (FSR), expressed in \(\mathrm{m\,s^{-1}}\).  FSR was modeled only where
+a numeric FSR observation was present.  No extinction target or extinction model
+was defined.
+
+For each task, interpolation and extrapolation were evaluated separately.
+\emph{Row interpolation} asks how accurately a model predicts a held-out row when
+other rows from the same paper may remain in training.  It is useful for estimating
+performance within the support of campaigns already represented in the database,
+but it does not test transfer to a new publication.  \emph{Paper-grouped
+extrapolation} instead holds out complete canonical papers, so that no paper
+identity occurs in both training and test partitions.  It asks whether relationships
+learned from the available literature transfer to a previously unseen paper or
+campaign.  The grouped estimate is the primary evidence for cross-paper
+generalization.  The deliberate use of both protocols makes the otherwise hidden
+effect of campaign dependence measurable.
+
+The two pipelines followed the same high-level sequence: load and standardize the
+data; freeze all outer partitions; perform hyperparameter search within each outer
+training partition; fit the selected configuration to that partition; evaluate it
+once on the untouched outer test partition; aggregate persisted predictions and
+metrics; choose separate interpolation and extrapolation champions by a declared
+policy; and only then refit deployable models on all labeled rows.  Evaluation
+models and full-data refits have different inferential roles.  The former provide
+out-of-sample comparison evidence, while the latter are operational artifacts and
+do not supply unbiased performance estimates.
+
+\section{Database ingestion and canonicalization}
+\label{sec:method-data}
+
+\subsection{Source structure and evidenced standardization}
+
+Both analyses used the task-local \texttt{Microgravity\_Database.csv}.  The CSV
+contains a category banner in its first row, a field-name header in its second row,
+and observations thereafter.  The loaders therefore read the CSV after skipping
+the category row and attempted UTF-8, UTF-8 with byte-order mark, CP1252, and
+Latin-1 encodings.  The persisted validation reports identify CP1252 as the
+successful encoding for both analyzed files.  The FSR loader additionally accepts
+Excel workbooks with one- or two-level headers, but the persisted analysis reported
+the CSV parse \texttt{skiprows=1; encoding=cp1252}.  These operations describe
+schema ingestion and computational standardization; the repository does not
+document enough of the upstream literature-search or manual transcription process
+to justify broader claims about database construction.
+
+Whitespace and placeholder tokens were normalized, duplicate headers and all-empty
+columns were removed where applicable, and numeric values were parsed from
+unit-bearing cells.  The ignition pipeline implemented explicit conversion for
+sample dimensions to metres, pressure to pascals, and flow velocity to
+\(\mathrm{m\,s^{-1}}\), using either a recognized cell suffix or the unit in the
+column header.  Gravity was represented relative to terrestrial gravity,
+\(g/g_{\mathrm{Earth}}\).  A microgravity text token without a numeric value was
+mapped to \(10^{-6}\), while acceleration values in \(\mathrm{m\,s^{-2}}\),
+\(\mathrm{cm\,s^{-2}}\), or \(\mathrm{mm\,s^{-2}}\) were converted to this relative
+scale.  Ignition-power entries describing heat flux, current, or other quantities
+that were not watts were not coerced into power values.  In the FSR pipeline,
+columns were classified as numeric when at least 60\% of their available cells
+could be parsed from a leading number.  Restricting parsing to a leading numeric
+token prevents chemical labels such as \(\mathrm{N_2}\) or \(\mathrm{CO_2}\) from
+being mistaken for measurements.  Thus, for example, ``101.3 kPa'' is numeric
+while ``N2'' remains categorical.
+
+Six fields were dropped before modeling in both tasks: material of sample, rig
+name, internal geometry, internal dimensions, facility, and free-form information.
+Paper identifiers and bibliographic fingerprints were never supplied as predictors.
+For ignition, the post-outcome columns flame length, FSR, heat-release rate (HRR),
+and smoke/aerosols were explicitly excluded.  For FSR, the selected FSR target,
+duplicate FSR-like fields, citation and author identifiers, notes, and detected
+post-outcome fields such as flame length, HRR, smoke/aerosols, and extinction-like
+fields were excluded.  This exclusion is a leakage control, not an extinction
+analysis.
+
+\subsection{Canonical paper identity}
+
+The grouping unit was a canonical paper identifier.  A valid DOI was normalized by
+removing URL or \texttt{doi:} prefixes, lowercasing, and retaining the canonical
+DOI expression.  The resulting identifier had the form
+\texttt{doi::<normalized-doi>}.  If no valid DOI was available, the citation was
+lowercased, punctuation was removed, whitespace was collapsed, and the identifier
+\texttt{citation::<normalized-citation>} was used.  Raw DOI strings were therefore
+not used directly as groups.  This canonicalization is essential: cosmetic
+differences in citation formatting must not permit one publication to appear under
+multiple group labels and thereby cross a grouped train--test boundary.
+
+\subsection{Task-specific cohorts}
+
+The ignition target was the database field \texttt{Ignition}, mapped to
+\(y_i\in\{0,1\}\) for No and Yes.  Training required every target to be recognized.
+Rows were deduplicated on the complete engineered feature vector, target, and
+canonical paper identifier, retaining the first occurrence.  The persisted
+\texttt{fable-data-v5} cohort contains 4,487 observations from 87 papers after 570
+duplicates were removed.  There were 3,383 ignition-positive and 1,104
+ignition-negative rows, corresponding to a positive prevalence of 0.75396.
+Twenty-nine blank source rows were also identified in the validation report.
+
+For regression, the loader selected the FSR-like column with the greatest number of
+numeric values; the persisted target was \texttt{FSR (m/s)}.  Rows lacking numeric
+FSR were removed, and duplicates were counted after target filtering.  The
+\texttt{fsr-data-v2} cohort contains 2,531 usable rows from 66 papers, derived from
+5,057 raw rows: 2,467 rows lacked FSR and 59 duplicates were removed.  Papers
+contributed between 1 and 193 usable rows (median 22.5, mean 38.35), demonstrating
+substantial imbalance in campaign size.  The observed FSR ranged from 0 to
+\(0.211~\mathrm{m\,s^{-1}}\), with mean \(0.008774~\mathrm{m\,s^{-1}}\) and
+standard deviation \(0.017252~\mathrm{m\,s^{-1}}\).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Persisted analysis cohorts. Counts are those recorded by the task-specific
+  validation reports after target filtering and deduplication.}
+  \label{tab:method-cohorts}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Task & Raw rows & Analyzed rows & Papers & Duplicates removed \\
+    \midrule
+    Ignition classification & 5,086 & 4,487 & 87 & 570 \\
+    FSR regression & 5,057 & 2,531 & 66 & 59 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Predictor representation and preprocessing}
+\label{sec:method-features}
+
+\subsection{Ignition feature engineering}
+
+Ignition classification used a fixed manifest of 32 numeric and five categorical
+features.  This manifest was invariant across all candidates.  Fuel properties
+comprised density (\(\mathrm{kg\,m^{-3}}\)), thermal conductivity
+(\(\mathrm{W\,m^{-1}\,K^{-1}}\)), specific heat
+(\(\mathrm{J\,kg^{-1}\,K^{-1}}\)), pyrolysis temperature (K), thermal diffusivity
+(\(\mathrm{m^2\,s^{-1}}\)), and volumetric heat capacity
+(\(\mathrm{J\,m^{-3}\,K^{-1}}\)).  Corresponding core properties included density,
+thermal conductivity, specific heat, and volumetric heat capacity.
+
+Gas and transport variables were oxygen concentration, gas molar mass, gas
+specific heat, gas thermal conductivity, gas density, gas thermal diffusivity,
+kinematic viscosity, Reynolds number, Péclet number, Prandtl number, and thermal
+diffusion time in seconds.  Operating conditions comprised pressure in pascals,
+signed flow velocity and absolute flow speed in \(\mathrm{m\,s^{-1}}\), relative
+gravity, ignition power in watts, and ignition duration in seconds.  Geometry was
+represented by half-thickness, a characteristic length, and as many as three
+parsed sample dimensions, all in metres.
+
+The five categorical variables were engineered from the schema: sample geometry
+(wire, flat, cylindrical, spherical, or residual category), diluent, signed-flow
+direction (coflow, counterflow, or quiescent), gravity regime (microgravity,
+partial gravity, Earth gravity, or hypergravity/unknown), and ignition method
+(open flame, radiative heater, discharge, wire/coil, or unknown).  Signed flow and
+absolute flow were intentionally both retained because direction and magnitude
+encode different information.  Derived quantities already present in the database,
+including Reynolds, Péclet, and Prandtl numbers and thermal diffusion time, were
+treated as predictors; their inclusion creates correlated representations and must
+be considered when interpreting importance.
+
+Missingness was heterogeneous.  Flow variables were missing in 897 ignition rows,
+gravity in 54, and gas-derived transport variables in 48.  Ignition power was
+missing in 3,606 rows and ignition time in 2,400; the third sample dimension was
+missing in 2,049.  By contrast, many tabulated material properties had no recorded
+missing values.  These patterns mean that apparatus-related variables can partly
+encode which campaigns measured or reported them, even though explicit paper
+identifiers were excluded.
+
+\subsection{FSR feature manifest}
+
+FSR regression used a detected manifest rather than the ignition pipeline's renamed
+fixed manifest.  The persisted manifest contains 29 numeric and four categorical
+fields.  Numeric fields cover the sample-dimension string parsed numerically,
+half-thickness and characteristic length; fuel and core thermophysical properties;
+oxygen concentration; gas molar mass, heat capacity, conductivity, density,
+thermal diffusivity, and kinematic viscosity; Reynolds, Péclet, and Prandtl
+numbers; thermal diffusion time; pressure in pascals; flow velocity in
+\(\mathrm{m\,s^{-1}}\); relative gravity; and ignition power and time.  Geometry,
+diluent, ignition method, and ignition outcome are categorical.  The manifest tags
+ignition power, ignition time, ignition method, and ignition outcome as apparatus
+features and the remainder as physics features.  However, role tags were retained
+for reporting only: all candidates used the same full feature list, so the
+\texttt{feature\_set=all} designation is substantive and no physics-only feature
+ablation was performed.
+
+The FSR target is in \(\mathrm{m\,s^{-1}}\), and names carrying SI units were
+interpreted accordingly.  The generic FSR parser extracts leading numbers but does
+not establish additional unit conversions beyond the recorded schema; no stronger
+standardization claim is made.  Missingness again concentrated in apparatus and
+flow fields: among analyzed rows, flow was missing in 709, ignition power in 2,198,
+ignition time in 1,725, gravity in 30, and several gas/transport variables in 33.
+
+\subsection{Fold-local transformations}
+
+All learned preprocessing was fitted on training data only.  For scikit-learn-style
+models, numeric missing values were replaced by the training-fold median.
+XGBoost retained native missing values.  Numeric scaling by a training-fold
+\texttt{StandardScaler} was applied for distance-, margin-, and neural-network
+families, but not for tree models.  Categorical missingness was replaced by the
+constant ``Unknown'' and categories were one-hot encoded with unknown-category-safe
+handling.  This arrangement prevents test-set medians or category vocabularies
+from entering model fitting.
+
+\section{Candidate models, weighting, and augmentation}
+\label{sec:method-models}
+
+The ignition benchmark comprised 26 declared candidates spanning XGBoost,
+decision trees, \(k\)-nearest neighbors (KNN), multilayer perceptrons (MLP), and
+support-vector machines (SVM).  Candidate recipes varied paper weighting, balanced
+class weighting, focal versus logistic XGBoost objectives, distance-weighted KNN,
+and linear versus radial-basis SVM.  The FSR benchmark comprised 34 candidates:
+10 XGBoost, seven random-forest, six KNN, five MLP, and six support-vector
+regression (SVR) recipes.  Regression candidates varied paper weighting, tree loss,
+signed-\(\log(1+y)\) target transformation, KNN distance weighting, SVR kernel, and
+XGBoost paper bagging.  Predictions from a transformed-target candidate were
+inverse-transformed to original FSR units before evaluation.
+
+Campaign-size weighting was defined from the number \(n_p\) of training rows in
+paper \(p\).  The principal choices were
+\begin{equation}
+  w_{ip}^{(\mathrm{none})}=1,\qquad
+  w_{ip}^{(\mathrm{sqrt})}=n_p^{-1/2},\qquad
+  w_{ip}^{(\mathrm{inverse})}=n_p^{-1}.
+  \label{eq:paper-weights}
+\end{equation}
+For ignition, optional balanced class weights were multiplied by the paper weights
+and the result renormalized.  Families with native sample-weight support received
+these values during fitting.  Weight-blind families used deterministic
+probability-proportional resampling so that a weighting option was not silently
+ignored.  The FSR MLP minimized weighted mean squared error; FSR KNN and SVR used
+the analogous resampling path.
+
+Every FSR candidate was evaluated under two training-data conditions.
+\texttt{rd} used the real outer-training rows.  \texttt{rd\_bt} appended 1,000
+rows sampled with replacement from those training rows; each copy retained its
+source paper identifier.  This bootstrap operation changes the empirical
+frequency of observed conditions.  It neither generates independent experiments
+nor expands physical support, and the test set was never augmented.  Candidate and
+augmentation together formed the regression selection unit.
+
+\section{Frozen outer evaluation protocols}
+\label{sec:method-splits}
+
+The ignition split file used base seed 42 and three consecutive seeds.  For each
+seed, it stored a stratified 80/20 row holdout, a five-fold stratified row
+cross-validation, and a five-fold stratified grouped cross-validation.  It also
+stored 87 leave-one-paper-out (LOPO) folds, one for each canonical paper.  Thus,
+the primary interpolation and grouped protocols each comprised 15 outer folds,
+the supplementary holdout comprised three, and LOPO supplied a paper-level
+robustness analysis.  Split integrity was checked for all 120 split objects.
+
+The FSR pipeline generated ten repeated 80/20 holdouts using seeds 42--51.  The
+interpolation partition was stratified by six target quantile bins when feasible
+and consistently contained 2,024 training and 507 test rows.  For extrapolation,
+50 candidate \texttt{GroupShuffleSplit} partitions were generated per repeat and
+the most target-balanced paper-disjoint candidate was retained.  Each grouped
+training set contained 52 papers and each test set 14 papers, although row counts
+varied because paper sizes differed.  Balance screening reduces avoidable changes
+in target distribution without weakening the defining paper-disjoint constraint.
+Integrity checks across all 20 partitions confirmed full coverage, nonempty
+partitions, no row overlap, and, for grouped partitions, no paper overlap.
+
+\section{Nested tuning and leakage control}
+\label{sec:method-nested}
+
+Hyperparameters were selected separately inside every outer training partition.
+For ignition interpolation, inner stratified folds were used; grouped
+extrapolation and LOPO used stratified, paper-disjoint inner folds with both classes
+represented.  For FSR, shuffled K-fold inner validation was used for interpolation
+and \texttt{GroupKFold} by paper for extrapolation.  Up to 40 distinct parameter
+configurations were sampled from each family search space in the documented full
+workflow.  Ignition used three inner grouped folds; FSR used five inner folds.
+
+For ignition configuration \(h\), the inner score ordered candidates by mean
+receiver-operating-characteristic area under the curve (ROC--AUC), then
+precision--recall AUC (PR--AUC), then lower Brier score.  For FSR it ordered by
+lower root mean squared error (RMSE), then lower mean absolute error (MAE), then
+higher coefficient of determination \(R^2\).  The best configuration was refitted
+on the complete outer training partition and evaluated once on the outer test
+partition.  Search histories, selected hyperparameters, outer predictions, and
+integrity status were persisted.  Dataset SHA-256 fingerprints linked the input,
+splits, and evaluations; the FSR evaluator explicitly aborted on a mismatch.
+
+For the ignition task, decision thresholds were also selected without outer-test
+labels.  Given a probability estimate \(\hat p_i\),
+\begin{equation}
+  \hat y_i(\tau)=\mathbb{I}\!\left(\hat p_i\geq\tau\right).
+  \label{eq:threshold}
+\end{equation}
+Four thresholds maximized, respectively, Matthews correlation coefficient (MCC),
+F1 score, balanced accuracy, and Youden's
+\(J=\mathrm{sensitivity}+\mathrm{specificity}-1\) on the winning configuration's
+inner out-of-fold predictions.  Ties favored a threshold nearer 0.5.  Once frozen,
+each threshold was applied to the outer test fold.  No single threshold was
+declared universally optimal because each policy imposes a different balance
+between false positives and false negatives.
+
+\section{Metrics, uncertainty, and model selection}
+\label{sec:method-metrics}
+
+Threshold-independent classification metrics were ROC--AUC, PR--AUC, and the
+Brier score
+\begin{equation}
+  \mathrm{Brier}=\frac{1}{n}\sum_{i=1}^{n}(\hat p_i-y_i)^2.
+  \label{eq:brier}
+\end{equation}
+Thresholded metrics included MCC, F1, balanced accuracy, sensitivity, specificity,
+and precision.  Regression metrics included
+\begin{align}
+  \mathrm{RMSE} &=
+    \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i-\hat y_i)^2}, &
+  \mathrm{MAE} &=
+    \frac{1}{n}\sum_{i=1}^{n}|y_i-\hat y_i|, \label{eq:reg-errors}\\
+  R^2 &=1-\frac{\sum_i(y_i-\hat y_i)^2}
+                    {\sum_i(y_i-\bar y)^2}, &
+  \mathrm{MBE} &=\frac{1}{n}\sum_i(\hat y_i-y_i).
+  \label{eq:r2-mbe}
+\end{align}
+MAPE and normalized RMSE were also persisted.  MAPE is unstable when measured FSR
+approaches zero and was therefore descriptive rather than a champion-selection
+criterion.
+
+Reported ``mean \(\pm\) SD'' values summarize outer-fold variability.  In
+addition, 2,000-resample 95\% bootstrap intervals were computed from persisted
+outer predictions.  Repeated predictions for a row were averaged before
+resampling.  Interpolation resampled unique rows; extrapolation resampled canonical
+papers, preserving the clustered inferential unit.  Fold SD and cluster-bootstrap
+intervals answer different questions and are both reported where available.
+
+Ignition candidates had to pass integrity checks, complete all required folds,
+produce valid probabilities, and have ROC--AUC fold SD no greater than 0.15.
+Interpolation was ranked on stratified-row ROC--AUC.  Extrapolation was ranked on
+grouped ROC--AUC and additionally required successful LOPO evaluation.  Values
+within 0.01 of the best were resolved by higher PR--AUC, lower uncertainty, and a
+declared simplicity order.  FSR candidates required complete, finite evaluation,
+RMSE coefficient of variation no greater than 0.45, and mean \(R^2\geq-0.25\).
+Any RMSE within 2\% of the best formed a tie band.  Tie-breakers considered higher
+\(R^2\), lower uncertainty, and no augmentation; extrapolation additionally
+considered a smaller interpolation--extrapolation gap.  Because all persisted FSR
+candidates used the same full feature set, the nominal physics-only and
+fewer-features tie-breakers did not distinguish them.  For both tasks, refitting
+used the modal outer-fold hyperparameter configuration, with lexical resolution
+of an exact modal tie.
+
+\section{Post hoc explainability}
+\label{sec:method-explainability}
+
+Tree-model explanations were generated from persisted evaluation and refit
+artifacts, without retuning.  Mean absolute SHAP magnitude was used as a global
+summary,
+\begin{equation}
+  I_j^{\mathrm{SHAP}}=\frac{1}{n}\sum_{i=1}^{n}|\phi_{ij}|,
+  \label{eq:shap}
+\end{equation}
+where \(\phi_{ij}\) is the additive contribution assigned to feature \(j\) for
+observation \(i\).  Permutation importance measured the degradation in held-out
+score after disrupting one original feature while leaving the fitted model fixed.
+For classification, positive values are losses in ROC--AUC; for regression,
+positive values are increases in RMSE.  Repeated permutations provide the reported
+mean and standard deviation.
+
+These measures are predictive, conditional on the fitted model and sampled data.
+They do not identify causal effects.  Correlated physical and engineered variables
+can divide, substitute, or mask importance; one-hot levels and their parent
+categorical fields have different granularities; missingness can carry campaign
+information; and SHAP magnitude does not establish the sign of an effect.
+Negative permutation importance means that random disruption happened to improve
+held-out performance under the realized sample, not that the variable is
+physically protective.  Explainability was consequently interpreted as evidence
+about model reliance and predictive associations only.
