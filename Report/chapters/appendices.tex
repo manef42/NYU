@@ -103,11 +103,13 @@ The reproducibility contract is:
     \item Refit the selected configuration on all labelled data for inference, package the model card and feature manifest, and retain evaluation results separately. A refitted artifact is deployable; outer-fold predictions are the unbiased comparison evidence.
 \end{enumerate}
 
-The recorded FSR fingerprint is
-\texttt{6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8};
-the ignition fingerprint is
-\texttt{d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6}.
-Random seeds begin at 42 and split files are shared across candidates.
+The recorded fingerprints are shown below; random seeds begin at 42 and split
+files are shared across candidates.
+\begin{center}
+\scriptsize
+\texttt{FSR: 6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8}\\
+\texttt{Ignition: d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6}
+\end{center}
 
 \section{Traceability matrix}
 \label{app:traceability}
@@ -122,23 +124,23 @@ Random seeds begin at 42 and split files are shared across candidates.
 Claim & Persisted evidence \\
 \hline
 FSR dataset has 2,531 target rows from 66 papers &
-\texttt{FSR Regressors/results/report/00\_overview/dataset\_integrity\_summary.md}. \\
+\path{FSR Regressors/results/report/00_overview/dataset_integrity_summary.md}. \\
 FSR interpolation and grouped champion scores &
-\texttt{FSR Regressors/results/report/README.md}, \texttt{00\_overview/interpolation\_leaderboard.md}, and \texttt{extrapolation\_leaderboard.md}. \\
+\path{FSR Regressors/results/report/README.md}, \path{00_overview/interpolation_leaderboard.md}, and \path{extrapolation_leaderboard.md}. \\
 FSR generalisation gap and stability &
-\texttt{00\_overview/generalization\_gap.md} and \texttt{metric\_stability.md}. \\
+\path{00_overview/generalization_gap.md} and \path{metric_stability.md}. \\
 Ignition dataset has 4,487 rows, 87 papers, and 3,383/1,104 class counts &
-\texttt{Ignition Classifiers/results/report/dataset\_integrity\_summary.md}. \\
+\path{Ignition Classifiers/results/report/dataset_integrity_summary.md}. \\
 Ignition interpolation and grouped scores &
-\texttt{interpolation\_leaderboard.md}, \texttt{extrapolation\_leaderboard.md}, and \texttt{interpolation\_extrapolation\_drop.md}. \\
+\path{interpolation_leaderboard.md}, \path{extrapolation_leaderboard.md}, and \path{interpolation_extrapolation_drop.md}. \\
 Threshold trade-offs &
-\texttt{Ignition Classifiers/results/report/champion\_threshold\_performance.md}. \\
+\path{Ignition Classifiers/results/report/champion_threshold_performance.md}. \\
 Explanations are model-dependent &
 Both report directories' SHAP and permutation-importance tables and status JSON files. \\
 Champion identity and full-data artifact provenance &
-Each task's \texttt{results/selection.json}, \texttt{artifacts/*\_champion/model\_card.json}, feature manifest, and training-data fingerprint. \\
+Each task's \path{results/selection.json}, \path{artifacts/*_champion/model_card.json}, feature manifest, and training-data fingerprint. \\
 No paper leakage and nested tuning contract &
-\texttt{FSR Regressors/pipeline.md} and \texttt{Ignition Classifiers/pipeline.md}; machine checks are persisted under \texttt{results/evaluation}. \\
+\path{FSR Regressors/pipeline.md} and \path{Ignition Classifiers/pipeline.md}; machine checks are persisted under \path{results/evaluation}. \\
 \hline
 \end{tabular}
 \end{table}
