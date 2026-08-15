@@ -391,6 +391,16 @@ produce the corresponding change in FSR.
 \section{Synthesis}
 \label{sec:results-synthesis}
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.90\textwidth]{protocol_comparison.pdf}
+  \caption{Protocol sensitivity for the common baseline configurations used to
+  isolate the row-to-paper shift. Error bars in the FSR panel are fold standard
+  deviations. The ignition panel compares the same unweighted XGBoost candidate
+  under both protocols. Values are generated from persisted report tables.}
+  \label{fig:protocol-comparison}
+\end{figure}
+
 The two tasks exhibit the same structural result despite different targets,
 cohorts, models, and metrics.  Ignition ROC--AUC declined from approximately 0.91
 under row interpolation to 0.72 for the grouped champion.  FSR RMSE approximately
@@ -416,6 +426,16 @@ paper-level failures preclude universal claims.  SHAP and permutation analyses
 identify predictive reliance, not causal combustion laws.  The defensible outputs
 are therefore protocol-specific estimates with their uncertainty and documented
 feature context, rather than a single headline score or a mechanistic claim.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.94\textwidth]{shap_rankings.pdf}
+  \caption{Top ten global mean absolute SHAP magnitudes in the persisted
+  explainability tables. Magnitudes are task- and model-specific and are not
+  comparable across panels. Absolute SHAP values quantify predictive
+  contribution without direction and do not establish causal influence.}
+  \label{fig:shap-rankings}
+\end{figure}
 
 \section{Robustness of comparative conclusions}
 \label{sec:results-robustness}
