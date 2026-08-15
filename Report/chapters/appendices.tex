@@ -1,0 +1,213 @@
+\chapter{Technical Appendices}
+\label{chap:appendices}
+
+\section{Feature dictionary}
+\label{app:features}
+
+The deployed manifests are the authoritative machine-readable feature definitions. Tables~\ref{tab:ignition_features} and~\ref{tab:fsr_features} provide a compact human-readable dictionary. Units are encoded in names where available; otherwise they follow the database schema. Derived quantities are predictors, not independent measurements.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Ignition feature dictionary (\texttt{fable-data-v5}; 32 numeric and five categorical features).}
+\label{tab:ignition_features}
+\begin{tabular}{p{0.23\textwidth}p{0.68\textwidth}}
+\hline
+Group & Features and interpretation \\
+\hline
+Fuel properties &
+\texttt{fuel\_density\_kg\_m3}, \texttt{fuel\_k\_w\_mk}, \texttt{fuel\_cp\_j\_kgk}, \texttt{fuel\_pyrolysis\_t\_k}, \texttt{fuel\_alpha\_m2\_s}, and \texttt{fuel\_volumetric\_heat\_capacity\_j\_m3k}: density, conductivity, specific heat, pyrolysis temperature, diffusivity, and volumetric heat capacity. \\
+Core properties &
+\texttt{core\_density\_kg\_m3}, \texttt{core\_k\_w\_mk}, \texttt{core\_cp\_j\_kgk}, and \texttt{core\_volumetric\_heat\_capacity\_j\_m3k}. \\
+Gas and transport &
+\texttt{oxygen}, \texttt{gas\_molar\_mass}, \texttt{gas\_cp\_j\_kgk}, \texttt{gas\_k\_w\_mk}, \texttt{gas\_density\_kg\_m3}, \texttt{gas\_alpha\_m2\_s}, \texttt{gas\_nu\_m2\_s}, \texttt{reynolds}, \texttt{peclet}, \texttt{prandtl}, and \texttt{thermal\_diffusion\_time\_s}. \\
+Operating conditions &
+\texttt{pressure\_pa}, signed \texttt{flow\_velocity\_m\_s}, \texttt{flow\_speed\_abs\_m\_s}, \texttt{gravity\_g}, \texttt{ignition\_power\_w}, and \texttt{ignition\_time\_s}. \\
+Geometry &
+\texttt{half\_thickness\_m}, \texttt{characteristic\_length\_m}, and \texttt{sample\_dim\_1\_m} through \texttt{sample\_dim\_3\_m}. \\
+Categorical regime &
+\texttt{geometry\_cat} (wire, flat, cylindrical, spherical), \texttt{diluent\_cat}, \texttt{flow\_direction\_cat} (coflow, counterflow, quiescent), \texttt{gravity\_regime\_cat} (microgravity, partial, Earth, hyper/unknown), and \texttt{ignition\_method\_cat}. \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FSR feature dictionary (\texttt{fsr-data-v2}; exact availability follows the artifact manifest).}
+\label{tab:fsr_features}
+\begin{tabular}{p{0.23\textwidth}p{0.68\textwidth}}
+\hline
+Group & Manifest fields \\
+\hline
+Geometry &
+Sample dimensions, \texttt{half\_thickness}, \texttt{characteristic\_length\_m}, and categorical \texttt{Geometry of Sample}. \\
+Fuel properties &
+\texttt{fuel\_density\_kg\_m3}, \texttt{fuel\_k\_W\_mK}, \texttt{fuel\_cp\_J\_kgK}, \texttt{fuel\_pyrolysis\_T\_K}, \texttt{fuel\_alpha\_m2\_s}, and \texttt{fuel\_volumetric\_heat\_capacity\_J\_m3K}. \\
+Core properties &
+\texttt{core\_density\_kg\_m3}, \texttt{core\_k\_W\_mK}, \texttt{core\_cp\_J\_kgK}, and \texttt{core\_volumetric\_heat\_capacity\_J\_m3K}. \\
+Gas and transport &
+\texttt{Oxygen Concentration}, \texttt{gas\_M}, \texttt{gas\_cp\_mass}, \texttt{gas\_k}, \texttt{gas\_density\_kg\_m3}, \texttt{gas\_alpha\_m2\_s}, \texttt{gas\_nu\_m2\_s}, \texttt{Reynolds}, \texttt{Peclet}, \texttt{Prandtl}, and \texttt{thermal\_diffusion\_time}. \\
+Conditions and apparatus &
+\texttt{Pressure (Pa)}, \texttt{Flow Velocity (m/s)}, \texttt{Gravity}, \texttt{Ignition Power (W)}, \texttt{Ignition Time (s)}, categorical \texttt{diluent}, \texttt{Ignition Method}, and antecedent categorical \texttt{Ignition}. \\
+\hline
+\end{tabular}
+\end{table}
+
+Explicit source identifiers, DOI/citation fields, duplicate FSR targets, and post-outcome variables such as flame length, heat-release rate, smoke, and extinction indicators are excluded from predictors. Paper identity is retained only for grouping and weighting. Numeric parsing accepts cells beginning with a number; strings such as \texttt{N2} and \texttt{CO2} remain categorical. For non-XGBoost models, numeric missing values are median-imputed and categorical values receive a constant unknown level; XGBoost may retain native numeric missingness.
+
+\section{Metric definitions}
+\label{app:metrics}
+
+For observed FSR \(y_i\), prediction \(\hat y_i\), sample mean \(\bar y\), and \(n\) test observations,
+\begin{align}
+R^2 &= 1-\frac{\sum_{i=1}^{n}(y_i-\hat y_i)^2}
+{\sum_{i=1}^{n}(y_i-\bar y)^2},\\
+\mathrm{RMSE} &= \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i-\hat y_i)^2},\\
+\mathrm{MAE} &= \frac{1}{n}\sum_{i=1}^{n}|y_i-\hat y_i|,\\
+\mathrm{MBE} &= \frac{1}{n}\sum_{i=1}^{n}(\hat y_i-y_i),\\
+\mathrm{MAPE} &= \frac{100}{n}\sum_{i=1}^{n}
+\left|\frac{y_i-\hat y_i}{y_i}\right|.
+\end{align}
+NRMSE is the repository's normalised RMSE output. MAPE is unstable when \(y_i\) approaches zero and is secondary to RMSE and MAE for this FSR distribution.
+
+For ignition probability \(\hat p_i\), the Brier score is
+\begin{equation}
+\mathrm{Brier}=\frac{1}{n}\sum_{i=1}^{n}(\hat p_i-y_i)^2.
+\end{equation}
+ROC--AUC measures ranking of positives above negatives across thresholds. PR--AUC summarises precision--recall performance and must be read in light of class prevalence. Given threshold \(\tau\),
+\begin{equation}
+\hat y_i=\mathbf{1}[\hat p_i\geq\tau].
+\end{equation}
+Sensitivity is \(\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})\), specificity is \(\mathrm{TN}/(\mathrm{TN}+\mathrm{FP})\), precision is \(\mathrm{TP}/(\mathrm{TP}+\mathrm{FP})\), and balanced accuracy is the mean of sensitivity and specificity. The Matthews correlation coefficient is
+\begin{equation}
+\mathrm{MCC}=
+\frac{\mathrm{TP}\mathrm{TN}-\mathrm{FP}\mathrm{FN}}
+{\sqrt{(\mathrm{TP}+\mathrm{FP})(\mathrm{TP}+\mathrm{FN})
+(\mathrm{TN}+\mathrm{FP})(\mathrm{TN}+\mathrm{FN})}}.
+\end{equation}
+Thresholds optimising MCC, F1, balanced accuracy, and Youden's \(J\) are selected from inner out-of-fold predictions, never from the corresponding outer test labels.
+
+\section{Reproducibility workflow}
+\label{app:reproducibility}
+
+The reproducibility contract is:
+\begin{enumerate}
+    \item Load the named database and record its SHA-256 fingerprint, data version, parsing decisions, target counts, missingness, and duplicate removal.
+    \item Canonicalise DOI or citation into \texttt{paper\_id}; exclude source identifiers and post-outcome leakage from model inputs.
+    \item Freeze all row and paper-grouped split assignments before model comparison. Assert complete row coverage, no row overlap, and zero paper overlap for grouped protocols.
+    \item For every candidate and outer fold, fit preprocessing only on the outer training partition. Tune hyperparameters on inner folds; use group-disjoint inner folds when the outer protocol is grouped.
+    \item Fit the selected inner configuration on the complete outer training partition and score the untouched outer test partition once. For ignition, freeze thresholds from inner out-of-fold probabilities. For FSR bootstrap conditions, augment training only and preserve inherited paper identity.
+    \item Persist outer predictions, fold and per-paper metrics, search histories, selected hyperparameters, integrity checks, and failure records. Aggregate only complete, valid candidates.
+    \item Select champions from persisted tables under the versioned policy. The FSR policy prioritises RMSE; the ignition policy prioritises ROC--AUC and requires LOPO robustness for extrapolation.
+    \item Refit the selected configuration on all labelled data for inference, package the model card and feature manifest, and retain evaluation results separately. A refitted artifact is deployable; outer-fold predictions are the unbiased comparison evidence.
+\end{enumerate}
+
+The recorded FSR fingerprint is
+\texttt{6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8};
+the ignition fingerprint is
+\texttt{d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6}.
+Random seeds begin at 42 and split files are shared across candidates.
+
+\section{Traceability matrix}
+\label{app:traceability}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Claim-to-evidence traceability matrix. Paths are relative to the repository root.}
+\label{tab:traceability}
+\begin{tabular}{p{0.27\textwidth}p{0.63\textwidth}}
+\hline
+Claim & Persisted evidence \\
+\hline
+FSR dataset has 2,531 target rows from 66 papers &
+\texttt{FSR Regressors/results/report/00\_overview/dataset\_integrity\_summary.md}. \\
+FSR interpolation and grouped champion scores &
+\texttt{FSR Regressors/results/report/README.md}, \texttt{00\_overview/interpolation\_leaderboard.md}, and \texttt{extrapolation\_leaderboard.md}. \\
+FSR generalisation gap and stability &
+\texttt{00\_overview/generalization\_gap.md} and \texttt{metric\_stability.md}. \\
+Ignition dataset has 4,487 rows, 87 papers, and 3,383/1,104 class counts &
+\texttt{Ignition Classifiers/results/report/dataset\_integrity\_summary.md}. \\
+Ignition interpolation and grouped scores &
+\texttt{interpolation\_leaderboard.md}, \texttt{extrapolation\_leaderboard.md}, and \texttt{interpolation\_extrapolation\_drop.md}. \\
+Threshold trade-offs &
+\texttt{Ignition Classifiers/results/report/champion\_threshold\_performance.md}. \\
+Explanations are model-dependent &
+Both report directories' SHAP and permutation-importance tables and status JSON files. \\
+Champion identity and full-data artifact provenance &
+Each task's \texttt{results/selection.json}, \texttt{artifacts/*\_champion/model\_card.json}, feature manifest, and training-data fingerprint. \\
+No paper leakage and nested tuning contract &
+\texttt{FSR Regressors/pipeline.md} and \texttt{Ignition Classifiers/pipeline.md}; machine checks are persisted under \texttt{results/evaluation}. \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Oral-defense reconciliation}
+\label{app:defense}
+
+The following concise answers reconcile statements that can otherwise appear contradictory.
+
+\begin{description}
+    \item[Why can the model be called strong if grouped performance is moderate?]
+    It is strong for interpolation and useful but limited for transfer. The report does not collapse those questions into one score.
+
+    \item[Why are Rivera/Jose results above \(0.9\) while this grouped FSR \(R^2\) is \(0.458\)?]
+    Their headline results concern a narrower wire database under random ten-fold cross-validation; this study's \(0.458\) holds out entire papers. The protocols, source composition, features, units, and algorithms are not equivalent \cite{riveraWireML}.
+
+    \item[Does paper-grouped validation prove performance on a future spacecraft?]
+    No. It is stronger internal evidence against paper leakage, but future conditions may differ by laboratory, material, facility, gravity regime, and mission environment. Prospective external validation remains necessary.
+
+    \item[Why use XGBoost if random forest wins FSR?]
+    XGBoost is a strong tabular prior and wins ignition, consistent with the literature \cite{shwartzZiv2022tabular}; model selection is empirical and task-specific. Random forest offered the preferred grouped FSR result in the tested portfolio.
+
+    \item[Does SHAP identify combustion mechanisms?]
+    No. SHAP explains the fitted prediction relative to a background distribution. Correlation, derived features, missingness, and source confounding preclude causal interpretation.
+
+    \item[Did bootstrap augmentation create new experiments?]
+    No. It resampled observed training rows, inherited their paper IDs, and changed weighting. It added no new physical support.
+
+    \item[Can a low predicted risk certify a material?]
+    No. The artifacts support screening and prioritisation only. Qualification, certification, and expert hazard assessment remain authoritative.
+
+    \item[Why not deploy a PINN immediately?]
+    The database mainly contains heterogeneous tabular endpoints, not common-domain fields with agreed governing equations and boundary conditions. Near-term physically constrained or hybrid models are more defensible \cite{raissi2019pinn}.
+\end{description}
+
+\section{Model portfolios}
+\label{app:portfolios}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Configured model portfolios sourced from the repository.}
+\label{tab:model_portfolios}
+\begin{tabular}{p{0.17\textwidth}p{0.22\textwidth}p{0.50\textwidth}}
+\hline
+Task & Family & Candidate hypotheses \\
+\hline
+FSR & XGBoost (10) &
+Baseline; square-root/inverse paper weights; absolute-error and pseudo-Huber objectives; signed-\(\log(1+y)\) target; paper bagging. \\
+FSR & Random forest (7) &
+Baseline and paper weights; absolute-error criteria; signed-log target variants. \\
+FSR & KNN (6) &
+Uniform or distance neighbours, each with no, square-root, or inverse paper weighting. \\
+FSR & MLP (5) &
+Baseline; paper weighting; signed-log target variants. \\
+FSR & SVR (6) &
+Linear or RBF kernels, each with no, square-root, or inverse paper weighting. \\
+Ignition & XGBoost (8) &
+Baseline; paper-only and class-only weights; combined square-root/inverse weights; focal-loss variants. \\
+Ignition & Decision tree (3) &
+Baseline and combined class plus square-root/inverse paper weighting. \\
+Ignition & KNN (5) &
+Baseline; weighted variants; distance-neighbour variants. \\
+Ignition & MLP (5) &
+Baseline; weighted variants; focal-loss variants. \\
+Ignition & SVM (5) &
+RBF baseline/weighted variants and linear-kernel weighted variants. \\
+\hline
+\end{tabular}
+\end{table}
+
+The executable YAML is authoritative where explanatory Markdown counts lag behind. It contains 34 FSR candidates (10 XGBoost, seven random forest, six KNN, five MLP, and six SVR) and 26 ignition candidates. Every FSR candidate is evaluated with real-data (\texttt{rd}) and configured bootstrap-augmented (\texttt{rd\_bt}) conditions. The selected champions are \texttt{rf\_baseline [rd]} for both FSR protocols, \texttt{xgb\_paper\_sqrt} for ignition interpolation, and \texttt{xgb\_baseline} for ignition extrapolation. These names identify frozen configurations and do not imply universal superiority outside the recorded schema and validation design.
