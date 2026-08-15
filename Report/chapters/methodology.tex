@@ -221,16 +221,24 @@ from entering model fitting.
 \section{Candidate models, weighting, and augmentation}
 \label{sec:method-models}
 
-The ignition benchmark comprised 26 declared candidates spanning XGBoost,
+The ignition configuration declared 26 candidates spanning XGBoost,
 decision trees, \(k\)-nearest neighbors (KNN), multilayer perceptrons (MLP), and
 support-vector machines (SVM).  Candidate recipes varied paper weighting, balanced
 class weighting, focal versus logistic XGBoost objectives, distance-weighted KNN,
-and linear versus radial-basis SVM.  The FSR benchmark comprised 34 candidates:
+and linear versus radial-basis SVM.  The FSR configuration declared 34 candidates:
 10 XGBoost, seven random-forest, six KNN, five MLP, and six support-vector
 regression (SVR) recipes.  Regression candidates varied paper weighting, tree loss,
 signed-\(\log(1+y)\) target transformation, KNN distance weighting, SVR kernel, and
 XGBoost paper bagging.  Predictions from a transformed-target candidate were
 inverse-transformed to original FSR units before evaluation.
+
+The persisted comparison pools were smaller than these configured portfolios.
+The merged FSR manifest contains 25 candidates (50 candidate--augmentation
+conditions), and the formal ignition selection record omits MLP candidates even
+though MLP shard metrics are present.  Results and champion claims in this report
+therefore refer to the candidates actually represented in the persisted
+leaderboards and selection records, not to an assumed complete execution of every
+configured recipe.
 
 Campaign-size weighting was defined from the number \(n_p\) of training rows in
 paper \(p\).  The principal choices were

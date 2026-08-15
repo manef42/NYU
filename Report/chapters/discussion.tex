@@ -24,6 +24,13 @@ Missingness may itself be source-dependent. If one laboratory systematically rep
 
 Feature engineering improves consistency but does not remove these concerns. The ignition pipeline uses 32 numeric and five categorical features, including material, gas-transport, operating-condition, geometry, flow-direction, gravity-regime, and ignition-method descriptors. The FSR pipeline detects the available numeric and categorical roles after excluding explicit source identifiers, duplicate target fields, and post-outcome variables. Derived quantities such as Reynolds, Peclet, Prandtl, volumetric heat capacity, thermal diffusivity, and thermal diffusion time can encode useful physical structure. Yet derived features share inputs and can be mutually dependent; their values are only as reliable as the source measurements and assumptions used to calculate them.
 
+One schema discrepancy requires explicit qualification: the persisted FSR feature
+manifest includes categorical \texttt{Ignition}, although the pipeline
+documentation describes ignition fields as excluded. Its reported tree and SHAP
+importance is zero, but that does not substitute for a controlled ablation.
+Future FSR evaluation should remove the field and regenerate frozen comparisons
+before asserting that the documented and executed schemas are identical.
+
 \subsection{Imbalance and observational sampling}
 
 Two forms of imbalance matter. First, ignition is a majority-positive task: approximately three quarters of the 4,487 records are ignition cases. A high PR--AUC is therefore partly facilitated by prevalence and must be read beside ROC--AUC, Brier score, sensitivity, specificity, and threshold-dependent performance. The four stored threshold policies make the trade-off explicit. For example, the grouped champion's F1-oriented policy attains very high aggregate sensitivity but very low specificity, whereas the balanced-accuracy policy gives much more even sensitivity and specificity. No threshold is universally preferable; its acceptability depends on the consequences of false negatives and false positives.
@@ -34,7 +41,7 @@ Observational coverage creates a more fundamental limitation. Oxygen, pressure, 
 
 \subsection{Model dependence, metrics, and uncertainty}
 
-Model rankings are contingent on the tested candidates, search spaces, preprocessing, loss functions, seeds, and selection policy. The FSR benchmark considered 34 configured candidates across XGBoost, random forest, KNN, MLP, and SVR; the ignition benchmark considered 26 candidates across XGBoost, decision tree, KNN, MLP, and SVM. The selected FSR champion was random forest rather than XGBoost, while ignition selected XGBoost. This is useful evidence against treating a single family as universally superior, but it does not establish that the selected model is optimal among all possible algorithms.
+Model rankings are contingent on the tested candidates, search spaces, preprocessing, loss functions, seeds, and selection policy. The configuration files declare 34 FSR and 26 ignition candidates, but the persisted merged FSR manifest contains 25 candidates and the formal ignition selection record omits the available MLP shards. The selected FSR champion was random forest rather than XGBoost, while ignition selected XGBoost. These results apply to the persisted comparison pools; they neither establish complete execution of every configured recipe nor prove that the selected model is optimal among all possible algorithms.
 
 Likewise, a point estimate is not a complete account of performance. \(R^2\) is sensitive to the target variance in a held-out fold and can be unstable when a small set of papers defines a narrow or shifted range. FSR MAPE is extremely large because percentage error is ill-conditioned when observed spread approaches zero; RMSE and MAE in physical units are more interpretable here. For ignition, ROC--AUC measures ranking across thresholds but not probability calibration or a mission-specific operating point. The paper-cluster bootstrap, repeated splits, per-paper metrics, calibration outputs, and fold standard deviations should therefore accompany any headline number.
 
