@@ -416,3 +416,55 @@ paper-level failures preclude universal claims.  SHAP and permutation analyses
 identify predictive reliance, not causal combustion laws.  The defensible outputs
 are therefore protocol-specific estimates with their uncertainty and documented
 feature context, rather than a single headline score or a mechanistic claim.
+
+\section{Robustness of comparative conclusions}
+\label{sec:results-robustness}
+
+The principal comparisons were not artifacts of one secondary metric.  For
+ignition, the extrapolation champion had the highest grouped ROC--AUC, the lowest
+grouped Brier score among the three leading XGBoost rows shown in
+Table~\ref{tab:ignition-leaders}, and a successful LOPO result.  The
+\texttt{svm\_weighted\_inverse} candidate had a slightly higher grouped PR--AUC
+(0.8787 versus 0.8767) but lower ROC--AUC (0.6934 versus 0.7183).  This does not
+contradict selection because PR--AUC was a tie-breaker rather than the primary
+metric, and the SVM was outside the 0.01 ROC--AUC tie tolerance.  Likewise,
+\texttt{xgb\_paper\_sqrt} had the smallest fold SD among the three leading
+XGBoost candidates (0.0365), but its lower grouped mean prevented uncertainty
+alone from making it champion.
+
+Calibration-oriented evidence also deteriorated across papers.  The selected
+interpolation classifier's mean Brier score was 0.1063, whereas the extrapolation
+champion's grouped mean was 0.1791.  Because the selected candidates differ, this
+is not a pure paired model effect, but it agrees with the discrimination gap:
+probability estimates were less accurate when campaigns were excluded.  The
+threshold results add a practical warning.  A policy optimized for F1 under high
+positive prevalence retained excellent sensitivity yet accepted almost no
+specificity in grouped evaluation.  Reporting only F1 or sensitivity would conceal
+that behavior.
+
+For FSR, RMSE and MAE told the same broad story.  The selected model's grouped RMSE
+was 1.95 times its interpolation RMSE, and grouped MAE was 2.29 times its
+interpolation MAE.  The foldwise mean \(R^2\) reduction was 0.4214.  Mean MBE
+remained small in absolute terms under interpolation but became more negative in
+grouped evaluation, indicating average underprediction of approximately
+\(6.6\times10^{-4}~\mathrm{m\,s^{-1}}\) over the grouped folds.  Small global
+bias did not imply small individual error: grouped MAE was more than seven times
+the magnitude of MBE because positive and negative residuals cancel in the latter.
+
+MAPE was not used to overturn these conclusions.  The interpolation random-forest
+MAPE was already 73.8\%, and its grouped MAPE was 357.0\%, despite comparatively
+small absolute errors.  This occurs because the FSR cohort includes zero and
+near-zero values, for which percentage denominators are undefined or unstable.
+NRMSE similarly rose from 0.697 to 1.433 between protocols, but its scale depends
+on the normalization convention.  RMSE in \(\mathrm{m\,s^{-1}}\), MAE in the same
+units, and \(R^2\) were therefore the most interpretable joint summary.
+
+Finally, the selected FSR point estimates were not uniquely separated from every
+competitor.  Several tree ensembles occupied a narrow RMSE range, especially
+relative to the grouped fold SD of roughly \(0.004~\mathrm{m\,s^{-1}}\).
+Champion status should be understood as the deterministic outcome of the
+predeclared tie policy, not proof that one fitted algorithm is intrinsically
+superior in all future samples.  The stable conclusion is broader: ensemble trees
+formed the leading group in these persisted evaluations, while the protocol shift
+from rows to papers was much larger than the differences among the leading
+candidate recipes.
