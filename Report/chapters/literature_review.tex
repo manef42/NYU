@@ -173,6 +173,17 @@ Training combines mismatch to available observations and initial or boundary dat
 \end{equation}
 The framework supports forward inference with known physical parameters and inverse identification in which parameters in \(\mathcal{N}\) are learned from observations \cite{raissi2019pinn}.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\textwidth]{pinn_example.png}
+  \caption{Example physics-informed neural-network solution from Raissi et al.:
+  sparse initial and boundary observations and interior collocation points
+  constrain the nonlinear Schrödinger solution; predicted profiles (red dashed)
+  are compared with the exact solution (blue). Reproduced from Fig.~1 of
+  \cite{raissi2019pinn}.}
+  \label{fig:pinn-example}
+\end{figure}
+
 Raissi et al.\ demonstrate the formulation on nonlinear Schrödinger, Allen--Cahn, Navier--Stokes, Korteweg--de Vries, and Burgers equations, using continuous- and discrete-time variants. They emphasize that PINNs complement rather than replace mature numerical methods and identify unresolved issues involving architecture, optimization, convergence, noise, and uncertainty \cite{raissi2019pinn}. Karniadakis et al.\ broaden the discussion to scientific settings where observational data may be scarce, noisy, or incomplete and prior physical knowledge can constrain an otherwise large hypothesis space \cite{karniadakis2021physicsinformed}.
 
 \subsection{Relevance and limitation for combustion tables}
