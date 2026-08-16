@@ -1,91 +1,169 @@
 \chapter{Introduction}
 \label{chap:introduction}
 
-\section{Engineering context}
+\section{Spacecraft fire safety}
 
-Fire safety is a system-level requirement for a crewed spacecraft. A pressurized vehicle contains the three elements required for fire : oxidizer, combustible material, and potential ignition sources, within a confined volume from which evacuation, replacement of damaged equipment, and atmospheric clean-up may be difficult or impossible. Electrical systems are particularly important in this setting: they are indispensable to vehicle operation, yet faults, overheated components, and degraded insulation can supply ignition energy in close proximity to polymeric fuels. Spacecraft must also carry functional polymers, wiring, fabrics, packaging, personal items, and, for some mission concepts, polymer-rich radiation shielding. Material selection therefore cannot be reduced to eliminating every combustible item. It is an engineering compromise among fire performance, electrical and mechanical function, mass, manufacturability, human use, and mission architecture \cite{guibaud2022spacecraft}.
+Fire safety is a system-level requirement for crewed spacecraft. A pressurized
+vehicle necessarily combines oxidizer, combustible materials, and potential
+ignition sources in a confined volume where evacuation, replacement of damaged
+equipment, and atmospheric clean-up may be impossible. Electrical systems are
+indispensable to vehicle operation, yet faults, overheated components, and
+degraded insulation place ignition energy next to polymeric fuels. Material
+selection is consequently a compromise among fire performance, function, mass,
+manufacturability, and mission architecture rather than a simple elimination of
+all combustible items \cite{guibaud2022spacecraft}.
 
-The historical record demonstrates why that compromise must be made explicitly. Guibaud et al.\ compile twelve acknowledged fire or smoke incidents from early crewed programmes through Mir. Their review includes the fatal Apollo~1 cabin fire, the Apollo~13 oxygen-tank event, smoke incidents aboard Salyut stations and Space Shuttles, and two fires aboard Mir. The incidents differ in initiating mechanism, atmosphere, detection, and consequence, but collectively expose recurring weaknesses in prevention, detection, crew response, suppression, and recovery. Three developed to a life-threatening scale, while several smaller events were controlled by removing electrical power before a larger fire formed. Importantly, dedicated detectors did not provide the initial warning in most of the minor events; crew members frequently noticed odour, smoke, or visible flame first \cite{guibaud2022spacecraft}.
+Apollo~1 remains the clearest demonstration of coupled fire hazards. During a
+ground test on 27 January 1967, a fire developed rapidly in the command module's
+high-pressure pure-oxygen atmosphere. The exact ignition source was not
+established by the investigation, but electrical wiring was considered a likely
+source; extensive combustible material, the atmosphere, and the inward-opening
+hatch made the event catastrophic. The post-fire views in
+\cref{fig:apollo1} show why specimen flammability cannot be separated from
+installation and vehicle configuration. The accident led to atmospheric,
+materials, wiring, hatch, and test-program changes, including extensive
+component and full-scale mock-up testing \cite{guibaud2022spacecraft}.
 
-Low-Earth-Orbit operations have accumulated extensive experience, but a deep-space mission changes the consequences of a fire. The International Space Station can rely on established ground support, emergency return vehicles, and eventual resupply. A distant vehicle or surface habitat must remain safe when communication is delayed, rapid evacuation is unavailable, and consumed extinguishing agent or damaged hardware cannot promptly be replaced. Guibaud et al.\ further identify prospective low-pressure, oxygen-enriched exploration atmospheres, long exposure to radiation, intermediate lunar or Martian gravity, dust, waste accumulation, and increased operational autonomy as coupled fire-safety concerns \cite{guibaud2022spacecraft}. The implication for materials engineering is direct: a material that is acceptable under a terrestrial screening configuration cannot be assumed to retain the same relative hazard under every spacecraft atmosphere, flow field, geometry, or gravity level.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{apollo1_exterior.jpg}
+    \caption{Exterior of the Apollo 204 command module after the fire.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{apollo1_interior.jpg}
+    \caption{Charred command-module cabin interior.}
+  \end{subfigure}
+  \caption{Apollo~1 after the 1967 fire. NASA photographs S67-21295 and
+  S67-21294; public-domain U.S. Government works \cite{nasaApolloExterior,nasaApolloInterior}.}
+  \label{fig:apollo1}
+\end{figure}
 
-\section{Why spacecraft fire behaviour is a distinct prediction problem}
+Deep-space missions increase the consequences of such an event. A distant
+vehicle or surface habitat cannot assume rapid evacuation, immediate resupply,
+or prompt replacement of discharged extinguishers and damaged life-support
+hardware. Proposed low-pressure atmospheres, elevated oxygen fraction, lunar or
+Martian gravity, radiation aging, dust, waste accumulation, and long autonomous
+operation all interact with fire risk \cite{guibaud2022spacecraft}. A material
+qualified in one terrestrial configuration therefore cannot be assumed to keep
+the same hazard ranking in every spacecraft environment.
 
-Terrestrial intuition is incomplete in reduced gravity because buoyancy no longer organizes heat and mass transport in the familiar way. In normal gravity, density differences produced by heating generate a buoyant flow that affects oxygen delivery, flame shape, preheating of unburned fuel, smoke transport, and heat loss. In microgravity, forced ventilation and molecular diffusion become dominant transport mechanisms. Consequently, a weak imposed flow can have a large influence on whether a material ignites and on how rapidly a flame advances. Smoke can also migrate slowly or along ventilation paths rather than rising to a ceiling-mounted detector \cite{guibaud2022spacecraft}. Reduced gravity does not simply multiply terrestrial burning behaviour by a constant correction factor; it changes the balance among transport processes.
+\section{Flammability, quenching, and blowoff}
+\label{sec:intro-flammability}
 
-The atmosphere introduces another set of coupled variables. Oxygen concentration affects the ability of a flame to be established and sustained, while total pressure changes gas density, transport, and cooling. Exploration atmospheres may depart from the terrestrial reference mixture of approximately \(21\%\) oxygen in nitrogen at \(101.3~\mathrm{kPa}\). Guibaud et al.\ report that increasing oxygen content can make additional spacecraft materials flammable and increase subsequent fire growth, while low-pressure operation can reduce convective cooling of electrical equipment \cite{guibaud2022spacecraft}. A safe material decision therefore depends on oxygen concentration and pressure together, not on a material name alone.
+In this report, \emph{flammability} is not reduced to a single binary property.
+It is represented by five complementary experimental observables:
 
-Geometry and material construction are equally important. The wire-flame literature synthesized by Rivera et al.\ shows that flame spread over insulated electrical wires depends on core and insulation materials, core diameter, insulation thickness, oxygen concentration, pressure, imposed flow, gravity, and spread direction. A conductive metal core can transfer heat ahead of a flame and preheat virgin insulation, but it can also remove heat from the burning region and act as a heat sink. Which effect dominates depends on the relative core and insulation dimensions, their thermophysical properties, and the surrounding conditions \cite{riveraWireML}. Melting and dripping introduce further regime changes. Thus ``polyethylene-insulated wire'', for example, does not define a single fire response independently of its core, dimensions, orientation, and environment.
-\newpage
-Two outputs are especially useful at the material-screening stage. The first is \emph{ignition}, represented here as a binary experimental outcome,
-\begin{equation}
-    y_{\mathrm{ign}} \in \{0,1\},
-    \qquad
-    y_{\mathrm{ign}} =
-    \begin{cases}
-        1, & \text{ignition observed},\\
-        0, & \text{ignition not observed}.
-    \end{cases}
-    \label{eq:ignition_target}
-\end{equation}
-The second is flame spread rate (FSR), the speed at which an established flame front advances over the fuel,
-\begin{equation}
-    v_{\mathrm{FSR}} = \frac{\mathrm{d}x_f}{\mathrm{d}t}
-    \quad [\mathrm{m\,s^{-1}}],
-    \label{eq:fsr_definition}
-\end{equation}
-where \(x_f\) denotes a consistently defined flame-front position. Ignition addresses whether the imposed test and environmental conditions produce a flame; FSR quantifies one aspect of propagation after ignition. They are related but not interchangeable. A material-condition pair may be difficult to ignite yet support appreciable spread once ignited, or may ignite without yielding a steady, measurable spread rate. Treating the two as separate learning tasks preserves this distinction.
+\begin{table}[htbp]
+  \centering
+  \caption{Five variables used to describe material flammability in the database.}
+  \label{tab:flammability-variables}
+  \begin{tabularx}{\textwidth}{@{}p{0.19\textwidth}X@{}}
+    \toprule
+    Variable & Engineering interpretation \\
+    \midrule
+    Ignition & Whether the imposed energy and environment establish a flame. \\
+    Flame length & Spatial extent of the visible flame under the test condition. \\
+    Flame-spread rate (FSR) & Speed of the advancing flame front,
+      reported in \si{\metre\per\second}. \\
+    Heat-release rate (HRR) & Rate of chemical energy release,
+      reported in \si{\watt} when available. \\
+    Smoke/aerosols & Production of particulate and condensable combustion
+      products relevant to visibility, toxicity, and detection. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-This report does \emph{not} model flame extinction. Extinction is scientifically important and is discussed in the cited spacecraft-fire literature as part of the wider combustion problem \cite{guibaud2022spacecraft}, but it is outside the repository pipelines assessed here. The implemented scope is limited to classification of ignition and regression of FSR. Statements about extinction in the literature review are therefore contextual only and must not be read as an extinction prediction capability.
+These variables describe different stages and consequences of a fire. Ignition
+addresses initiation; flame length, FSR, and HRR characterize growth; smoke and
+aerosols affect detection and habitability. Their availability is uneven across
+the literature. The implemented machine-learning pipelines model only ignition
+and FSR. Flame length, HRR, and smoke/aerosols are retained as database outputs
+but excluded from predictors to prevent outcome leakage.
 
-\section{Motivation for a data-driven material-selection framework}
+The stability of an established flame is bounded by two distinct extinction
+mechanisms. At high imposed flow or stretch, the gas residence time through the
+reaction zone becomes too short relative to the chemical reaction time. The
+flame detaches or is extinguished by \emph{blowoff}, conventionally associated
+with a low Damköhler number. Self-induced buoyant flow can also produce blowoff
+during upward spread in normal gravity \cite{johnston2015blowoff}.
 
-The conventional spacecraft qualification process emphasizes controlled flammability tests and configuration-level hazard analysis. Guibaud et al.\ describe NASA's material test philosophy, including a propagation test in which specimens are assessed in a prescribed worst-case atmosphere and are rejected if propagation exceeds the specified criterion or burning debris ignites an indicator material. They also show why a specimen-level pass/fail result cannot answer every system question: full-scale Apollo mock-up tests did not always reproduce the benign behaviour inferred from isolated-component tests, and gravity-dependent changes can alter both flammability and material ranking \cite{guibaud2022spacecraft}. Physical testing remains indispensable, but a finite test matrix cannot densely cover all combinations of material properties, dimensions, oxygen content, pressure, flow, orientation, and gravity.
+At the opposite limit, very weak flow supplies insufficient convective heat
+feedback and oxygen transport to offset radiative and conductive losses. The
+flame shrinks and extinguishes by \emph{quenching}. The low-speed quenching
+branch is experimentally accessible in microgravity because buoyancy no longer
+imposes a minimum natural-convection velocity. In ordinary gravity, buoyant flow
+masks this near-zero-flow branch; this is the precise sense in which the
+quenching limit considered here is observed only under microgravity conditions,
+not a claim that every possible form of flame quenching is exclusive to space.
 
-High-fidelity combustion simulations face a complementary difficulty. Flame spread couples solid heating and pyrolysis to gas-phase transport and reaction, often with melting, moving boundaries, radiation, and uncertain material properties. Rivera et al.\ note that analytical models necessarily simplify these processes and that computational models are difficult to validate over the full parameter space because reduced-gravity experiments are expensive and heterogeneous \cite{riveraWireML}. The objective of a data-driven model is not to remove the need for experiments or physics-based simulation. It is to learn cross-study relationships from measurements that already exist, quantify predictive performance under explicit validation rules, and support prioritization of the next material or condition to test.
+Plotting limiting oxygen concentration against forced stretch or flow gives the
+U-shaped boundary in \cref{fig:flammability-map}. The left branch is the
+microgravity low-flow quenching limit, the right branch is the high-flow
+blowoff limit, and stable burning occupies the region above the boundary. The
+minimum identifies the lowest oxygen concentration at which any tested flow can
+sustain combustion. This map demonstrates why oxygen concentration alone is
+insufficient: the same material and atmosphere may be non-flammable at very low
+and very high flow yet burn at an intermediate flow.
 
-The assembled database makes such an analysis possible by placing literature observations into a common tabular representation. Each row associates a cited experiment with sample descriptors, fuel and core properties, atmospheric and flow variables, facility information, ignition method where available, and measured outputs. This structure naturally supports two supervised mappings. For a feature vector \(\mathbf{x}\) describing the specimen and its environment,
-\begin{align}
-    \widehat{p}_{\mathrm{ign}} &= f_{\mathrm{cls}}(\mathbf{x}),
-    \label{eq:classification_map}\\
-    \widehat{v}_{\mathrm{FSR}} &= f_{\mathrm{reg}}(\mathbf{x}),
-    \label{eq:regression_map}
-\end{align}
-where \(f_{\mathrm{cls}}\) estimates an ignition probability and \(f_{\mathrm{reg}}\) estimates FSR in \(\mathrm{m\,s^{-1}}\). The predictions are conditional on the experimental domain represented in the database. They are not universal material constants.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\textwidth]{flammability_map.png}
+  \caption{U-shaped microgravity flammability boundary for PMMA rods in BASS-II
+  experiments. The low-stretch branch is quenching and the high-stretch branch
+  is blowoff. Reproduced from Fig.~4 of Olson and Ferkul
+  \cite{olsonFerkul2015}, NASA public-use technical report.}
+  \label{fig:flammability-map}
+\end{figure}
 
-Tabular scientific data have characteristics that matter for model choice: numerical and categorical predictors coexist, values may be missing, and the response may change across sparsely sampled regimes. In a broad comparison across eleven tabular datasets, Shwartz-Ziv and Armon found that XGBoost generally outperformed the deep tabular architectures examined and required less hyperparameter tuning; they also found that an ensemble combining XGBoost and deep models could outperform either family alone \cite{shwartzZiv2022tabular}. Their result is evidence for benchmarking strong tree ensembles, not a theorem that one algorithm must dominate every combustion dataset. Accordingly, this research treats model family as an empirical question and compares multiple candidates rather than assuming that architectural complexity guarantees better prediction.
+\section{Research gap and data-driven motivation}
 
-Physics-informed machine learning provides a second motivation. Raissi, Perdikaris, and Karniadakis formulated physics-informed neural networks (PINNs) in which a neural approximation is trained against observed data while a differential-equation residual is penalized at collocation points \cite{raissi2019pinn}. Karniadakis et al.\ place such approaches within a broader framework in which observational, simulation, and physical information may be combined to address forward and inverse problems \cite{karniadakis2021physicsinformed}. For a state \(u\) governed by
-\begin{equation}
-    \frac{\partial u}{\partial t}+\mathcal{N}[u;\boldsymbol{\lambda}]=0,
-    \label{eq:general_pde}
-\end{equation}
-a canonical PINN loss has the form
-\begin{equation}
-    \mathcal{L}
-    = \mathcal{L}_{\mathrm{data}}
-    + \lambda_{\mathrm{phys}}\mathcal{L}_{\mathrm{residual}}
-    + \lambda_{\mathrm{bc}}\mathcal{L}_{\mathrm{boundary}},
-    \label{eq:pinn_loss_intro}
-\end{equation}
-where the last two terms constrain the learned field using governing equations and boundary information \cite{raissi2019pinn}. This idea is attractive for combustion data because physical knowledge could regularize learning where measurements are sparse. It also imposes a strict requirement: the chosen constraint must be valid for the target and variables being modeled. The present database consists principally of experiment-level tabular observations rather than resolved space--time fields with complete boundary conditions. Physics-informed ideas therefore motivate physically meaningful features and constraints, but they do not justify pretending that a conventional tabular predictor is a full PDE solver.
+Reduced gravity changes the balance among diffusion, imposed ventilation,
+radiation, and solid conduction. Experiments are correspondingly expensive and
+the published evidence is fragmented across materials, geometries, facilities,
+atmospheres, and reporting conventions. A finite qualification matrix cannot
+dense-sample this space, while a high-fidelity model requires boundary
+conditions and material properties that are often absent from historical
+reports.
 
-\section{Research gap and question}
+The research gap is therefore not simply a lack of another predictive
+algorithm. It is the absence of a unified, traceable, leakage-resistant
+evaluation that asks both whether models interpolate among conditions from
+known campaigns and whether they transfer to a completely held-out paper.
+Randomly splitting rows can place nearly repeated observations from one rig on
+both sides of the evaluation boundary, creating optimistic evidence for a
+material-selection question that usually concerns a new campaign.
 
-The reviewed sources reveal a gap between spacecraft fire-safety needs and available predictive methods. The spacecraft literature documents the operational importance of ignition and spread under reduced buoyancy, as well as unresolved dependence on atmosphere, flow, geometry, and gravity \cite{guibaud2022spacecraft}. The wire literature demonstrates that nonlinear machine-learning models can predict FSR from compiled experiments and that categorical regime information can materially improve random cross-validation performance \cite{riveraWireML}. General machine-learning literature supports tree ensembles as strong tabular baselines \cite{shwartzZiv2022tabular}, while the PINN literature shows how physical equations can be embedded in learning when suitable field data and governing constraints are available \cite{raissi2019pinn,karniadakis2021physicsinformed}.
+This project addresses that gap by standardizing published measurements into a
+microgravity flammability database and constructing separate supervised
+pipelines for ignition classification and FSR regression. The intended role is
+screening and experiment prioritization, not replacement of qualification tests
+or combustion physics.
 
-What remains insufficiently resolved is a unified, leakage-resistant evaluation of both fire initiation and propagation across heterogeneous literature sources, with validation that distinguishes interpolation among represented studies from transfer to held-out experimental sources or conditions. High random-split accuracy alone can reflect repeated or closely related configurations on both sides of a split. It does not establish that a model will generalize to a new paper, facility, material family, or environmental regime. Rivera et al.\ explicitly characterize their random ten-fold validation as robustness within their compiled wire dataset rather than strict transfer to a new source \cite{riveraWireML}. That limitation is central for engineering use, because material selection often asks precisely about a candidate outside the densest region of prior testing.
-
-The research question guiding this report is therefore:
+\section{Research question and objectives}
 
 \begin{quote}
-\emph{To what extent can supervised models trained on a curated, multi-source microgravity-combustion database predict (i) whether ignition occurs and (ii) the flame spread rate under spacecraft-relevant material, geometric, atmospheric, flow, and gravity conditions, while maintaining performance when evaluated beyond the experimental groups used for training?}
+\emph{To what extent can supervised models trained on a curated, multi-source
+microgravity-combustion database predict (i) whether ignition occurs and (ii)
+the flame-spread rate under spacecraft-relevant material, geometric,
+atmospheric, flow, and gravity conditions, while maintaining performance when
+entire experimental papers are withheld?}
 \end{quote}
 
-The wording is deliberately conditional. ``Predict'' means estimate the two recorded outcomes within a stated feature domain and validation protocol. It does not mean certify flight hardware, recover an unobserved combustion mechanism, or model extinction.
+The work has four objectives:
+\begin{enumerate}
+  \item assemble a source-traceable database with consistent variables and SI
+  units from heterogeneous publications;
+  \item construct clear, reproducible classification and regression pipelines;
+  \item compare row-level interpolation with paper-grouped extrapolation; and
+  \item interpret model behavior using held-out diagnostics, permutation
+  importance, and SHAP without treating predictive associations as causal laws.
+\end{enumerate}
 
-\section{Objectives and Scope}
-
-To answer the research question, the research is organized around four engineering objectives. First, it converts heterogeneous literature measurements into analysis-ready predictors with consistent SI units, explicit target definitions, and traceability to source publications. Second, it develops a dedicated ignition-classification workflow and a separate FSR-regression workflow. Third, it evaluates candidate models under data partitions designed to expose both within-domain interpolation and more demanding extrapolation or source-transfer behaviour. Fourth, it interprets the trained models only to the degree supported by the data, using feature-importance and error analyses as diagnostic tools rather than as proofs of causation.
-
-The corresponding contribution is a reproducible decision-support framework linking a cited experimental database to two complementary predictions. The classifier provides a conditional ignition-risk estimate, and the regressor provides an estimated propagation speed when FSR is the relevant recorded output. Together they offer more information than a single undifferentiated ``flammability'' label. The framework also makes its limits visible: missing values, uneven source coverage, correlated measurements, and group-sensitive validation are treated as engineering constraints rather than hidden preprocessing details.
+Only ignition and FSR are modeled in the final repository. Extinction,
+flame length, HRR, and smoke/aerosol prediction remain future modeling tasks.
+This boundary preserves a clear distinction between the database's definition
+of flammability and the narrower scope of the validated machine-learning
+evidence.

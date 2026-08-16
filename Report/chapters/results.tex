@@ -1,493 +1,315 @@
 \chapter{Results}
 \label{chap:results}
 
-\section{Data integrity and scope of inference}
-\label{sec:results-integrity}
+\section{Database coverage and imbalance}
+\label{sec:database-results}
 
-Both persisted evaluation suites passed their overall integrity checks.  The
-ignition analysis used 4,487 deduplicated rows from 87 canonical papers, with 3,383
-positive and 1,104 negative labels.  Its frozen split manifest recorded no
-integrity failures across 120 split objects.  The FSR analysis used 2,531 rows with
-numeric FSR from 66 papers, and all 20 repeated holdout partitions passed their
-coverage and separation checks.  The corresponding SHA-256 fingerprints were
-\texttt{d80da0648ca3a7d77d31ae90ebea53b4e81b2ab28c8ec666ce6cd150ee7544f6}
-for ignition and
-\texttt{6e09a99e4ea69148e69151bd46149be4140d181b2b8294106927ea9499002fc8}
-for FSR.  These fingerprints establish which persisted data versions the numerical
-results describe.
+\subsection{Scale, source concentration, and target availability}
 
-The principal result throughout this chapter is the difference between row-level
-interpolation and paper-grouped extrapolation.  The former permits a publication
-to contribute observations to both sides of a split and is consequently a measure
-of prediction among represented campaigns.  The latter excludes every test
-paper from training and is the relevant test of transfer to new literature
-campaigns.  Neither protocol evaluates causal mechanisms, and neither extends the
-claim beyond the support of the compiled database.
+Before task-specific cleaning, the assembled table contains 5,057 experimental
+rows mapped to 87 publications. The raw database overview in
+\cref{fig:database-overview} shows its breadth: pressure spans more than three
+orders of magnitude, gravity extends from microgravity to hypergravity, and
+2,590 rows contain a numeric FSR before the regression pipeline's stricter
+parsing and deduplication. After task-specific preprocessing, 4,487 rows remain
+for ignition classification and 2,531 for FSR regression.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\textwidth]{database_overview.png}
+  \caption{Raw assembled-database overview before task-specific deduplication.
+  The modeling cohorts are smaller because their loaders impose distinct target,
+  parsing, and duplicate rules. Source:
+  \texttt{metrics/01\_dataset\_overview\_summary.png}.}
+  \label{fig:database-overview}
+\end{figure}
+
+The number of rows is not the number of independent experiments. Publications
+contribute very different numbers of nearby conditions. The Pareto curve in
+\cref{fig:database-imbalance} shows that 36 papers contribute more than 80\% of
+all rows. The ignition target is also imbalanced toward positive outcomes.
+These two imbalances motivate paper weighting, prevalence-aware classification
+metrics, and paper-grouped evaluation.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.61\textwidth}
+    \includegraphics[width=\linewidth]{database_pareto.png}
+    \caption{Cumulative data share after sorting papers by contribution.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.36\textwidth}
+    \includegraphics[width=\linewidth]{database_ignition_balance.png}
+    \caption{Raw ignition outcome composition.}
+  \end{subfigure}
+  \caption{Source-size and class imbalance in the assembled database. Source:
+  repository metrics figures 05 and 06.}
+  \label{fig:database-imbalance}
+\end{figure}
+
+\subsection{Oxygen--pressure coverage}
+
+\Cref{fig:o2-pressure-coverage} makes the sampling geometry visible. Most rows
+cluster near terrestrial pressure and a limited range of oxygen fractions;
+other pressure--oxygen combinations are represented by isolated campaigns or
+not sampled at all. Ignition and no-ignition outcomes overlap substantially,
+showing that neither oxygen nor pressure alone determines the label. The dense
+bands and empty cells also explain why a random row split can appear much easier
+than transfer to a new paper: nearby points commonly share a source.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{database_o2_pressure_ignition.png}
+    \caption{Observed outcomes in oxygen--pressure space.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{database_o2_pressure_density.png}
+    \caption{Sampling density; blank cells are empirical gaps.}
+  \end{subfigure}
+  \caption{Database coverage over oxygen mole fraction and pressure. The
+  pressure axis is logarithmic. Source: repository metrics figures 25 and 28.}
+  \label{fig:o2-pressure-coverage}
+\end{figure}
+
+Gravity coverage is similarly uneven (\cref{fig:gravity-coverage}). Ground,
+microgravity, lunar, Martian, and other partial-gravity regimes are present, but
+their row counts and associated materials differ. A numeric gravity field does
+not turn sparse partial-gravity combinations into interpolation evidence.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{database_gravity_regimes.png}
+  \caption{Gravity-regime composition in the assembled database. Source:
+  \texttt{metrics/23\_gravity\_regime\_composition.png}.}
+  \label{fig:gravity-coverage}
+\end{figure}
 
 \section{Ignition classification}
 \label{sec:results-ignition}
 
-\subsection{Model selection and interpolation performance}
+\subsection{Model families and interpolation}
 
-The selected interpolation model was \texttt{xgb\_paper\_sqrt}, an XGBoost
-classifier with paper weight \(1/\sqrt{n_p}\) and no stated class-weight addition.
-Across the 15 repeated stratified outer folds, its ROC--AUC was
-\(0.9076\pm0.0102\), PR--AUC was \(0.9687\pm0.0039\), and mean Brier score was
-0.1063.  Its modal refit configuration used 800 trees, maximum depth 6, learning
-rate 0.05, column subsampling 0.6, row subsampling 1.0, minimum child weight 1,
-\(\gamma=0\), \(L_1\) regularization 0.5, \(L_2\) regularization 1.0, and the
-logistic objective.  The supplementary three-repeat 80/20 holdout was consistent:
-ROC--AUC \(0.9032\pm0.0016\), PR--AUC \(0.9663\pm0.0015\), and Brier score 0.1114.
+The selected interpolation classifier is
+\texttt{xgb\_paper\_sqrt}, an XGBoost model with paper weight
+\(1/\sqrt{n_p}\). Across 15 repeated stratified outer folds it reaches
+ROC--AUC \(0.9076\pm0.0102\), PR--AUC \(0.9687\pm0.0039\), and mean Brier
+score 0.1063. The unweighted XGBoost baseline is close
+(ROC--AUC \(0.9058\pm0.0091\)); SVM, decision tree, and KNN are lower.
 
-The leading XGBoost variants were tightly clustered in row interpolation
-(Table~\ref{tab:ignition-leaders}).  The unweighted XGBoost baseline achieved
-\(0.9058\pm0.0091\) ROC--AUC, only 0.0018 below the selected model.  The
-class-weighted and combined square-root-weighted variants were similarly close.
-By contrast, the leading reported SVM reached 0.8608, the leading decision tree
-0.8531, and the leading KNN 0.8325.  The two reported focal-objective XGBoost
-recipes were near chance in ROC ranking (0.4960 and 0.4987), despite high PR--AUC
-values caused in part by the 75.4\% positive prevalence.  This combination
-illustrates why PR--AUC must be interpreted against prevalence and why candidate
-selection did not rely on it alone.
+\Cref{fig:ignition-family-comparison} summarizes the best persisted result in
+each family under both protocols. The blank MLP panel reflects the discrepancy
+between available MLP shards and the formal merged selection pool; it is not a
+zero score. The plot makes the principal result clearer than a long leaderboard:
+every represented family performs worse when complete papers are withheld.
 
-\begin{table}[htbp]
+\begin{figure}[htbp]
   \centering
-  \caption{Leading persisted ignition results. Values are outer-fold mean
-  \(\pm\) standard deviation; Brier is the fold mean.}
-  \label{tab:ignition-leaders}
-  \begin{tabular}{llccc}
-    \toprule
-    Protocol & Candidate & ROC--AUC & PR--AUC & Brier \\
-    \midrule
-    Row interpolation & \texttt{xgb\_paper\_sqrt}
-      & \(0.9076\pm0.0102\) & \(0.9687\pm0.0039\) & 0.1063 \\
-    Row interpolation & \texttt{xgb\_baseline}
-      & \(0.9058\pm0.0091\) & \(0.9682\pm0.0036\) & 0.1076 \\
-    Row interpolation & \texttt{svm\_weighted\_sqrt}
-      & \(0.8608\pm0.0125\) & \(0.9518\pm0.0049\) & 0.1794 \\
-    Row interpolation & \texttt{dt\_baseline}
-      & \(0.8531\pm0.0192\) & \(0.9372\pm0.0127\) & 0.1296 \\
-    Paper extrapolation & \texttt{xgb\_baseline}
-      & \(0.7183\pm0.0444\) & \(0.8767\pm0.0298\) & 0.1791 \\
-    Paper extrapolation & \texttt{xgb\_class\_only}
-      & \(0.7036\pm0.0447\) & \(0.8697\pm0.0309\) & 0.1873 \\
-    Paper extrapolation & \texttt{xgb\_paper\_sqrt}
-      & \(0.7004\pm0.0365\) & \(0.8650\pm0.0305\) & 0.1866 \\
-    Paper extrapolation & \texttt{svm\_weighted\_inverse}
-      & \(0.6934\pm0.0456\) & \(0.8787\pm0.0218\) & 0.1828 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+  \includegraphics[width=\textwidth]{ignition_family_comparison.png}
+  \caption{Best persisted ignition candidate by family for row interpolation
+  and paper-grouped extrapolation (mean ROC--AUC with fold SD). Source:
+  \texttt{Ignition Classifiers/results/report/five\_model\_family\_comparison.png}.}
+  \label{fig:ignition-family-comparison}
+\end{figure}
 
-The row-resampled bootstrap gives a complementary uncertainty summary.  After
-averaging repeated probabilities for each unique row, the interpolation champion
-had ROC--AUC 0.9122 (95\% CI 0.9037--0.9209), PR--AUC 0.9703
-(0.9660--0.9741), and Brier score 0.1023 (0.0969--0.1078).  These bootstrap
-estimates need not equal the arithmetic means of the 15 fold metrics because they
-aggregate repeated predictions per row before computing each metric.
+\subsection{Extrapolation and generalization loss}
 
-\subsection{Paper-grouped extrapolation and the cross-paper gap}
+The extrapolation champion changes to the unweighted
+\texttt{xgb\_baseline}. Its grouped ROC--AUC is
+\(0.7183\pm0.0444\), PR--AUC \(0.8767\pm0.0298\), and Brier score 0.1791.
+The paper-cluster bootstrap estimate is 0.7101 ROC--AUC with 95\% interval
+0.6408--0.7848. LOPO robustness is similar (0.7020,
+0.6376--0.7751).
 
-The extrapolation champion was the unweighted \texttt{xgb\_baseline}.  Its grouped
-outer-fold ROC--AUC was \(0.7183\pm0.0444\), PR--AUC
-\(0.8767\pm0.0298\), and Brier score 0.1791.  The selected modal configuration was
-substantially more regularized and shallower than the interpolation champion: 400
-trees, maximum depth 2, learning rate 0.01, column subsampling 0.6, row subsampling
-0.6, minimum child weight 4, \(\gamma=0.1\), \(L_1=0.5\), \(L_2=1.0\), and the
-logistic objective.  The mandatory LOPO analysis was successful.  Its
-paper-cluster bootstrap ROC--AUC was 0.7020 (95\% CI 0.6376--0.7751), PR--AUC
-0.8622 (0.8013--0.9222), and Brier score 0.1734 (0.1293--0.2112).
+For the same unweighted XGBoost recipe, ROC--AUC falls by 0.1875 between row
+and grouped evaluation. \Cref{fig:ignition-generalization} shows that this
+loss is broad across candidate families. Small bars for focal variants do not
+indicate successful transfer; they result from near-chance performance in both
+protocols.
 
-For the primary grouped protocol, the same paper-cluster procedure yielded
-ROC--AUC 0.7101 (95\% CI 0.6408--0.7848), PR--AUC 0.8683
-(0.8110--0.9277), and Brier score 0.1713 (0.1234--0.2124).  These intervals are
-considerably wider than the interpolation intervals, reflecting both fewer
-independent paper units and heterogeneity among campaigns.
-
-The unweighted baseline's ROC--AUC fell from 0.9058 under stratified row
-interpolation to 0.7183 under grouped extrapolation, an absolute reduction of
-0.1875.  For the interpolation champion itself, the corresponding reduction was
-larger: 0.9076 to 0.7004, or 0.2072.  Combined class and paper weighting did not
-remove the gap; the square-root-weighted XGBoost model dropped by 0.2215.  The
-decision-tree baseline had the largest reported reduction, 0.2414.  Linear SVM
-variants showed smaller numerical drops of 0.0746--0.0855, but this was because
-their interpolation scores were already lower, not because their grouped scores
-were superior.  The focal variants' near-zero gaps likewise reflect near-chance
-performance in both settings and are not evidence of robust transfer.
-
-\begin{table}[htbp]
+\begin{figure}[htbp]
   \centering
-  \caption{Ignition cross-paper generalization gap. Positive values denote lower
-  ROC--AUC when whole papers were held out.}
-  \label{tab:ignition-gap}
-  \begin{tabular}{lccc}
-    \toprule
-    Candidate & Row ROC--AUC & Grouped ROC--AUC & Absolute drop \\
-    \midrule
-    \texttt{xgb\_baseline} & 0.9058 & 0.7183 & 0.1875 \\
-    \texttt{xgb\_class\_only} & 0.9055 & 0.7036 & 0.2019 \\
-    \texttt{xgb\_paper\_sqrt} & 0.9076 & 0.7004 & 0.2072 \\
-    \texttt{xgb\_paper\_inverse} & 0.9008 & 0.6934 & 0.2074 \\
-    \texttt{xgb\_weighted\_sqrt} & 0.9057 & 0.6842 & 0.2215 \\
-    \texttt{dt\_baseline} & 0.8531 & 0.6117 & 0.2414 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+  \includegraphics[width=0.80\textwidth]{ignition_generalization_drop.png}
+  \caption{Ignition ROC--AUC loss when evaluation changes from random rows to
+  held-out papers. Source:
+  \texttt{Ignition Classifiers/results/report/interpolation\_extrapolation\_drop.png}.}
+  \label{fig:ignition-generalization}
+\end{figure}
 
-This deterioration is the clearest classification result.  Rows within represented
-papers can be ranked with high accuracy, but transfer to unseen papers is only
-moderate and more uncertain.  The change in selected candidate reinforces the
-point: square-root paper weighting narrowly led within-paper interpolation, whereas
-the plain baseline generalized best under the declared grouped policy.  A
-single ``best ignition model'' without its evaluation protocol would therefore be
-misleading.
+\subsection{Thresholds and calibration}
 
-\subsection{Operational thresholds}
+Probability ranking and operational decisions are different. In grouped
+evaluation, the F1-oriented threshold (approximately 0.285) gives sensitivity
+0.984 but specificity only 0.059, effectively labeling almost every case as
+ignition. The balanced-accuracy/Youden threshold (approximately 0.858) gives
+sensitivity 0.664 and specificity 0.662. \Cref{fig:ignition-operating} shows
+these trade-offs together with calibration. No threshold is universally
+correct: a screening policy must state the relative cost of missed ignitions and
+unnecessary tests.
 
-Threshold choice produced materially different operating characteristics
-(Table~\ref{tab:ignition-thresholds}).  For the interpolation champion, the
-mean MCC threshold was 0.7920, giving sensitivity 0.7916, specificity 0.8723, and
-precision 0.9500 over persisted outer predictions.  The F1-optimal threshold was
-much lower at 0.3688; sensitivity increased to 0.9516 while specificity fell to
-0.4798.  Balanced accuracy and Youden's \(J\) selected the same mean threshold,
-0.8379, with sensitivity 0.7660 and specificity 0.9013.
-
-For the extrapolation champion, the MCC threshold of 0.8099 produced sensitivity
-0.7290 and specificity 0.5836.  The F1 threshold, 0.2850, classified nearly every
-row as positive: sensitivity was 0.9837 but specificity only 0.0592.  Balanced
-accuracy and Youden's \(J\) again coincided, at threshold 0.8583, balancing
-sensitivity 0.6639 and specificity 0.6621.  This sensitivity--specificity exchange
-is especially consequential in an imbalanced data set.  The persisted results
-support retaining all four policies for application-specific decisions rather
-than presenting one threshold as universally preferable.
-
-\begin{table}[htbp]
+\begin{figure}[htbp]
   \centering
-  \caption{Thresholded performance of the selected ignition classifiers. Counts
-  pool repeated outer-test predictions and therefore exceed the number of unique
-  database rows.}
-  \label{tab:ignition-thresholds}
-  \begin{tabular}{llrrrrrr}
-    \toprule
-    Champion & Policy & \(\bar{\tau}\) & Sens. & Spec. & Precision & FP & FN \\
-    \midrule
-    Interpolation & MCC & 0.7920 & 0.7916 & 0.8723 & 0.9500 & 423 & 2,115 \\
-    Interpolation & F1 & 0.3688 & 0.9516 & 0.4798 & 0.8486 & 1,723 & 491 \\
-    Interpolation & Balanced accuracy & 0.8379 & 0.7660 & 0.9013 & 0.9596 & 327 & 2,375 \\
-    Extrapolation & MCC & 0.8099 & 0.7290 & 0.5836 & 0.8429 & 1,379 & 2,750 \\
-    Extrapolation & F1 & 0.2850 & 0.9837 & 0.0592 & 0.7621 & 3,116 & 165 \\
-    Extrapolation & Balanced accuracy & 0.8583 & 0.6639 & 0.6621 & 0.8576 & 1,119 & 3,411 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{ignition_thresholds.png}
+    \caption{Threshold-dependent champion performance.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{ignition_calibration.png}
+    \caption{Observed frequency versus predicted probability.}
+  \end{subfigure}
+  \caption{Ignition operating-point and calibration diagnostics from persisted
+  outer predictions. Source: ignition report figures.}
+  \label{fig:ignition-operating}
+\end{figure}
 
-\subsection{Ignition model reliance}
+\subsection{Ignition explainability}
 
-SHAP and permutation rankings presented complementary descriptions of the
-XGBoost models.  In the interpolation champion, the largest mean absolute SHAP
-magnitudes were oxygen (0.6150), Prandtl number (0.4154), absolute flow speed
-(0.3429), gas molar mass (0.3140), ignition time (0.2521), fuel pyrolysis
-temperature (0.2241), and the third sample dimension (0.2140).  In the
-extrapolation champion, oxygen remained first (0.3591), followed by absolute flow
-speed (0.2500), Prandtl number (0.2497), gas molar mass (0.2047), fuel pyrolysis
-temperature (0.2044), ignition time (0.1638), and signed flow velocity (0.1271).
-These are average absolute contribution magnitudes in the fitted score space; they
-do not indicate whether larger values increase or decrease ignition probability.
+The held-paper XGBoost SHAP plot in \cref{fig:ignition-explainability} shows
+both contribution direction and feature value. Oxygen has the largest global
+SHAP magnitude, followed by absolute flow speed, Prandtl number, gas molar
+mass, fuel pyrolysis temperature, and ignition time. Higher oxygen values
+generally move predictions toward ignition in this fitted model, while several
+transport quantities show nonlinear or mixed patterns.
 
-Held-out permutation importance gave a different ordering.  For the extrapolation
-champion, whose unpermuted held-out ROC--AUC in this analysis was 0.7818, the
-largest mean losses were obtained for fuel pyrolysis temperature
-\(0.0977\pm0.0051\), ignition time \(0.0452\pm0.0066\), fuel specific heat
-\(0.0279\pm0.0019\), thermal diffusion time \(0.0206\pm0.0020\), the third sample
-dimension \(0.0158\pm0.0021\), and absolute flow speed
-\(0.0130\pm0.0085\).  Oxygen, despite leading SHAP magnitude, had permutation
-importance \(-0.0054\pm0.0085\).  Likewise, Prandtl number was
-\(-0.0200\pm0.0067\).  This disagreement is expected when predictors are
-correlated or substitutable: a model can allocate substantial local contributions
-to a variable even if shuffling that variable does not degrade aggregate ranking
-because related variables preserve information.  It would be incorrect to
-translate either ranking into a causal hierarchy of combustion controls.
+Permutation importance gives a different ranking: fuel pyrolysis temperature,
+ignition time, fuel heat capacity, and thermal diffusion time produce the
+largest positive held-out ROC--AUC losses when shuffled. Oxygen has high SHAP
+magnitude but slightly negative permutation importance in this held-out sample.
+The disagreement is evidence of correlated and substitutable predictors, not a
+contradiction and not a causal ranking.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{ignition_shap_beeswarm.png}
+    \caption{SHAP values for the extrapolation champion.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{ignition_permutation.png}
+    \caption{Held-out permutation importance.}
+  \end{subfigure}
+  \caption{Authoritative ignition explainability outputs produced by the
+  classification pipeline. Source:
+  \texttt{Ignition Classifiers/results/report/extrapolation\_champion/}.}
+  \label{fig:ignition-explainability}
+\end{figure}
 
 \section{Flame-spread-rate regression}
 \label{sec:results-fsr}
 
-\subsection{Interpolation model comparison}
+\subsection{Model comparison and interpolation}
 
-The declared selection policy chose the unaugmented random-forest baseline
-\texttt{rf\_baseline} for row interpolation.  Across ten repeated row holdouts it
-achieved RMSE \(0.006263\pm0.000472~\mathrm{m\,s^{-1}}\), MAE
-\(0.002103\pm0.000173~\mathrm{m\,s^{-1}}\), and
-\(R^2=0.8790\pm0.0178\).  Its mean bias error was
-\(-3.88\times10^{-5}~\mathrm{m\,s^{-1}}\).  The modal configuration used 500
-trees, maximum depth 10, 0.8 of the available features at each split, minimum leaf
-size 1, and minimum split size 2.
+The unaugmented random-forest baseline is selected for FSR interpolation. Across
+ten repeated row holdouts it reaches
+\(R^2=0.8790\pm0.0178\),
+RMSE \(0.006263\pm0.000472~\si{\metre\per\second}\), and
+MAE \(0.002103\pm0.000173~\si{\metre\per\second}\).
+Bootstrap-augmented XGBoost has a numerically slightly lower mean RMSE
+(\(0.006236~\si{\metre\per\second}\)) but falls within the 2\% tie band and has
+greater fold variability, so the declared tie policy favors the unaugmented
+random forest.
 
-The numerically lowest interpolation RMSE belonged to bootstrap-augmented
-\texttt{xgb\_baseline}, \(0.006236\pm0.000698~\mathrm{m\,s^{-1}}\), but it lay
-within the 2\% tie band and had \(R^2=0.8783\pm0.0310\).  The unaugmented random
-forest was selected after the higher-\(R^2\), lower-uncertainty, and
-no-augmentation tie-breakers.  Other competitive results included unaugmented
-\texttt{xgb\_absoluteerror\_sqrt}, with RMSE
-\(0.006338\pm0.000680~\mathrm{m\,s^{-1}}\), MAE
-\(0.002028\pm0.000166~\mathrm{m\,s^{-1}}\), and \(R^2=0.8752\pm0.0294\).
-KNN, MLP, and SVR candidates were materially weaker in the leading persisted
-rankings: the best listed KNN condition had RMSE 0.0090, the best listed MLP 0.0102,
-and the best listed SVR 0.0106 \(\mathrm{m\,s^{-1}}\).
+\Cref{fig:fsr-model-comparison} presents the complete persisted comparison
+visually. Tree ensembles occupy the leading group. More importantly, the
+orange grouped bars are consistently higher than the blue interpolation bars;
+augmentation does not remove that protocol gap.
 
-The row bootstrap for the selected random forest, after averaging repeated
-predictions per row, estimated RMSE \(0.005955~\mathrm{m\,s^{-1}}\) (95\% CI
-0.004734--0.007146), MAE \(0.001973~\mathrm{m\,s^{-1}}\)
-(0.001759--0.002215), and \(R^2=0.8845\) (0.8449--0.9198).  As for
-classification, these pooled-prediction estimates differ slightly from the mean
-of foldwise metrics because the order of aggregation and metric calculation is
-different.
-
-\subsection{Unseen-paper performance and uncertainty}
-
-The same unaugmented random-forest candidate was selected for paper extrapolation,
-but with a distinct modal configuration: 500 trees, maximum depth 12, feature
-fraction 0.5, minimum leaf size 8, and minimum split size 2.  Its ten grouped
-holdouts yielded RMSE \(0.012205\pm0.004115~\mathrm{m\,s^{-1}}\), MAE
-\(0.004819\pm0.001144~\mathrm{m\,s^{-1}}\), and
-\(R^2=0.4576\pm0.2215\).  Mean bias was
-\(-0.000658~\mathrm{m\,s^{-1}}\).  Fold-level ranges emphasize instability across
-paper composition: RMSE varied from 0.007775 to
-\(0.022121~\mathrm{m\,s^{-1}}\), while \(R^2\) ranged from 0.0176 to 0.7465.
-
-Paper-cluster bootstrap intervals were correspondingly broad.  The grouped
-random-forest estimate was RMSE \(0.011867~\mathrm{m\,s^{-1}}\) (95\% CI
-0.006525--0.017839), MAE \(0.004482~\mathrm{m\,s^{-1}}\)
-(0.002889--0.006528), and \(R^2=0.4893\) (0.2773--0.7319).  The interval width
-is part of the scientific result: transfer accuracy depends strongly on which
-papers are withheld, and the effective extrapolation sample comprises papers,
-not thousands of exchangeable rows.
-
-The nearest grouped competitors did not clearly overturn the random-forest
-selection.  Augmented \texttt{rf\_baseline} had RMSE
-\(0.012218\pm0.004060~\mathrm{m\,s^{-1}}\) and
-\(R^2=0.4477\pm0.2468\).  Augmented \texttt{xgb\_paper\_sqrt} had RMSE
-\(0.012572\pm0.003832~\mathrm{m\,s^{-1}}\) and
-\(R^2=0.4411\pm0.1548\).  Augmented
-\texttt{xgb\_absoluteerror\_inverse} had RMSE
-\(0.012632\pm0.003872~\mathrm{m\,s^{-1}}\) and
-\(R^2=0.4223\pm0.1973\).  Six candidate--condition combinations were rejected by
-the extrapolation policy: both data conditions for
-\texttt{mlp\_log\_target\_sqrt}, \texttt{mlp\_log\_target\_inverse}, and
-\texttt{svr\_linear}.  Their mean grouped \(R^2\) values ranged from \(-0.696\)
-to \(-3.093\), and several also exceeded the RMSE coefficient-of-variation limit.
-
-\begin{table}[htbp]
+\begin{figure}[htbp]
   \centering
-  \small
-  \caption{Leading persisted FSR results in original target units. Values are
-  outer-fold mean \(\pm\) standard deviation.}
-  \label{tab:fsr-leaders}
-  \resizebox{\textwidth}{!}{%
-  \begin{tabular}{llccc}
-    \toprule
-    Protocol & Candidate--condition & RMSE (\(\mathrm{m\,s^{-1}}\)) &
-      MAE (\(\mathrm{m\,s^{-1}}\)) & \(R^2\) \\
-    \midrule
-    Row interpolation & \texttt{rf\_baseline--rd}
-      & \(0.006263\pm0.000472\) & \(0.002103\pm0.000173\) & \(0.8790\pm0.0178\) \\
-    Row interpolation & \texttt{xgb\_baseline--rd\_bt}
-      & \(0.006236\pm0.000698\) & \(0.002226\pm0.000367\) & \(0.8783\pm0.0310\) \\
-    Row interpolation & \texttt{xgb\_absoluteerror\_sqrt--rd}
-      & \(0.006338\pm0.000680\) & \(0.002028\pm0.000166\) & \(0.8752\pm0.0294\) \\
-    Paper extrapolation & \texttt{rf\_baseline--rd}
-      & \(0.012205\pm0.004115\) & \(0.004819\pm0.001144\) & \(0.4576\pm0.2215\) \\
-    Paper extrapolation & \texttt{rf\_baseline--rd\_bt}
-      & \(0.012218\pm0.004060\) & \(0.004856\pm0.001266\) & \(0.4477\pm0.2468\) \\
-    Paper extrapolation & \texttt{xgb\_paper\_sqrt--rd\_bt}
-      & \(0.012572\pm0.003832\) & \(0.005130\pm0.000882\) & \(0.4411\pm0.1548\) \\
-    \bottomrule
-  \end{tabular}
-  }
-\end{table}
+  \includegraphics[width=\textwidth]{fsr_model_comparison.png}
+  \caption{FSR outer-fold RMSE for persisted candidates under row
+  interpolation, paper extrapolation, and real/bootstrapped training conditions.
+  Source:
+  \texttt{FSR Regressors/results/report/01\_comparison/model\_comparison\_bars.png}.}
+  \label{fig:fsr-model-comparison}
+\end{figure}
 
-\subsection{FSR cross-paper gap and augmentation}
+\subsection{Extrapolation and paper heterogeneity}
 
-For the selected random forest, grouped RMSE exceeded row-interpolation RMSE by
-\(0.005942\pm0.004138~\mathrm{m\,s^{-1}}\), almost doubling from 0.006263 to
-\(0.012205~\mathrm{m\,s^{-1}}\).  Its \(R^2\) fell from 0.8790 to 0.4576, a
-reduction of 0.4214.  MAE similarly increased from 0.002103 to
-\(0.004819~\mathrm{m\,s^{-1}}\).  The gap is not attributable to a change of
-metric or model family: it appears for the same candidate evaluated under the two
-split mechanisms.  It therefore quantifies the optimism that would result from
-describing random-row scores as new-paper performance.
+The same unaugmented random-forest recipe is selected for paper extrapolation,
+with a separately tuned configuration. Grouped performance is
+\(R^2=0.4576\pm0.2215\),
+RMSE \(0.012205\pm0.004115~\si{\metre\per\second}\), and
+MAE \(0.004819\pm0.001144~\si{\metre\per\second}\). The RMSE is 1.95 times
+the interpolation value. The paper-cluster 95\% interval for RMSE is
+0.006525--\(0.017839~\si{\metre\per\second}\), demonstrating sensitivity to
+which campaigns are held out.
 
-Bootstrap augmentation did not provide a systematic advantage.  For the selected
-random forest, augmentation changed interpolation RMSE by
-\(+0.0000265\pm0.0001985~\mathrm{m\,s^{-1}}\) and grouped RMSE by
-\(+0.0000131\pm0.0004498~\mathrm{m\,s^{-1}}\), where positive values favor the
-unaugmented condition.  Some recipes improved: grouped
-\texttt{xgb\_paper\_sqrt} changed by
-\(-0.000392\pm0.000690~\mathrm{m\,s^{-1}}\), and
-\texttt{xgb\_log\_target\_inverse} by
-\(-0.000665\pm0.001507~\mathrm{m\,s^{-1}}\).  Others worsened, including grouped
-\texttt{xgb\_baseline} by \(+0.000554\pm0.000615~\mathrm{m\,s^{-1}}\).
-The magnitudes were generally small relative to between-fold uncertainty.  The
-selection of \texttt{rd} for both champions is thus consistent with the empirical
-results and the policy preference for real data within the tie band.  It does not
-imply that bootstrap copies were invalid; it shows that resampling observed
-training rows did not robustly solve transfer to unseen papers.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fsr_generalization_gap.png}
+    \caption{Grouped minus row-level RMSE by candidate.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fsr_group_rmse_strip.png}
+    \caption{Grouped RMSE across repeated paper splits.}
+  \end{subfigure}
+  \caption{FSR transfer loss and split-to-split heterogeneity. Error bars in
+  (a) summarize repeat variability. Source: FSR report comparison figures.}
+  \label{fig:fsr-generalization}
+\end{figure}
 
-\subsection{Paper-level heterogeneity}
+The parity diagnostic in \cref{fig:fsr-parity} shows dense low-FSR observations
+near the diagonal but larger errors and visible regression toward the mean at
+sparse high spread rates. The hardest held-out paper reaches RMSE
+\(0.1331~\si{\metre\per\second}\), whereas many papers are below
+\(0.003~\si{\metre\per\second}\). A single pooled score therefore conceals
+important campaign-level failure modes.
 
-Aggregated performance concealed severe paper-specific errors.  For the grouped
-random-forest champion, the hardest reported paper was
-\texttt{doi::10.1016/j.combustflame.2020.12.005}, with RMSE
-\(0.13313~\mathrm{m\,s^{-1}}\), MAE \(0.12536~\mathrm{m\,s^{-1}}\), and
-\(R^2=-13.35\).  The next paper had RMSE \(0.07729~\mathrm{m\,s^{-1}}\).
-Several others had RMSE near \(0.02~\mathrm{m\,s^{-1}}\), while many papers were
-predicted with errors below \(0.003~\mathrm{m\,s^{-1}}\).  Extremely negative
-per-paper \(R^2\) values also occurred for papers with little within-paper target
-variance; in that setting, a modest absolute error can be large relative to the
-paper-specific variance denominator.  Accordingly, per-paper RMSE and MAE are more
-stable indicators of absolute predictive error than isolated per-paper \(R^2\).
-The heterogeneous error distribution is consistent with the wide grouped fold SD
-and bootstrap intervals and argues against a universal accuracy claim.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.76\textwidth]{fsr_pred_vs_true.png}
+  \caption{Observed versus predicted FSR for the random-forest family under
+  paper-grouped evaluation. Source:
+  \texttt{FSR Regressors/results/report/02\_diagnostics/pred\_vs\_true\_random\_forest.png}.}
+  \label{fig:fsr-parity}
+\end{figure}
 
-\subsection{FSR model reliance}
+\subsection{FSR explainability}
 
-The random-forest champion's impurity-based importance placed flow velocity first
-(0.2187), followed by thermal diffusion time (0.1830), oxygen concentration
-(0.1013), characteristic length (0.0830), the parsed sample-dimension field
-(0.0698), gas thermal conductivity (0.0658), Péclet number (0.0476), and Reynolds
-number (0.0402).  Impurity importance is included as a model summary but is known
-to favor variables that offer many potential split points and does not measure
-held-out dependence.
+The FSR random forest relies most strongly on thermal diffusion time, oxygen,
+gas thermal conductivity, and flow velocity in its SHAP summary
+(\cref{fig:fsr-explainability}). The beeswarm adds direction: high oxygen
+generally pushes FSR upward, while thermal diffusion time has a strongly
+nonlinear pattern. Held-out permutation importance independently identifies
+oxygen, flow velocity, gas conductivity, and thermal diffusion time as the
+largest positive RMSE degradations.
 
-Mean absolute SHAP magnitude gave thermal diffusion time the largest value,
-\(0.005293~\mathrm{m\,s^{-1}}\), followed by oxygen concentration
-\(0.003105\), gas thermal conductivity \(0.001441\), flow velocity \(0.001089\),
-fuel volumetric heat capacity \(0.001034\), fuel density \(0.000949\), core
-volumetric heat capacity \(0.000852\), and core density
-\(0.000787~\mathrm{m\,s^{-1}}\).  These magnitudes summarize how strongly features
-contributed to predictions in the evaluated artifact; taking absolute values
-removes direction.
+Several correlated material variables have negative permutation importance in
+the realized held-out sample. That means shuffling happened to reduce error; it
+does not imply a physically protective effect. The repeated appearance of
+oxygen, flow, and thermal transport across two explanation methods supports
+their use as hypotheses and coverage priorities, not as causal coefficients.
 
-Permutation importance was computed on a held-out set whose unpermuted RMSE was
-\(0.010919~\mathrm{m\,s^{-1}}\).  The clearest positive degradations were oxygen
-concentration, \(0.002276\pm0.000349~\mathrm{m\,s^{-1}}\); flow velocity,
-\(0.001486\pm0.000782\); gas thermal conductivity,
-\(0.001137\pm0.000083\); and thermal diffusion time,
-\(0.000967\pm0.000682~\mathrm{m\,s^{-1}}\).  Prandtl number, gas specific heat,
-and Reynolds number had smaller positive values of \(0.000271\), \(0.000156\),
-and \(0.000154~\mathrm{m\,s^{-1}}\), respectively.  Several correlated
-thermophysical variables had negative permutation values, including fuel
-volumetric heat capacity (\(-0.000837\)), fuel density (\(-0.000790\)), and core
-volumetric heat capacity (\(-0.000665~\mathrm{m\,s^{-1}}\)).  These negative
-values indicate that permutation happened to reduce RMSE in this held-out sample;
-they do not establish an inverse physical effect.
-
-Across the three summaries, oxygen concentration, flow, gas conductivity, and
-thermal diffusion time repeatedly appeared near the top, which is evidence that
-the fitted predictor relied on information associated with those variables.
-Nevertheless, the database contains strongly related raw and derived transport
-quantities, campaign-specific missingness, and uneven coverage of materials and
-conditions.  Importance can therefore migrate among correlated predictors, and
-none of the rankings identifies a causal intervention.  In particular, the results
-do not demonstrate that changing one variable while holding all else fixed would
-produce the corresponding change in FSR.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fsr_shap_beeswarm.png}
+    \caption{Random-forest SHAP values on unseen papers.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fsr_permutation.png}
+    \caption{Held-out permutation importance.}
+  \end{subfigure}
+  \caption{Authoritative FSR explainability outputs generated by the regression
+  pipeline. Source:
+  \texttt{FSR Regressors/results/report/07\_explainability/}.}
+  \label{fig:fsr-explainability}
+\end{figure}
 
 \section{Synthesis}
-\label{sec:results-synthesis}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.90\textwidth]{protocol_comparison.pdf}
-  \caption{Protocol sensitivity for the common baseline configurations used to
-  isolate the row-to-paper shift. Error bars in the FSR panel are fold standard
-  deviations. The ignition panel compares the same unweighted XGBoost candidate
-  under both protocols. Values are generated from persisted report tables.}
-  \label{fig:protocol-comparison}
-\end{figure}
+The figures establish one common result across two targets and different model
+families: within-paper interpolation is strong, while transfer to an unseen
+paper is moderate and substantially more uncertain. Ignition ROC--AUC falls
+from approximately 0.91 to 0.72; FSR RMSE approximately doubles and \(R^2\)
+falls from 0.879 to 0.458. These protocol effects are larger than the
+differences among the leading tree recipes.
 
-The two tasks exhibit the same structural result despite different targets,
-cohorts, models, and metrics.  Ignition ROC--AUC declined from approximately 0.91
-under row interpolation to 0.72 for the grouped champion.  FSR RMSE approximately
-doubled and \(R^2\) fell from 0.879 to 0.458 when complete papers were withheld.
-Uncertainty also expanded under grouped resampling.  These gaps are direct
-evidence that campaign membership captures dependencies not eliminated by the
-standardized predictor set.
-
-The selected families were tree ensembles in all cases, but the configurations
-and weighting choices differed by prediction question.  Paper weighting narrowly
-won ignition interpolation yet not ignition extrapolation.  The random-forest
-baseline won both FSR protocols, with a deeper but much larger minimum leaf size
-for grouped transfer.  Bootstrap augmentation changed some regression candidates
-in either direction but produced no general reduction in cross-paper error.
-Threshold optimization substantially changed ignition sensitivity and specificity,
-so deployment requires an explicit operating objective.
-
-These findings support a bounded conclusion.  The database contains enough
-repeated structure for strong within-campaign prediction and enough transferable
-signal for performance above naive baselines on average across unseen papers.
-However, the cross-paper penalties, wide grouped uncertainty, and extreme
-paper-level failures preclude universal claims.  SHAP and permutation analyses
-identify predictive reliance, not causal combustion laws.  The defensible outputs
-are therefore protocol-specific estimates with their uncertainty and documented
-feature context, rather than a single headline score or a mechanistic claim.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.94\textwidth]{shap_rankings.pdf}
-  \caption{Top ten global mean absolute SHAP magnitudes in the persisted
-  explainability tables. Magnitudes are task- and model-specific and are not
-  comparable across panels. Absolute SHAP values quantify predictive
-  contribution without direction and do not establish causal influence.}
-  \label{fig:shap-rankings}
-\end{figure}
-
-\section{Robustness of comparative conclusions}
-\label{sec:results-robustness}
-
-The principal comparisons were not artifacts of one secondary metric.  For
-ignition, the extrapolation champion had the highest grouped ROC--AUC, the lowest
-grouped Brier score among the three leading XGBoost rows shown in
-Table~\ref{tab:ignition-leaders}, and a successful LOPO result.  The
-\texttt{svm\_weighted\_inverse} candidate had a slightly higher grouped PR--AUC
-(0.8787 versus 0.8767) but lower ROC--AUC (0.6934 versus 0.7183).  This does not
-contradict selection because PR--AUC was a tie-breaker rather than the primary
-metric, and the SVM was outside the 0.01 ROC--AUC tie tolerance.  Likewise,
-\texttt{xgb\_paper\_sqrt} had the smallest fold SD among the three leading
-XGBoost candidates (0.0365), but its lower grouped mean prevented uncertainty
-alone from making it champion.
-
-Calibration-oriented evidence also deteriorated across papers.  The selected
-interpolation classifier's mean Brier score was 0.1063, whereas the extrapolation
-champion's grouped mean was 0.1791.  Because the selected candidates differ, this
-is not a pure paired model effect, but it agrees with the discrimination gap:
-probability estimates were less accurate when campaigns were excluded.  The
-threshold results add a practical warning.  A policy optimized for F1 under high
-positive prevalence retained excellent sensitivity yet accepted almost no
-specificity in grouped evaluation.  Reporting only F1 or sensitivity would conceal
-that behavior.
-
-For FSR, RMSE and MAE told the same broad story.  The selected model's grouped RMSE
-was 1.95 times its interpolation RMSE, and grouped MAE was 2.29 times its
-interpolation MAE.  The foldwise mean \(R^2\) reduction was 0.4214.  Mean MBE
-remained small in absolute terms under interpolation but became more negative in
-grouped evaluation, indicating average underprediction of approximately
-\(6.6\times10^{-4}~\mathrm{m\,s^{-1}}\) over the grouped folds.  Small global
-bias did not imply small individual error: grouped MAE was more than seven times
-the magnitude of MBE because positive and negative residuals cancel in the latter.
-
-MAPE was not used to overturn these conclusions.  The interpolation random-forest
-MAPE was already 73.8\%, and its grouped MAPE was 357.0\%, despite comparatively
-small absolute errors.  This occurs because the FSR cohort includes zero and
-near-zero values, for which percentage denominators are undefined or unstable.
-NRMSE similarly rose from 0.697 to 1.433 between protocols, but its scale depends
-on the normalization convention.  RMSE in \(\mathrm{m\,s^{-1}}\), MAE in the same
-units, and \(R^2\) were therefore the most interpretable joint summary.
-
-Finally, the selected FSR point estimates were not uniquely separated from every
-competitor.  Several tree ensembles occupied a narrow RMSE range, especially
-relative to the grouped fold SD of roughly \(0.004~\mathrm{m\,s^{-1}}\).
-Champion status should be understood as the deterministic outcome of the
-predeclared tie policy, not proof that one fitted algorithm is intrinsically
-superior in all future samples.  The stable conclusion is broader: ensemble trees
-formed the leading group in these persisted evaluations, while the protocol shift
-from rows to papers was much larger than the differences among the leading
-candidate recipes.
+The database plots explain part of this behavior. Sources are highly unequal,
+conditions occupy narrow bands in oxygen--pressure space, partial-gravity
+coverage is sparse, and missingness is structured by campaign. Explainability
+plots identify physically plausible predictive reliance, but they cannot
+separate causal mechanisms from these correlations. The defensible result is a
+screening tool with explicit domain and uncertainty limits, not a universal
+flammability law.
