@@ -69,7 +69,7 @@ R^2 &= 1-\frac{\sum_{i=1}^{n}(y_i-\hat y_i)^2}
 \mathrm{MAPE} &= \frac{100}{n}\sum_{i=1}^{n}
 \left|\frac{y_i-\hat y_i}{y_i}\right|.
 \end{align}
-NRMSE is the repository's normalised RMSE output. MAPE is unstable when \(y_i\) approaches zero and is secondary to RMSE and MAE for this FSR distribution.
+NRMSE is a normalised RMSE. MAPE is unstable when \(y_i\) approaches zero and is secondary to RMSE and MAE for this FSR distribution.
 
 For ignition probability \(\hat p_i\), the Brier score is
 \begin{equation}
@@ -79,7 +79,11 @@ ROC--AUC measures ranking of positives above negatives across thresholds. PR--AU
 \begin{equation}
 \hat y_i=\mathbf{1}[\hat p_i\geq\tau].
 \end{equation}
-Sensitivity is \(\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})\), specificity is \(\mathrm{TN}/(\mathrm{TN}+\mathrm{FP})\), precision is \(\mathrm{TP}/(\mathrm{TP}+\mathrm{FP})\), and balanced accuracy is the mean of sensitivity and specificity. The Matthews correlation coefficient is
+Sensitivity is \(\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})\), specificity is \(\mathrm{TN}/(\mathrm{TN}+\mathrm{FP})\), precision is \(\mathrm{TP}/(\mathrm{TP}+\mathrm{FP})\), and balanced accuracy is the mean of sensitivity and specificity. The F1 score is the harmonic mean
+\begin{equation}
+\mathrm{F1}=\frac{2\,\mathrm{precision}\cdot\mathrm{recall}}{\mathrm{precision}+\mathrm{recall}}.
+\end{equation}
+The Matthews correlation coefficient is
 \begin{equation}
 \mathrm{MCC}=
 \frac{\mathrm{TP}\mathrm{TN}-\mathrm{FP}\mathrm{FN}}
@@ -117,30 +121,30 @@ files are shared across candidates.
 \begin{table}[htbp]
 \centering
 \small
-\caption{Claim-to-evidence traceability matrix. Paths are relative to the repository root.}
+\caption{Claim-to-evidence traceability matrix.}
 \label{tab:traceability}
 \begin{tabular}{p{0.27\textwidth}p{0.63\textwidth}}
 \hline
 Claim & Persisted evidence \\
 \hline
 FSR dataset has 2,531 target rows from 66 papers &
-\path{FSR Regressors/results/report/00_overview/dataset_integrity_summary.md}. \\
+Dataset-integrity summary for the FSR modeling cohort. \\
 FSR interpolation and grouped champion scores &
-\path{FSR Regressors/results/report/README.md}, \path{00_overview/interpolation_leaderboard.md}, and \path{extrapolation_leaderboard.md}. \\
-FSR generalisation gap and stability &
-\path{00_overview/generalization_gap.md} and \path{metric_stability.md}. \\
+Frozen interpolation and extrapolation leaderboards and the FSR selection record. \\
+FSR transfer loss and stability &
+Repeated-holdout gap and metric-stability tables. \\
 Ignition dataset has 4,487 rows, 87 papers, and 3,383/1,104 class counts &
-\path{Ignition Classifiers/results/report/dataset_integrity_summary.md}. \\
+Dataset-integrity summary for the ignition modeling cohort. \\
 Ignition interpolation and grouped scores &
-\path{interpolation_leaderboard.md}, \path{extrapolation_leaderboard.md}, and \path{interpolation_extrapolation_drop.md}. \\
+Frozen interpolation and extrapolation leaderboards. \\
 Threshold trade-offs &
-\path{Ignition Classifiers/results/report/champion_threshold_performance.md}. \\
+Champion threshold-performance table used in \cref{fig:threshold-operating}. \\
 Explanations are model-dependent &
-Both report directories' SHAP and permutation-importance tables and status JSON files. \\
+SHAP and permutation-importance tables for each champion. \\
 Champion identity and full-data artifact provenance &
-Each task's \path{results/selection.json}, \path{artifacts/*_champion/model_card.json}, feature manifest, and training-data fingerprint. \\
+Selection records, model cards, feature manifests, and training-data fingerprints. \\
 No paper leakage and nested tuning contract &
-\path{FSR Regressors/pipeline.md} and \path{Ignition Classifiers/pipeline.md}; machine checks are persisted under \path{results/evaluation}. \\
+Split-assignment checks and evaluation integrity records. \\
 \hline
 \end{tabular}
 \end{table}
@@ -182,7 +186,7 @@ The following concise answers reconcile statements that can otherwise appear con
 \begin{table}[htbp]
 \centering
 \small
-\caption{Configured model portfolios sourced from the repository.}
+\caption{Configured model portfolios.}
 \label{tab:model_portfolios}
 \begin{tabular}{p{0.17\textwidth}p{0.22\textwidth}p{0.50\textwidth}}
 \hline

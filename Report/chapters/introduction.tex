@@ -118,52 +118,8 @@ and very high flow yet burn at an intermediate flow.
   \label{fig:flammability-map}
 \end{figure}
 
-\section{Research gap and data-driven motivation}
-
-Reduced gravity changes the balance among diffusion, imposed ventilation,
-radiation, and solid conduction. Experiments are correspondingly expensive and
-the published evidence is fragmented across materials, geometries, facilities,
-atmospheres, and reporting conventions. A finite qualification matrix cannot
-dense-sample this space, while a high-fidelity model requires boundary
-conditions and material properties that are often absent from historical
-reports.
-
-The research gap is therefore not simply a lack of another predictive
-algorithm. It is the absence of a unified, traceable, leakage-resistant
-evaluation that asks both whether models interpolate among conditions from
-known campaigns and whether they transfer to a completely held-out paper.
-Randomly splitting rows can place nearly repeated observations from one rig on
-both sides of the evaluation boundary, creating optimistic evidence for a
-material-selection question that usually concerns a new campaign.
-
-This project addresses that gap by standardizing published measurements into a
-microgravity flammability database and constructing separate supervised
-pipelines for ignition classification and FSR regression. The intended role is
-screening and experiment prioritization, not replacement of qualification tests
-or combustion physics.
-
-\section{Research question and objectives}
-
-\begin{quote}
-\emph{To what extent can supervised models trained on a curated, multi-source
-microgravity-combustion database predict (i) whether ignition occurs and (ii)
-the flame-spread rate under spacecraft-relevant material, geometric,
-atmospheric, flow, and gravity conditions, while maintaining performance when
-entire experimental papers are withheld?}
-\end{quote}
-
-The work has four objectives:
-\begin{enumerate}
-  \item assemble a source-traceable database with consistent variables and SI
-  units from heterogeneous publications;
-  \item construct clear, reproducible classification and regression pipelines;
-  \item compare row-level interpolation with paper-grouped extrapolation; and
-  \item interpret model behavior using held-out diagnostics, permutation
-  importance, and SHAP without treating predictive associations as causal laws.
-\end{enumerate}
-
-Only ignition and FSR are modeled in the final repository. Extinction,
-flame length, HRR, and smoke/aerosol prediction remain future modeling tasks.
-This boundary preserves a clear distinction between the database's definition
-of flammability and the narrower scope of the validated machine-learning
-evidence.
+The remainder of this report reviews the spacecraft, combustion, and
+machine-learning literature that frames the research gap; states the resulting
+question and objectives; describes the database and evaluation design; and
+reports ignition and flame-spread predictions under interpolation and
+paper-held-out extrapolation.

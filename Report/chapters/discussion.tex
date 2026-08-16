@@ -33,11 +33,35 @@ before asserting that the documented and executed schemas are identical.
 
 \subsection{Imbalance and observational sampling}
 
-Two forms of imbalance matter. First, ignition is a majority-positive task: approximately three quarters of the 4,487 records are ignition cases. A high PR--AUC is therefore partly facilitated by prevalence and must be read beside ROC--AUC, Brier score, sensitivity, specificity, and threshold-dependent performance. The four stored threshold policies make the trade-off explicit. For example, the grouped champion's F1-oriented policy attains very high aggregate sensitivity but very low specificity, whereas the balanced-accuracy policy gives much more even sensitivity and specificity. No threshold is universally preferable; its acceptability depends on the consequences of false negatives and false positives.
+Two forms of imbalance matter. First, ignition is a majority-positive task: approximately three quarters of the 4,487 records are ignition cases. A high PR--AUC is therefore partly facilitated by prevalence and must be read beside ROC--AUC, Brier score, sensitivity, specificity, and threshold-dependent performance. Second, papers contribute unequal row counts. A densely sampled campaign can dominate empirical risk even if it represents a narrow region. The candidate portfolios test no, square-root, and inverse paper weights, and weight-blind families use deterministic probability-proportional resampling. These mechanisms change each source's influence, but cannot manufacture missing regimes. The selected grouped champions were the unweighted baselines: random forest for FSR and XGBoost for ignition. This does not prove that source imbalance is unimportant. It only shows that the tested weighting corrections did not improve the selection objective enough under these frozen splits.
 
-Second, papers contribute unequal row counts. A densely sampled campaign can dominate empirical risk even if it represents a narrow region. The candidate portfolios test no, square-root, and inverse paper weights, and weight-blind families use deterministic probability-proportional resampling. These mechanisms change each source's influence, but cannot manufacture missing regimes. The selected grouped champions were the unweighted baselines: random forest for FSR and XGBoost for ignition. This does not prove that source imbalance is unimportant. It only shows that the tested weighting corrections did not improve the selection objective enough under these frozen splits.
+Observational coverage creates a more fundamental limitation. Oxygen, pressure, gravity, flow, geometry, material properties, and ignition practice were chosen by investigators for particular scientific questions. Their joint distribution is therefore neither random nor uniform. For example, a material may occur mainly in one geometry and gravity regime, while a pressure range may be associated with one facility. A flexible learner can predict from these correlations without separating their physical effects. Sparse partial-gravity observations are especially problematic because lunar and Martian gravity conditions cannot be treated as densely sampled interpolation domains merely because gravity is a numeric feature.
 
-Observational coverage creates a more fundamental limitation. Oxygen, pressure, gravity, flow, geometry, material properties, and ignition practice were chosen by investigators for particular scientific questions. Their joint distribution is therefore neither random nor uniform. For example, a material may occur mainly in one geometry and gravity regime, while a pressure range may be associated with one facility. A flexible learner can predict from these correlations without separating their physical effects. Sparse partial-gravity observations are especially problematic because lunar and Martian gravity conditions cannot be treated as densely sampled interpolation domains merely because ``gravity'' is a numeric feature.
+\subsection{Threshold policies and the operating points they induce}
+\label{sec:threshold-limitations}
+
+A ROC or PR curve ranks cases; a deployed screener still needs a number \(\tau\) at which a probability becomes a yes. Four policies were frozen from inner out-of-fold scores: maximum MCC, maximum F1, maximum balanced accuracy, and maximum Youden \(J\). Balanced accuracy and Youden \(J\) selected the same thresholds in both champions, so \cref{fig:threshold-operating} shows three distinct policies for each of the interpolation and extrapolation models.
+
+The figure plots sensitivity (recall) against specificity. The dashed diagonal is the locus of equal sensitivity and specificity; points above it catch ignitions at a higher rate than they correctly clear non-ignitions, and points below it do the reverse. Marker shape distinguishes the interpolation champion (\texttt{xgb\_paper\_sqrt}, circles) from the extrapolation champion (\texttt{xgb\_baseline}, triangles). Colour distinguishes the policy.
+
+Interpolation occupies the upper-right quadrant. At \(\tau\approx 0.84\) the balanced-accuracy policy attains sensitivity \(0.77\) and specificity \(0.90\); MCC at \(\tau\approx 0.79\) is similar (\(0.79\), \(0.87\)). Those high thresholds are usable screening settings inside known campaigns: most ignitions are still caught, and most true non-ignitions remain unlabeled. The F1 policy drops the threshold to \(\tau\approx 0.37\) and induces a different operating point: sensitivity \(0.95\) but specificity only \(0.48\). Because F1 ignores true negatives, it buys almost-complete recall by labeling many non-ignitions as ignition. Even within interpolation, F1 is therefore not a fire-safe default; it is a high-recall policy whose false-alarm cost must be accepted explicitly.
+
+Extrapolation induces a much harsher map. All three triangles lie on or below the diagonal. Balanced accuracy at \(\tau\approx 0.86\) sits on the diagonal at \((0.66,0.66)\): the grouped champion, once forced to a single cut, is no better than a balanced coin in this sensitivity--specificity plane. MCC at \(\tau\approx 0.81\) trades a little more recall (\(0.73\)) for weaker specificity (\(0.58\)). F1 at \(\tau\approx 0.29\) produces sensitivity \(0.98\) and specificity \(0.06\): the model essentially predicts ignition for every held-out case. A ``never miss a fire'' threshold on a new paper therefore does not yield a selective screener; it yields a near-constant positive alarm.
+
+Two consequences follow. First, no threshold trained on interpolation transfers as a universal operating point: the same policy names produce qualitatively different (sensitivity, specificity) pairs once papers are withheld. Second, metric choice is itself a safety decision. Optimizing F1, or any recall-heavy scalar, induces an alarm-almost-always rule under source shift, which would saturate a test campaign rather than prioritize it. Optimizing balanced accuracy or MCC induces a more even trade-off, but under extrapolation that trade-off is only moderate and is not a certification margin. The curves in \cref{fig:ignition-auc} remain valid rankings; \cref{fig:threshold-operating} shows that converting those rankings into a binary fire-safe call still requires an explicit loss function, and that the grouped evidence does not currently support a high-recall, high-specificity cut.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\textwidth]{threshold_operating_points.png}
+  \caption{Ignition operating points induced by three threshold policies for
+  the interpolation champion (circles) and the extrapolation champion
+  (triangles). Axes are sensitivity (recall) and specificity. F1 selects a
+  low threshold and collapses specificity, especially under paper hold-out
+  (\(\tau\approx 0.29\), specificity \(0.06\)). Balanced accuracy and MCC
+  select high thresholds that remain usable in interpolation but only
+  moderately balanced---or worse---once entire papers are withheld.}
+  \label{fig:threshold-operating}
+\end{figure}
 
 \subsection{Model dependence, metrics, and uncertainty}
 
@@ -101,17 +125,38 @@ The present findings add a data-governance qualification to that motivation. His
 
 The most defensible near-term application is screening. Given candidate conditions in the documented schema, the ignition artifact can rank cases by predicted ignition probability, and the FSR artifact can estimate spread rate for records sufficiently similar to the training support. This can reduce a large design space to a smaller set requiring detailed simulation or experiment. A screening tool can, for example, flag material--geometry--atmosphere combinations whose predictions and uncertainty suggest elevated concern, or prioritise boundary cases where models disagree.
 
-Such use should be explicitly asymmetric. A high-risk prediction may justify additional investigation; a low-risk prediction should not by itself waive testing. False reassurance is particularly consequential in spacecraft fire safety. Threshold selection must therefore follow an operational loss function rather than a generic metric. If missing a potentially ignitable case is costly, a sensitivity-oriented threshold may be appropriate, accepting more false alarms. If scarce test capacity is the binding constraint, a more specific threshold may be chosen, but the resulting missed-case risk must be quantified. The repository deliberately stores MCC-, F1-, balanced-accuracy-, and Youden-\(J\)-oriented thresholds rather than declaring one universally correct.
+Such use should be explicitly asymmetric. A high-risk prediction may justify additional investigation; a low-risk prediction should not by itself waive testing. False reassurance is particularly consequential in spacecraft fire safety. Threshold selection must therefore follow an operational loss function rather than a generic metric. If missing a potentially ignitable case is costly, a sensitivity-oriented threshold may be appropriate, accepting more false alarms. If scarce test capacity is the binding constraint, a more specific threshold may be chosen, but the resulting missed-case risk must be quantified. Four policies---MCC, F1, balanced accuracy, and Youden \(J\)---are retained rather than declaring one universally correct; \cref{fig:threshold-operating} shows that F1 in particular induces an almost-always-positive rule under paper hold-out.
 
 FSR screening should rely primarily on RMSE and MAE in physical units, not MAPE near zero. Predictions should be accompanied by a domain flag and an interval or empirical error summary. The grouped champion's mean RMSE of \(0.0122~\mathrm{m\,s^{-1}}\), with substantial fold variation, is large relative to many low-spread observations. Ranking may therefore be more reliable than precise point estimation in underrepresented regimes. Where a decision depends on a narrow FSR boundary, confirmatory testing is necessary.
 
-\subsection{Experiment design and database curation}
+\subsection{Experiment design and the unexplored oxygen--pressure domain}
 
 A second application is directing new data collection. Per-paper errors can identify campaigns that are systematically difficult to predict. Disagreement between random and grouped performance identifies fields that may encode source-specific rather than transferable information. Explainability, used cautiously, can nominate influential variables whose measurement completeness deserves improvement. For example, the repeated importance of fuel pyrolysis temperature, ignition time, thermal diffusion time, oxygen, flow, and gas properties suggests that missing or inconsistently defined values in these fields can be costly.
 
-The tool can also support coverage analysis before an experiment. A proposed test condition can be compared with ranges, categories, and combinations represented in training. A case in a familiar oxygen--pressure range but a new material--geometry--gravity combination should be labelled out of distribution even if each marginal value is individually familiar. This distinction encourages experiments that fill joint gaps rather than merely adding dense repetitions to an already dominant campaign.
+The most direct map of what remains to be tested is the oxygen--pressure coverage of the assembled table (\cref{fig:o2-pressure-coverage}). Panel (a) plots every observation in oxygen mole fraction versus pressure, coloured by ignition outcome. Panel (b) bins the same plane by sampling density; empty cells are empirical gaps, not physically forbidden regions. Most rows cluster in a horizontal band near terrestrial pressure (\(\approx 100~\mathrm{kPa}\)) and in vertical stripes at a few laboratory oxygen set-points (\(0.2\), \(0.3\), \(0.4\), \(0.5\), and \(1.0\)). Ignition and no-ignition outcomes overlap inside that band: neither oxygen nor pressure alone separates the label, which is why a univariate oxygen cutoff is not a substitute for the multivariate model. Equally important are the white regions. Oxygen mole fractions between about \(0.55\) and \(0.95\) are almost unsampled except at isolated pressures; low oxygen below \(0.1\) is nearly empty; high pressure above a few megapascals is visited only at a handful of oxygen fractions; and low pressure below \(\approx 20~\mathrm{kPa}\) is sparse away from a small low-oxygen tail. Proposed exploration atmospheres---reduced total pressure with elevated oxygen fraction---sit precisely in combinations that the density plot leaves blank or thinly populated.
 
-Partial-gravity testing is an especially strong candidate for prioritisation. Data collected at lunar- or Martian-relevant gravity, with controlled atmosphere and flow, would test whether a numeric gravity feature transfers smoothly or whether regime-specific dynamics dominate. Because spaceflight experiments are expensive, model uncertainty and coverage can help allocate them, but the acquisition strategy should reserve samples for prospective validation rather than using every new result for immediate retraining.
+This geometry is the practical content of ``out of distribution'' for a spacecraft material screener. A query whose oxygen and pressure each lie inside the marginal ranges can still fall in an empty joint cell. Predictions there are extrapolations in the experimental design sense, even if the model API returns a number. The figure therefore does not merely decorate the database: it is a search-space map. Future tests should be allocated to those empty oxygen--pressure cells, crossed with underrepresented geometries, materials, and gravity platforms, rather than added as further dense repeats of the \(100~\mathrm{kPa}\) band. Because spaceflight experiments are expensive, model uncertainty and this coverage plot can help allocate them, but the acquisition strategy should reserve samples for prospective validation rather than using every new result for immediate retraining.
+
+A proposed test condition can be compared with ranges, categories, and combinations represented in training. A case in a familiar oxygen--pressure range but a new material--geometry--gravity combination should still be labelled out of distribution. Partial-gravity testing remains an especially strong candidate for prioritisation: lunar- or Martian-relevant gravity, with controlled atmosphere and flow, would test whether a numeric gravity feature transfers smoothly or whether regime-specific dynamics dominate.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{database_o2_pressure_ignition.png}
+    \caption{Observed ignition outcomes in oxygen--pressure space.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{database_o2_pressure_density.png}
+    \caption{Sampling density; blank cells are untested combinations.}
+  \end{subfigure}
+  \caption{Oxygen mole fraction versus pressure in the assembled database
+  (logarithmic pressure axis). The dense terrestrial-pressure band and a few
+  discrete oxygen set-points dominate the literature. Empty regions---high
+  oxygen at intermediate pressure, very low oxygen, and much of the
+  high-pressure and low-pressure envelopes---are the experimental search
+  space that screening still cannot claim.}
+  \label{fig:o2-pressure-coverage}
+\end{figure}
 
 \subsection{Material and design decision support}
 
@@ -135,7 +180,7 @@ These artifacts are not certification models. They have not undergone prospectiv
 
 This limitation does not make the models unusable. Screening and decision support can be valuable precisely because they precede authoritative testing. The proper claim is that the models summarise existing evidence and can prioritise resources under documented uncertainty. The improper claim is that a predicted ``no ignition'' or low FSR establishes compliance.
 
-Deployment would require version control and auditability. The repository already records data hashes, feature manifests, split assignments, selected hyperparameters, model cards, and out-of-fold predictions. An operational service should additionally lock the software environment, validate units and schemas, log every query and response, monitor drift, and trigger review when the database or artifact changes. Evaluation artifacts and refitted artifacts must remain clearly separated: the former support performance claims; the latter generate predictions.
+Deployment would require version control and auditability. Data hashes, feature manifests, split assignments, selected hyperparameters, model cards, and out-of-fold predictions are already recorded. An operational service should additionally lock the software environment, validate units and schemas, log every query and response, monitor drift, and trigger review when the database or artifact changes. Evaluation artifacts and refitted artifacts must remain clearly separated: the former support performance claims; the latter generate predictions.
 
 \subsection{A staged deployment concept}
 
