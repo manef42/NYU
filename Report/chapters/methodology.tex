@@ -1,448 +1,192 @@
-\chapter{Methodology}
-\label{chap:methodology}
+\chapter{Literature Review}
+\label{chap:literature_review}
 
-\section{Study design and prediction tasks}
-\label{sec:method-study-design}
+\section{Review strategy and source roles}
 
-This work treats the curated microgravity-combustion database as an observational,
-multi-study data set rather than as a collection of independent and identically
-distributed measurements.  An experimental paper commonly contributes a series of
-closely related rows obtained with the same apparatus, material preparation,
-diagnostic practice, and range of operating conditions.  Consequently, two rows
-from one paper can be substantially more similar than two rows drawn from different
-papers even when their tabulated physical variables overlap.  The methodology was
-therefore organized around two distinct prediction tasks.  The first was binary
-classification of whether ignition occurred.  The second was regression of flame
-spread rate (FSR), expressed in \(\mathrm{m\,s^{-1}}\).  FSR was modeled only where
-a numeric FSR observation was present.  No extinction target or extinction model
-was defined.
+We synthesize five sources that address different layers of the research problem. Guibaud et al.\ provide the spacecraft fire-safety context, historical evidence, and deep-space challenges \cite{guibaud2022spacecraft}. Rivera et al.\ review the physics of flame spread over electrical wires and present the closest prior machine-learning study to the present FSR task \cite{riveraWireML}. Shwartz-Ziv and Armon provide comparative evidence about model selection for tabular data \cite{shwartzZiv2022tabular}. Raissi, Perdikaris, and Karniadakis establish the PINN formulation \cite{raissi2019pinn}, while Karniadakis et al.\ situate physics-informed learning within the wider scientific-machine-learning field \cite{karniadakis2021physicsinformed}.
 
-For each task, interpolation and extrapolation were evaluated separately.
-\emph{Row interpolation} asks how accurately a model predicts a held-out row when
-other rows from the same paper may remain in training.  It is useful for estimating
-performance within the support of campaigns already represented in the database,
-but it does not test transfer to a new publication.  \emph{Paper-grouped
-extrapolation} instead holds out complete canonical papers, so that no paper
-identity occurs in both training and test partitions.  It asks whether relationships
-learned from the available literature transfer to a previously unseen paper or
-campaign.  The grouped estimate is the primary evidence for cross-paper
-generalization.  The deliberate use of both protocols makes the otherwise hidden
-effect of campaign dependence measurable.
-
-The two pipelines followed the same high-level sequence: load and standardize the
-data; freeze all outer partitions; perform hyperparameter search within each outer
-training partition; fit the selected configuration to that partition; evaluate it
-once on the untouched outer test partition; aggregate persisted predictions and
-metrics; choose separate interpolation and extrapolation champions by a declared
-policy; and only then refit deployable models on all labeled rows.  Evaluation
-models and full-data refits have different inferential roles.  The former provide
-out-of-sample comparison evidence, while the latter are operational artifacts and
-do not supply unbiased performance estimates.
-
-\section{Database ingestion and canonicalization}
-\label{sec:method-data}
-
-\subsection{Source structure and evidenced standardization}
-
-Both analyses used the task-local \texttt{Microgravity\_Database.csv}.  The CSV
-contains a category banner in its first row, a field-name header in its second row,
-and observations thereafter.  The loaders therefore read the CSV after skipping
-the category row and attempted UTF-8, UTF-8 with byte-order mark, CP1252, and
-Latin-1 encodings.  The persisted validation reports identify CP1252 as the
-successful encoding for both analyzed files.  The FSR loader additionally accepts
-Excel workbooks with one- or two-level headers, but the persisted analysis reported
-the CSV parse \texttt{skiprows=1; encoding=cp1252}.  These operations describe
-schema ingestion and computational standardization; the repository does not
-document enough of the upstream literature-search or manual transcription process
-to justify broader claims about database construction.
-
-Whitespace and placeholder tokens were normalized, duplicate headers and all-empty
-columns were removed where applicable, and numeric values were parsed from
-unit-bearing cells.  The ignition pipeline implemented explicit conversion for
-sample dimensions to metres, pressure to pascals, and flow velocity to
-\(\mathrm{m\,s^{-1}}\), using either a recognized cell suffix or the unit in the
-column header.  Gravity was represented relative to terrestrial gravity,
-\(g/g_{\mathrm{Earth}}\).  A microgravity text token without a numeric value was
-mapped to \(10^{-6}\), while acceleration values in \(\mathrm{m\,s^{-2}}\),
-\(\mathrm{cm\,s^{-2}}\), or \(\mathrm{mm\,s^{-2}}\) were converted to this relative
-scale.  Ignition-power entries describing heat flux, current, or other quantities
-that were not watts were not coerced into power values.  In the FSR pipeline,
-columns were classified as numeric when at least 60\% of their available cells
-could be parsed from a leading number.  Restricting parsing to a leading numeric
-token prevents chemical labels such as \(\mathrm{N_2}\) or \(\mathrm{CO_2}\) from
-being mistaken for measurements.  Thus, for example, ``101.3 kPa'' is numeric
-while ``N2'' remains categorical.
-
-Six fields were dropped before modeling in both tasks: material of sample, rig
-name, internal geometry, internal dimensions, facility, and free-form information.
-Paper identifiers and bibliographic fingerprints were never supplied as predictors.
-For ignition, the post-outcome columns flame length, FSR, heat-release rate (HRR),
-and smoke/aerosols were explicitly excluded.  For FSR, the selected FSR target,
-duplicate FSR-like fields, citation and author identifiers, notes, and detected
-post-outcome fields such as flame length, HRR, smoke/aerosols, and extinction-like
-fields were excluded.  This exclusion is a leakage control, not an extinction
-analysis.
-
-\subsection{Canonical paper identity}
-
-The grouping unit was a canonical paper identifier.  A valid DOI was normalized by
-removing URL or \texttt{doi:} prefixes, lowercasing, and retaining the canonical
-DOI expression.  The resulting identifier had the form
-\texttt{doi::<normalized-doi>}.  If no valid DOI was available, the citation was
-lowercased, punctuation was removed, whitespace was collapsed, and the identifier
-\texttt{citation::<normalized-citation>} was used.  Raw DOI strings were therefore
-not used directly as groups.  This canonicalization is essential: cosmetic
-differences in citation formatting must not permit one publication to appear under
-multiple group labels and thereby cross a grouped train--test boundary.
-
-\subsection{Task-specific cohorts}
-
-The ignition target was the database field \texttt{Ignition}, mapped to
-\(y_i\in\{0,1\}\) for No and Yes.  Training required every target to be recognized.
-Rows were deduplicated on the complete engineered feature vector, target, and
-canonical paper identifier, retaining the first occurrence.  The persisted
-\texttt{fable-data-v5} cohort contains 4,487 observations from 87 papers after 570
-duplicates were removed.  There were 3,383 ignition-positive and 1,104
-ignition-negative rows, corresponding to a positive prevalence of 0.75396.
-Twenty-nine blank source rows were also identified in the validation report.
-
-For regression, the loader selected the FSR-like column with the greatest number of
-numeric values; the persisted target was \texttt{FSR (m/s)}.  Rows lacking numeric
-FSR were removed, and duplicates were counted after target filtering.  The
-\texttt{fsr-data-v2} cohort contains 2,531 usable rows from 66 papers, derived from
-5,057 raw rows: 2,467 rows lacked FSR and 59 duplicates were removed.  Papers
-contributed between 1 and 193 usable rows (median 22.5, mean 38.35), demonstrating
-substantial imbalance in campaign size.  The observed FSR ranged from 0 to
-\(0.211~\mathrm{m\,s^{-1}}\), with mean \(0.008774~\mathrm{m\,s^{-1}}\) and
-standard deviation \(0.017252~\mathrm{m\,s^{-1}}\).
+These source roles must remain distinct. Historical incident counts, spacecraft atmosphere descriptions, and deep-space concerns are attributed to Guibaud et al. Physical and machine-learning statements specific to wire flame spread are attributed to Rivera et al. Claims about tabular algorithm comparisons are limited to the datasets and protocol of Shwartz-Ziv and Armon. PINN equations describe methods reported in the PINN literature; they do not imply that this project's tabular pipelines solved a combustion PDE. Finally, none of the performance values reported for earlier studies is presented as a result of this project.
 
 \begin{table}[htbp]
-  \centering
-  \caption{Persisted analysis cohorts. Counts are those recorded by the task-specific
-  validation reports after target filtering and deduplication.}
-  \label{tab:method-cohorts}
-  \begin{tabular}{lrrrr}
-    \toprule
-    Task & Raw rows & Analyzed rows & Papers & Duplicates removed \\
-    \midrule
-    Ignition classification & 5,086 & 4,487 & 87 & 570 \\
-    FSR regression & 5,057 & 2,531 & 66 & 59 \\
-    \bottomrule
-  \end{tabular}
+    \centering
+    \caption{Authoritative sources and their use in this report.}
+    \label{tab:source_roles}
+    \begin{tabular}{p{0.21\textwidth}p{0.32\textwidth}p{0.34\textwidth}}
+        \hline
+        Source & Principal evidence used & Limitation for the present question \\
+        \hline
+        Guibaud et al.\ \cite{guibaud2022spacecraft} &
+        Spacecraft incidents, fire-safety strategy, reduced-buoyancy implications, and deep-space challenges &
+        Review and risk context; not a trained ignition or FSR predictor \\
+        \hline
+        Rivera et al.\ \cite{riveraWireML} &
+        Wire-flame physics, heterogeneous experimental predictors, categorization, augmentation, and ML FSR benchmarks &
+        Focuses on wire FSR; random cross-validation is not strict held-source-out transfer \\
+        \hline
+        Shwartz-Ziv and Armon \cite{shwartzZiv2022tabular} &
+        Controlled comparison of XGBoost with deep models on eleven tabular datasets &
+        General tabular evidence, not combustion-specific evidence \\
+        \hline
+        Raissi et al.\ \cite{raissi2019pinn} &
+        Differential-equation residuals, collocation points, and forward/inverse PINN formulation &
+        Assumes suitable governing equations and coordinate-resolved information \\
+        \hline
+        Karniadakis et al.\ \cite{karniadakis2021physicsinformed} &
+        Broader synthesis of physics-informed machine learning and data--physics integration &
+        Research framework rather than a spacecraft-material qualification method \\
+        \hline
+    \end{tabular}
 \end{table}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.88\textwidth]{dataset_composition.pdf}
-  \caption{Task-specific database composition after the preprocessing described
-  in this chapter. Counts are generated directly from the persisted validation
-  summaries; the two tasks use different target-availability rules and therefore
-  different paper cohorts.}
-  \label{fig:dataset-composition}
-\end{figure}
+\section{Spacecraft fire safety as a material-selection problem}
 
-\section{Predictor representation and preprocessing}
-\label{sec:method-features}
+\subsection{Lessons from incidents and evolving practice}
 
-\subsection{Ignition feature engineering}
+The history reviewed by Guibaud et al.\ shows that spacecraft fire safety evolved through incident investigation, atmospheric redesign, material screening, detection hardware, suppression equipment, and crew procedures. Their chronology identifies twelve acknowledged fire or smoke events. Apollo~1 remains the clearest demonstration of coupled design hazards: an oxygen-rich cabin, combustible interior materials, possible electrical ignition, rapid pressure rise, and an inward-opening hatch combined in a fatal accident during a ground test. The precise ignition source was not established, but subsequent actions included atmospheric changes, removal or protection of combustibles, and extensive component and mock-up flammability testing \cite{guibaud2022spacecraft}.
 
-Ignition classification used a fixed manifest of 32 numeric and five categorical
-features.  This manifest was invariant across all candidates.  Fuel properties
-comprised density (\(\mathrm{kg\,m^{-3}}\)), thermal conductivity
-(\(\mathrm{W\,m^{-1}\,K^{-1}}\)), specific heat
-(\(\mathrm{J\,kg^{-1}\,K^{-1}}\)), pyrolysis temperature (K), thermal diffusivity
-(\(\mathrm{m^2\,s^{-1}}\)), and volumetric heat capacity
-(\(\mathrm{J\,m^{-3}\,K^{-1}}\)).  Corresponding core properties included density,
-thermal conductivity, specific heat, and volumetric heat capacity.
+Apollo~1 also demonstrated that material behaviour cannot always be inferred from an isolated specimen. Guibaud et al.\ report that components showing acceptable individual behaviour did not necessarily prevent excessive propagation after integration into a full spacecraft mock-up. The configuration changed the available fuel paths, heat feedback, and interactions among adjacent items. This observation remains relevant to data-driven screening: a row-level material prediction can inform a decision, but cannot by itself represent every installation detail in a complete vehicle \cite{guibaud2022spacecraft}.
 
-Gas and transport variables were oxygen concentration, gas molar mass, gas
-specific heat, gas thermal conductivity, gas density, gas thermal diffusivity,
-kinematic viscosity, Reynolds number, Péclet number, Prandtl number, and thermal
-diffusion time in seconds.  Operating conditions comprised pressure in pascals,
-signed flow velocity and absolute flow speed in \(\mathrm{m\,s^{-1}}\), relative
-gravity, ignition power in watts, and ignition duration in seconds.  Geometry was
-represented by half-thickness, a characteristic length, and as many as three
-parsed sample dimensions, all in metres.
+Later incidents shifted attention toward electrical equipment and operational response. The Salyut and Shuttle records include failed fans, short circuits, overheated resistors, fused wires, and failed electronic components. In the five Shuttle events summarized by Guibaud et al., the crew interrupted power before a full-scale fire developed, while onboard detection systems did not provide the decisive first warning. The 1997 Mir fire showed a different failure mode: a lithium-perchlorate oxygen canister produced an energetic flame and dense smoke, obstructed access to one escape vehicle, and could not be directly suppressed by the available water-based foam. Crew members had to improvise while contending with visibility, equipment access, and respirator problems \cite{guibaud2022spacecraft}. The literature's point is not that every spacecraft fire resembles a wire fire, but that ignition source, material, atmosphere, access, and mitigation interact at system scale.
 
-The five categorical variables were engineered from the schema: sample geometry
-(wire, flat, cylindrical, spherical, or residual category), diluent, signed-flow
-direction (coflow, counterflow, or quiescent), gravity regime (microgravity,
-partial gravity, Earth gravity, or hypergravity/unknown), and ignition method
-(open flame, radiative heater, discharge, wire/coil, or unknown).  Signed flow and
-absolute flow were intentionally both retained because direction and magnitude
-encode different information.  Derived quantities already present in the database,
-including Reynolds, Péclet, and Prandtl numbers and thermal diffusion time, were
-treated as predictors; their inclusion creates correlated representations and must
-be considered when interpreting importance.
+Present practice uses multiple defence layers. Guibaud et al.\ describe fire-resistant material selection, configuration analysis, redundant or distributed smoke detection, electrical and ventilation shutdown, portable extinguishers, atmospheric monitoring, crew masks, and rehearsed procedures on the International Space Station. This layered architecture has benefited from earlier programmes, yet it still relies on knowledge of material response and combustion signatures in low gravity. The review argues that uncertainties remain in translating terrestrial test performance to reduced gravity and in demonstrating suppression performance for every relevant scenario \cite{guibaud2022spacecraft}.
 
-Missingness was heterogeneous.  Flow variables were missing in 897 ignition rows,
-gravity in 54, and gas-derived transport variables in 48.  Ignition power was
-missing in 3,606 rows and ignition time in 2,400; the third sample dimension was
-missing in 2,049.  By contrast, many tabulated material properties had no recorded
-missing values.  These patterns mean that apparatus-related variables can partly
-encode which campaigns measured or reported them, even though explicit paper
-identifiers were excluded.
+\subsection{Qualification tests and their limits}
 
-\subsection{FSR feature manifest}
+Spacecraft material control is intentionally conservative. The test history summarized by Guibaud et al.\ includes NASA's vertical flame-propagation screening, in which multiple specimens are exposed to an ignition source under a specified atmosphere. The cited criterion considers both propagation distance and ignition by burning debris. At the vehicle level, a material that does not pass an isolated test may still require configuration analysis when mission-critical function prevents simple removal. Separation, containment, barriers, and elimination of propagation paths become part of the safety argument \cite{guibaud2022spacecraft}.
 
-FSR regression used a detected manifest rather than the ignition pipeline's renamed
-fixed manifest.  The persisted manifest contains 29 numeric and four categorical
-fields.  Numeric fields cover the sample-dimension string parsed numerically,
-half-thickness and characteristic length; fuel and core thermophysical properties;
-oxygen concentration; gas molar mass, heat capacity, conductivity, density,
-thermal diffusivity, and kinematic viscosity; Reynolds, Péclet, and Prandtl
-numbers; thermal diffusion time; pressure in pascals; flow velocity in
-\(\mathrm{m\,s^{-1}}\); relative gravity; and ignition power and time.  Geometry,
-diluent, ignition method, and ignition outcome are categorical.  The manifest tags
-ignition power, ignition time, ignition method, and ignition outcome as apparatus
-features and the remainder as physics features.  However, role tags were retained
-for reporting only: all candidates used the same full feature list, so the
-\texttt{feature\_set=all} designation is substantive and no physics-only feature
-ablation was performed.
+This approach is essential but does not produce a continuous map over all operating conditions. A pass/fail test answers a deliberately bounded qualification question. It does not directly estimate a probability of ignition for every pressure and oxygen concentration, nor does it yield FSR over arbitrary flow and gravity. Furthermore, Guibaud et al.\ cite reduced-gravity observations in which limiting behaviour differs from normal-gravity expectations and describe partial-gravity studies where relative material ranking can change \cite{guibaud2022spacecraft}. A data-driven surrogate is useful precisely in this space between discrete experiments: it can organize existing observations, interpolate under controlled assumptions, and expose regions where direct testing remains necessary. It cannot supersede the qualification test from which the safety requirement is defined.
 
-The FSR target is in \(\mathrm{m\,s^{-1}}\), and names carrying SI units were
-interpreted accordingly.  The generic FSR parser extracts leading numbers but does
-not establish additional unit conversions beyond the recorded schema; no stronger
-standardization claim is made.  Missingness again concentrated in apparatus and
-flow fields: among analyzed rows, flow was missing in 709, ignition power in 2,198,
-ignition time in 1,725, gravity in 30, and several gas/transport variables in 33.
+\section{Ignition and flame spread under reduced buoyancy}
 
-\subsection{Fold-local transformations}
+\subsection{Coupled solid- and gas-phase processes}
 
-All learned preprocessing was fitted on training data only.  For scikit-learn-style
-models, numeric missing values were replaced by the training-fold median.
-XGBoost retained native missing values.  Numeric scaling by a training-fold
-\texttt{StandardScaler} was applied for distance-, margin-, and neural-network
-families, but not for tree models.  Categorical missingness was replaced by the
-constant ``Unknown'' and categories were one-hot encoded with unknown-category-safe
-handling.  This arrangement prevents test-set medians or category vocabularies
-from entering model fitting.
+Ignition is a transition rather than an intrinsic label attached permanently to a material. Energy supplied by an igniter or fault heats the solid; heat is stored and conducted through the specimen and, if the material decomposes, volatile fuel is generated. Gas-phase transport then mixes fuel and oxidizer, while losses to the core, surroundings, and unheated material compete with heat feedback. The literature reviewed by Rivera et al.\ emphasizes that even reduced analytical descriptions require material properties, dimensions, gas properties, and heat-flux estimates that are not uniformly reported across experiments \cite{riveraWireML}. Consequently, an observed yes/no ignition outcome is conditional on the entire experimental configuration.
 
-\section{Candidate models, weighting, and augmentation}
-\label{sec:method-models}
-
-The ignition configuration declared 26 candidates spanning XGBoost,
-decision trees, \(k\)-nearest neighbors (KNN), multilayer perceptrons (MLP), and
-support-vector machines (SVM).  Candidate recipes varied paper weighting, balanced
-class weighting, focal versus logistic XGBoost objectives, distance-weighted KNN,
-and linear versus radial-basis SVM.  The FSR configuration declared 34 candidates:
-10 XGBoost, seven random-forest, six KNN, five MLP, and six support-vector
-regression (SVR) recipes.  Regression candidates varied paper weighting, tree loss,
-signed-\(\log(1+y)\) target transformation, KNN distance weighting, SVR kernel, and
-XGBoost paper bagging.  Predictions from a transformed-target candidate were
-inverse-transformed to original FSR units before evaluation.
-
-The persisted comparison pools were smaller than these configured portfolios.
-The merged FSR manifest contains 25 candidates (50 candidate--augmentation
-conditions), and the formal ignition selection record omits MLP candidates even
-though MLP shard metrics are present.  Results and champion claims in this report
-therefore refer to the candidates actually represented in the persisted
-leaderboards and selection records, not to an assumed complete execution of every
-configured recipe.
-
-Campaign-size weighting was defined from the number \(n_p\) of training rows in
-paper \(p\).  The principal choices were
+A useful scale for solid heating is the thermal diffusion time
 \begin{equation}
-  w_{ip}^{(\mathrm{none})}=1,\qquad
-  w_{ip}^{(\mathrm{sqrt})}=n_p^{-1/2},\qquad
-  w_{ip}^{(\mathrm{inverse})}=n_p^{-1}.
-  \label{eq:paper-weights}
+    t_{\mathrm{diff}} \sim \frac{\ell_c^2}{\alpha_s},
+    \qquad
+    \alpha_s=\frac{k_s}{\rho_s c_{p,s}},
+    \label{eq:thermal_diffusion_time}
 \end{equation}
-For ignition, optional balanced class weights were multiplied by the paper weights
-and the result renormalized.  Families with native sample-weight support received
-these values during fitting.  Weight-blind families used deterministic
-probability-proportional resampling so that a weighting option was not silently
-ignored.  The FSR MLP minimized weighted mean squared error; FSR KNN and SVR used
-the analogous resampling path.
+where \(\ell_c\) is a characteristic solid length, \(k_s\) is thermal conductivity in \(\mathrm{W\,m^{-1}\,K^{-1}}\), \(\rho_s\) is density in \(\mathrm{kg\,m^{-3}}\), \(c_{p,s}\) is specific heat in \(\mathrm{J\,kg^{-1}\,K^{-1}}\), and \(\alpha_s\) is thermal diffusivity in \(\mathrm{m^2\,s^{-1}}\). This scaling does not determine ignition by itself. It shows why thickness and thermophysical properties jointly affect the time over which a specimen responds to heating, and why separately recorded database columns can have interacting rather than additive effects.
 
-Every FSR candidate was evaluated under two training-data conditions.
-\texttt{rd} used the real outer-training rows.  \texttt{rd\_bt} appended 1,000
-rows sampled with replacement from those training rows; each copy retained its
-source paper identifier.  This bootstrap operation changes the empirical
-frequency of observed conditions.  It neither generates independent experiments
-nor expands physical support, and the test set was never augmented.  Candidate and
-augmentation together formed the regression selection unit.
-
-\section{Frozen outer evaluation protocols}
-\label{sec:method-splits}
-
-The ignition split file used base seed 42 and three consecutive seeds.  For each
-seed, it stored a stratified 80/20 row holdout, a five-fold stratified row
-cross-validation, and a five-fold stratified grouped cross-validation.  It also
-stored 87 leave-one-paper-out (LOPO) folds, one for each canonical paper.  Thus,
-the primary interpolation and grouped protocols each comprised 15 outer folds,
-the supplementary holdout comprised three, and LOPO supplied a paper-level
-robustness analysis.  Split integrity was checked for all 120 split objects.
-
-The FSR pipeline generated ten repeated 80/20 holdouts using seeds 42--51.  The
-interpolation partition was stratified by six target quantile bins when feasible
-and consistently contained 2,024 training and 507 test rows.  For extrapolation,
-50 candidate \texttt{GroupShuffleSplit} partitions were generated per repeat and
-the most target-balanced paper-disjoint candidate was retained.  Each grouped
-training set contained 52 papers and each test set 14 papers, although row counts
-varied because paper sizes differed.  Balance screening reduces avoidable changes
-in target distribution without weakening the defining paper-disjoint constraint.
-Integrity checks across all 20 partitions confirmed full coverage, nonempty
-partitions, no row overlap, and, for grouped partitions, no paper overlap.
-
-\section{Nested tuning and leakage control}
-\label{sec:method-nested}
-
-Hyperparameters were selected separately inside every outer training partition.
-For ignition interpolation, inner stratified folds were used; grouped
-extrapolation and LOPO used stratified, paper-disjoint inner folds with both classes
-represented.  For FSR, shuffled K-fold inner validation was used for interpolation
-and \texttt{GroupKFold} by paper for extrapolation.  Up to 40 distinct parameter
-configurations were sampled from each family search space in the documented full
-workflow.  Ignition used three inner grouped folds; FSR used five inner folds.
-
-For ignition configuration \(h\), the inner score ordered candidates by mean
-receiver-operating-characteristic area under the curve (ROC--AUC), then
-precision--recall AUC (PR--AUC), then lower Brier score.  For FSR it ordered by
-lower root mean squared error (RMSE), then lower mean absolute error (MAE), then
-higher coefficient of determination \(R^2\).  The best configuration was refitted
-on the complete outer training partition and evaluated once on the outer test
-partition.  Search histories, selected hyperparameters, outer predictions, and
-integrity status were persisted.  Dataset SHA-256 fingerprints linked the input,
-splits, and evaluations; the FSR evaluator explicitly aborted on a mismatch.
-
-For the ignition task, decision thresholds were also selected without outer-test
-labels.  Given a probability estimate \(\hat p_i\),
+After ignition, flame spread requires successive heating and pyrolysis of virgin material. Rivera et al.\ reproduce an analytical opposed-flow flame-spread relation in which spread speed depends on heated length, solid thermal inertia, pyrolysis and ambient temperatures, several flame and external heat-flux terms, radiative loss, and a kinetic contribution \cite{riveraWireML}. At the level needed here, that balance can be written schematically as
 \begin{equation}
-  \hat y_i(\tau)=\mathbb{I}\!\left(\hat p_i\geq\tau\right).
-  \label{eq:threshold}
+    v_{\mathrm{FSR}}
+    \sim
+    \frac{\dot{q}''_{\mathrm{net}}\,\ell_h}
+         {\rho_s c_{p,s}\,\delta\,(T_p-T_0)},
+    \label{eq:schematic_fsr_balance}
 \end{equation}
-Four thresholds maximized, respectively, Matthews correlation coefficient (MCC),
-F1 score, balanced accuracy, and Youden's
-\(J=\mathrm{sensitivity}+\mathrm{specificity}-1\) on the winning configuration's
-inner out-of-fold predictions.  Ties favored a threshold nearer 0.5.  Once frozen,
-each threshold was applied to the outer test fold.  No single threshold was
-declared universally optimal because each policy imposes a different balance
-between false positives and false negatives.
+where \(\dot{q}''_{\mathrm{net}}\) denotes net heating of the unburned solid, \(\ell_h\) is a heated length, \(\delta\) is a solid thickness scale, \(T_p\) is a pyrolysis-temperature scale, and \(T_0\) is the initial temperature. Equation~\eqref{eq:schematic_fsr_balance} is a qualitative energy-balance representation, not the regression equation used by this project. It makes the key coupling explicit: any variable that changes heat feedback, heat storage, or heat loss can alter spread speed.
 
-\section{Metrics, uncertainty, and model selection}
-\label{sec:method-metrics}
+\subsection{Microgravity transport}
 
-Threshold-independent classification metrics were ROC--AUC, PR--AUC, and the
-Brier score
+On Earth, gravity-induced buoyancy contributes a characteristic velocity and organizes the flame and smoke plume. In microgravity that contribution is suppressed, so imposed ventilation and diffusion control transport to a much greater degree. Guibaud et al.\ connect this change to flammability, spread, smoke movement, detector response, and suppression uncertainty. A fire may produce combustion products that take longer to reach a sensor, while a relatively small ventilation flow can reshape a non-buoyant flame \cite{guibaud2022spacecraft}. This is why ``zero gravity'' cannot be represented only as one more categorical label while all other transport variables are ignored.
+
+Dimensionless groups help organize the competing mechanisms. For characteristic velocity \(U\), length \(L\), gas kinematic viscosity \(\nu\), and gas thermal diffusivity \(\alpha_g\),
 \begin{equation}
-  \mathrm{Brier}=\frac{1}{n}\sum_{i=1}^{n}(\hat p_i-y_i)^2.
-  \label{eq:brier}
+    \mathrm{Re}=\frac{UL}{\nu},
+    \qquad
+    \mathrm{Pe}=\frac{UL}{\alpha_g},
+    \qquad
+    \mathrm{Pr}=\frac{\nu}{\alpha_g}.
+    \label{eq:dimensionless_groups}
 \end{equation}
-Thresholded metrics included MCC, F1, balanced accuracy, sensitivity, specificity,
-and precision.  Regression metrics included
-\begin{align}
-  \mathrm{RMSE} &=
-    \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i-\hat y_i)^2}, &
-  \mathrm{MAE} &=
-    \frac{1}{n}\sum_{i=1}^{n}|y_i-\hat y_i|, \label{eq:reg-errors}\\
-  R^2 &=1-\frac{\sum_i(y_i-\hat y_i)^2}
-                    {\sum_i(y_i-\bar y)^2}, &
-  \mathrm{MBE} &=\frac{1}{n}\sum_i(\hat y_i-y_i).
-  \label{eq:r2-mbe}
-\end{align}
-MAPE and normalized RMSE were also persisted.  MAPE is unstable when measured FSR
-approaches zero and was therefore descriptive rather than a champion-selection
-criterion.
+These groups compare inertial to viscous transport, advection to thermal diffusion, and momentum to thermal diffusivity, respectively. Their value in a heterogeneous database is representational: experiments with different dimensions and velocities may occupy related transport regimes. They do not remove the need to preserve dimensional predictors or account for geometry.
 
-Reported ``mean \(\pm\) SD'' values summarize outer-fold variability.  In
-addition, 2,000-resample 95\% bootstrap intervals were computed from persisted
-outer predictions.  Repeated predictions for a row were averaged before
-resampling.  Interpolation resampled unique rows; extrapolation resampled canonical
-papers, preserving the clustered inferential unit.  Fold SD and cluster-bootstrap
-intervals answer different questions and are both reported where available.
+Opposed and concurrent flow are physically different configurations. In opposed spread, gas flow is directed toward the advancing flame front; in concurrent spread, flow and flame advance share a direction. Rivera et al.\ identify spread direction as an important categorical descriptor and report that adding such regime information substantially improved predictions in their compiled wire dataset \cite{riveraWireML}. The result supports explicit representation of configuration, but it must be interpreted within that study's cross-validation protocol. It does not prove that a direction label captures all flow physics.
 
-Ignition candidates had to pass integrity checks, complete all required folds,
-produce valid probabilities, and have ROC--AUC fold SD no greater than 0.15.
-Interpolation was ranked on stratified-row ROC--AUC.  Extrapolation was ranked on
-grouped ROC--AUC and additionally required successful LOPO evaluation.  Values
-within 0.01 of the best were resolved by higher PR--AUC, lower uncertainty, and a
-declared simplicity order.  FSR candidates required complete, finite evaluation,
-RMSE coefficient of variation no greater than 0.45, and mean \(R^2\geq-0.25\).
-Any RMSE within 2\% of the best formed a tie band.  Tie-breakers considered higher
-\(R^2\), lower uncertainty, and no augmentation; extrapolation additionally
-considered a smaller interpolation--extrapolation gap.  Because all persisted FSR
-candidates used the same full feature set, the nominal physics-only and
-fewer-features tie-breakers did not distinguish them.  For both tasks, refitting
-used the modal outer-fold hyperparameter configuration, with lexical resolution
-of an exact modal tie.
+Partial gravity adds further complexity. Guibaud et al.\ review experiments and modelling that indicate non-monotonic responses for some fire quantities between microgravity and terrestrial gravity. They report different trends for upward and downward propagation and note that material ranking may change between normal, lunar, and Martian gravity \cite{guibaud2022spacecraft}. The engineering consequence is that a predictor should not silently infer partial-gravity behaviour from an arbitrary linear interpolation between microgravity and terrestrial gravity. Sparse coverage must instead be treated as an extrapolation problem and reported as such.
 
-\section{Post hoc explainability}
-\label{sec:method-explainability}
+\subsection{Atmosphere, pressure, and oxygen}
 
-Tree-model explanations were generated from persisted evaluation and refit
-artifacts, without retuning.  Mean absolute SHAP magnitude was used as a global
-summary,
+Oxygen concentration and pressure appear repeatedly in the spacecraft literature because mission atmosphere is both a life-support and structural design choice. Guibaud et al.\ describe the pure-oxygen, low-pressure atmosphere used in early American flight and the much higher pressure pure-oxygen condition present during the Apollo~1 ground test. Later spacecraft generally adopted nitrogen-diluted atmospheres, while proposed exploration vehicles may again use reduced total pressure and elevated oxygen fraction to address structural mass and extravehicular-activity considerations \cite{guibaud2022spacecraft}. Fire response must therefore be considered over a domain, not only at terrestrial sea-level conditions.
+
+Oxygen fraction is not equivalent to oxygen partial pressure, and neither alone captures all pressure effects. For an ideal mixture the oxygen partial pressure is
 \begin{equation}
-  I_j^{\mathrm{SHAP}}=\frac{1}{n}\sum_{i=1}^{n}|\phi_{ij}|,
-  \label{eq:shap}
+    p_{\mathrm{O_2}} = X_{\mathrm{O_2}} P,
+    \label{eq:oxygen_partial_pressure}
 \end{equation}
-where \(\phi_{ij}\) is the additive contribution assigned to feature \(j\) for
-observation \(i\).  Permutation importance measured the degradation in held-out
-score after disrupting one original feature while leaving the fitted model fixed.
-For classification, positive values are losses in ROC--AUC; for regression,
-positive values are increases in RMSE.  Repeated permutations provide the reported
-mean and standard deviation.
+with mole fraction \(X_{\mathrm{O_2}}\) and total pressure \(P\) in pascals. Equal values of \(p_{\mathrm{O_2}}\) can still coexist with different total gas density and transport properties when diluent and total pressure differ. Rivera et al.\ consequently include oxygen concentration and pressure as separate predictors in the wire FSR problem \cite{riveraWireML}. This supports a multivariate representation rather than collapse to a single atmosphere variable.
 
-These measures are predictive, conditional on the fitted model and sampled data.
-They do not identify causal effects.  Correlated physical and engineered variables
-can divide, substitute, or mask importance; one-hot levels and their parent
-categorical fields have different granularities; missingness can carry campaign
-information; and SHAP magnitude does not establish the sign of an effect.
-Negative permutation importance means that random disruption happened to improve
-held-out performance under the realized sample, not that the variable is
-physically protective.  Explainability was consequently interpreted as evidence
-about model reliance and predictive associations only.
+\section{Electrical-wire flame spread}
 
-\section{Reproducibility, estimands, and reporting conventions}
-\label{sec:method-reproducibility}
+Electrical wires are a particularly relevant material system because conductor and insulation form a coupled thermal geometry. Rivera et al.\ synthesize experiments using laboratory wires with metal cores and polymer insulation. Their review identifies core material and diameter, insulation material and thickness, oxygen concentration, pressure, forced flow, gravity, and orientation as influential quantities \cite{riveraWireML}. These variables also illustrate why the broader database is heterogeneous: a nominal material may appear in different specimen forms, and the same environment may produce different outcomes for different length scales.
 
-Reproducibility was enforced at the level of data identity, partition membership,
-candidate definition, and randomization.  The default random seed was 42; repeated
-splits used consecutive integer seeds.  Split assignments stored the row and paper
-membership of every partition rather than relying on regeneration from an
-algorithm description.  Candidate manifests recorded model family, weighting,
-fixed parameters, and augmentation condition.  Search histories and selected
-hyperparameters preserved the choices made independently for each outer fold.
-Integrity files recorded failed fits or invalid outputs instead of replacing them
-with fabricated scores.  This persisted-state design permits the report to be
-regenerated from evaluation outputs and fitted artifacts without rerunning or
-altering hyperparameter optimization.
+The central conductor has a dual role. A high-conductivity core can move heat ahead of the flame and assist preheating. The same core can drain energy away from the reaction and pyrolysis region, especially when its cross-section is large relative to the insulation. Rivera et al.\ attribute this balance to core and insulation dimensions and properties, environmental conditions, and gravity \cite{riveraWireML}. A monotonic rule such as ``higher core conductivity always increases FSR'' would therefore contradict the reviewed physics. Flexible nonlinear models are attractive because they can represent conditional interactions, but flexibility also increases the need for careful validation.
 
-The relevant estimand differs by protocol.  In a row split, observations are the
-resampling units and papers can be represented in both partitions.  Its performance
-is therefore conditional on the mixture of campaigns already present.  In a
-grouped split, the held-out units are papers; rows within a paper remain dependent
-and should not be counted as independent evidence for cross-paper uncertainty.
-The use of canonical-paper bootstrap resampling for grouped predictions reflects
-this distinction.  It does not eliminate all dependence---for example, multiple
-papers may share investigators, rigs, materials, or facilities---but it avoids the
-more serious error of assigning independent status to repeated rows from one
-publication.
+Insulation behaviour introduces discrete regimes. Polymer type affects thermophysical response, while melting and dripping can change fuel geometry and energy transport. Orientation determines whether gravity assists movement of molten insulation in normal or partial gravity. Rivera et al.\ therefore encode core material, insulation material, spread direction, and configuration as categorical predictors in addition to numerical properties \cite{riveraWireML}. This is an important methodological lesson: a table containing only bulk conductivity, density, and heat capacity may omit morphological or chemical distinctions that those properties do not fully identify.
 
-Fold means, fold standard deviations, and pooled-prediction bootstrap estimates
-were kept conceptually separate.  If \(m_k\) is a metric in outer fold \(k\), the
-reported fold summary is
+The wire literature also exposes a transferability issue. Studies may concentrate on one polymer, core, diameter range, apparatus, pressure regime, or flow direction. When observations from the same study are divided randomly among training and test folds, the test set can remain close to the training distribution. Rivera et al.\ acknowledge that their random ten-fold cross-validation measures robustness within the compiled literature dataset rather than strict transfer to an entirely new source \cite{riveraWireML}. For material selection, this distinction is critical because a new candidate is often associated with a new material family or experimental campaign.
+
+\section{Machine learning for flame-spread prediction}
+
+\subsection{Closest prior work}
+
+Rivera et al.\ provide the closest direct precedent for data-driven FSR prediction. They compile approximately \(1200\) wire-flame observations and describe numerical features for core, insulation, geometry, atmosphere, flow, and gravity, together with categorical indicators for material and spread configuration. They compare linear regression, decision tree, \(k\)-nearest neighbours, elastic net, stochastic gradient descent, Bayesian ridge, gradient boosting, support-vector regression, kernel ridge, and a multilayer perceptron \cite{riveraWireML}. The breadth of this benchmark is useful because it avoids treating one model family as the default.
+
+Their baseline using numerical predictors alone produced weaker performance than versions that included one-hot encoded categorical variables. Under categorized random ten-fold cross-validation, several nonlinear models attained mean coefficients of determination around or above \(0.90\); the exact values vary by model and augmentation strategy \cite{riveraWireML}. These are literature results. They cannot be transferred directly to this project's database, targets, partitions, or code, and they do not establish held-paper generalization.
+
+Rivera et al.\ also compare bootstrap resampling, small numerical perturbations, and a generative adversarial network (GAN). Bootstrap augmentation was the most consistently beneficial for tree- and neighbourhood-based models in their reported experiments. The authors stress that resampling preserves observed combinations, whereas noise and GAN generation can produce statistically plausible combinations without guaranteeing geometric consistency, conservation, or other physical constraints \cite{riveraWireML}. This qualification matters: synthetic tabular rows are not new experiments. If material density, conductivity, dimensions, and categorical identity are perturbed independently, the resulting row may not correspond to a realizable specimen.
+
+The prior study reports a small number of negative FSR predictions from unconstrained regressors and correctly identifies them as physically inadmissible \cite{riveraWireML}. This motivates non-negative output handling, target transformation, or explicit post-fit diagnostics. More generally, machine-learning performance must be judged against physical admissibility as well as aggregate error. A model can obtain a favourable mean score while failing in the low-FSR region that is most relevant to a safety boundary.
+
+\subsection{Model choice for tabular data}
+
+The structure of the combustion database resembles the broad statistical category studied by Shwartz-Ziv and Armon: fixed columns, heterogeneous units, mixed numerical and categorical features, missingness, and no spatial or sequential locality comparable to pixels or words. Their controlled study evaluates four deep tabular architectures and XGBoost across eleven classification and regression datasets, with a common hyperparameter-optimization protocol. XGBoost outperformed the deep models on most of the considered datasets, particularly those not used in the original deep-model papers, and its tuning converged more readily in their experiments \cite{shwartzZiv2022tabular}.
+
+The conclusion is narrower than ``deep learning never works for tables.'' Shwartz-Ziv and Armon explicitly invoke the no-free-lunch principle and report that an ensemble containing both deep models and XGBoost achieved the best average relative performance in their comparison \cite{shwartzZiv2022tabular}. For this project, the defensible inference is to include gradient-boosted trees as a strong baseline and compare them fairly with other candidates. Model selection must follow held-out evidence under the relevant engineering split, not reputation or architectural novelty.
+
+Tree ensembles are plausible for this task because thresholded partitions can capture nonlinear interactions and accommodate regime changes, while neural and kernel models offer different smoothness and representation biases. No family removes the need for leakage control. Imputation, scaling, categorical encoding, feature selection, and hyperparameter optimization must be fitted using training data only. Repeated measurements and paper-specific clusters should remain grouped where the evaluation question concerns transfer to a new source. These are methodological requirements of the present project, not performance claims borrowed from the cited tabular benchmark.
+
+\section{Physics-informed machine learning}
+
+\subsection{PINN formulation}
+
+Raissi et al.\ define PINNs for systems represented by nonlinear differential equations. For a latent field \(u(t,\mathbf{x})\),
 \begin{equation}
-  \bar m=\frac{1}{K}\sum_{k=1}^{K}m_k,\qquad
-  s_m=\sqrt{\frac{1}{K-1}\sum_{k=1}^{K}(m_k-\bar m)^2}.
-  \label{eq:fold-summary}
+    \frac{\partial u}{\partial t}
+    +\mathcal{N}[u;\boldsymbol{\lambda}] = 0,
+    \qquad \mathbf{x}\in\Omega,\quad t\in[0,T],
+    \label{eq:pinn_governing}
 \end{equation}
-This gives each repeat or fold one contribution.  The bootstrap tables instead
-average repeated predictions for a row, recompute a metric on the pooled
-predictions, and resample the appropriate row or paper units.  Because nonlinear
-metrics generally do not commute with averaging, a bootstrap point estimate need
-not reproduce \(\bar m\).  The former describes variability among the frozen
-outer evaluations; the latter supplies a sampling interval under the stated
-cluster-resampling scheme.
+the neural network approximates \(u\), and automatic differentiation evaluates the residual
+\begin{equation}
+    r_\theta(t,\mathbf{x})
+    =
+    \frac{\partial u_\theta}{\partial t}
+    +\mathcal{N}[u_\theta;\boldsymbol{\lambda}].
+    \label{eq:pinn_residual}
+\end{equation}
+Training combines mismatch to available observations and initial or boundary data with residual error at collocation points,
+\begin{equation}
+    \mathcal{L}(\theta)
+    =
+    \frac{1}{N_u}\sum_{i=1}^{N_u}
+    \left|u_\theta(t_i,\mathbf{x}_i)-u_i\right|^2
+    +
+    \frac{1}{N_r}\sum_{j=1}^{N_r}
+    \left|r_\theta(t_j,\mathbf{x}_j)\right|^2.
+    \label{eq:pinn_loss_review}
+\end{equation}
+The framework supports forward inference with known physical parameters and inverse identification in which parameters in \(\mathcal{N}\) are learned from observations \cite{raissi2019pinn}.
 
-All rates and errors were reported in the units of their persisted targets.
-Ignition discrimination metrics are dimensionless, and the Brier score is a mean
-squared probability error.  FSR RMSE, MAE, and MBE retain
-\(\mathrm{m\,s^{-1}}\); \(R^2\), MAPE, and NRMSE are dimensionless.  Candidate
-names such as \texttt{baseline}, \texttt{sqrt}, and \texttt{inverse} identify
-computational recipes rather than physical hypotheses.  Similarly,
-\texttt{rd\_bt} denotes duplicated training observations sampled with replacement,
-not a second experimental cohort.  These conventions prevent changes in
-evaluation protocol, aggregation, or units from being mistaken for changes in the
-underlying physical phenomenon.
+Raissi et al.\ demonstrate the formulation on nonlinear Schrödinger, Allen--Cahn, Navier--Stokes, Korteweg--de Vries, and Burgers equations, using continuous- and discrete-time variants. They emphasize that PINNs complement rather than replace mature numerical methods and identify unresolved issues involving architecture, optimization, convergence, noise, and uncertainty \cite{raissi2019pinn}. Karniadakis et al.\ broaden the discussion to scientific settings where observational data may be scarce, noisy, or incomplete and prior physical knowledge can constrain an otherwise large hypothesis space \cite{karniadakis2021physicsinformed}.
+
+\subsection{Relevance and limitation for combustion tables}
+
+The appeal to spacecraft combustion is evident. Reduced-gravity experiments are costly, and conservation or transport relations contain information not present in a small set of labels. A valid physics-informed constraint could discourage impossible predictions and improve data efficiency. Dimensionless groups, positivity, energy-balance trends, and known symmetries are possible levels of physical structure, ranging from feature engineering to hard or soft constraints. The PINN literature provides a principled reason to investigate such structure \cite{raissi2019pinn,karniadakis2021physicsinformed}.
+
+However, the standard PINN formulation requires more than a list of experiment-level rows. It needs a specified state field, spatial and temporal coordinates, a governing differential operator, and sufficient initial or boundary information for the target problem. The curated database records outcomes such as ignition and FSR under varied apparatuses; it is not a common mesh of temperature, species concentration, velocity, and reaction-rate fields. Applying Equation~\eqref{eq:pinn_loss_review} without a defensible operator and boundary conditions would create the appearance of physics without its mathematical content.
+
+This limitation is reinforced by Rivera et al., who conclude that the theoretical framework for their heterogeneous wire data remains incomplete for direct use of fully physics-informed models \cite{riveraWireML}. The scientifically appropriate hierarchy is therefore: preserve SI units and physically meaningful variables; encode known regimes; enforce indisputable output constraints such as non-negative FSR; evaluate transfer across sources; and reserve PDE-residual PINNs for datasets and subproblems where the governing fields and boundaries are actually available. This project can be physics-aware without claiming a PINN where none was implemented.
+
+\section{Synthesis and explicit research gap}
+
+The literature converges on four findings. First, spacecraft fire is a credible system hazard whose consequence increases when evacuation, resupply, and recovery are restricted \cite{guibaud2022spacecraft}. Second, ignition and spread depend jointly on material, geometry, atmosphere, flow, and gravity; reduced buoyancy changes transport rather than merely slowing or accelerating a terrestrial flame by a fixed factor \cite{guibaud2022spacecraft,riveraWireML}. Third, nonlinear supervised models can recover useful relationships from heterogeneous wire-flame tables, especially when physically meaningful categories are retained \cite{riveraWireML}. Fourth, strong tabular baselines and physical constraints should be evaluated empirically and applied only within the assumptions their source literature supports \cite{shwartzZiv2022tabular,raissi2019pinn,karniadakis2021physicsinformed}.
+
+Three gaps remain. The \emph{target gap} is that the closest ML study concentrates on FSR, whereas an engineering screening workflow also needs an explicit ignition model. The \emph{validation gap} is that random cross-validation within a compiled literature table does not measure transfer to a held-out paper, apparatus, or condition regime. The \emph{integration gap} is that broad spacecraft studies establish operational relevance while wire and ML studies establish local predictive feasibility, but the evidence has not yet been organized into one traceable framework that predicts both ignition and FSR under spacecraft-relevant conditions without overstating physical completeness.
+
+The present work addresses these gaps by constructing separate classification and regression tasks from the repository database, comparing model families appropriate to mixed tabular data, and distinguishing interpolation from more demanding grouped or extrapolative evaluation. Its claims are intentionally bounded. The project predicts recorded ignition and FSR outcomes; it does not model extinction, certify flight materials, or solve the full reacting-flow problem. That boundary is not a weakness in presentation but a consequence of the available evidence. A reliable material-selection tool must make clear both what has been learned from existing tests and where a new experiment remains the only defensible next step.
