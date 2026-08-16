@@ -115,11 +115,11 @@ covered regimes, and guiding database expansion.
 \addcontentsline{toc}{chapter}{Statement of scope and evidence}
 All numerical claims in this report are taken from version-controlled database
 validation files, frozen split metadata, model-selection records, and generated
-evaluation tables in the repository. The oral-defense deck is used to recover
-the intended narrative, not as the numerical source of record; it explicitly
-marks one metric page as not updated. Although the defense question mentioned
-extinction, the final repository contains completed pipelines only for ignition
-and \FSR. Consequently, no extinction model or result is claimed here.
+evaluation tables. The oral-defense deck is used to recover the intended
+narrative, not as the numerical source of record; it explicitly marks one
+metric page as not updated. Although the defense question mentioned
+extinction, completed pipelines exist only for ignition and \FSR.
+Consequently, no extinction model or result is claimed here.
 
 \tableofcontents
 
@@ -136,8 +136,11 @@ Symbol or acronym & Definition\\
 \(\alpha\) & Thermal diffusivity, \si{\metre\squared\per\second}\\
 \(\rho\) & Density, \si{\kilogram\per\metre\cubed}\\
 \(\FSR\) & Flame-spread rate, \si{\metre\per\second}\\
+F1 & Harmonic mean of precision and recall\\
+FPR & False-positive rate\\
 LOPO & Leave-one-paper-out\\
 MAE & Mean absolute error\\
+MCC & Matthews correlation coefficient\\
 ML & Machine learning\\
 MLP & Multilayer perceptron\\
 OOD & Out of distribution\\
@@ -146,6 +149,7 @@ RF & Random forest\\
 RMSE & Root-mean-square error\\
 ROC--AUC & Area under the receiver-operating-characteristic curve\\
 SHAP & Shapley additive explanations\\
+TPR & True-positive rate (recall, sensitivity)\\
 XGBoost & Extreme gradient-boosted decision trees\\
 \bottomrule
 \end{longtable}

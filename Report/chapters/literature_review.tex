@@ -194,10 +194,36 @@ However, the standard PINN formulation requires more than a list of experiment-l
 
 This limitation is reinforced by Rivera et al., who conclude that the theoretical framework for their heterogeneous wire data remains incomplete for direct use of fully physics-informed models \cite{riveraWireML}. The scientifically appropriate hierarchy is therefore: preserve SI units and physically meaningful variables; encode known regimes; enforce indisputable output constraints such as non-negative FSR; evaluate transfer across sources; and reserve PDE-residual PINNs for datasets and subproblems where the governing fields and boundaries are actually available. This project can be physics-aware without claiming a PINN where none was implemented.
 
-\section{Synthesis and explicit research gap}
+\section{Synthesis, research gap, and objectives}
 
 The literature converges on four findings. First, spacecraft fire is a credible system hazard whose consequence increases when evacuation, resupply, and recovery are restricted \cite{guibaud2022spacecraft}. Second, ignition and spread depend jointly on material, geometry, atmosphere, flow, and gravity; reduced buoyancy changes transport rather than merely slowing or accelerating a terrestrial flame by a fixed factor \cite{guibaud2022spacecraft,riveraWireML}. Third, nonlinear supervised models can recover useful relationships from heterogeneous wire-flame tables, especially when physically meaningful categories are retained \cite{riveraWireML}. Fourth, strong tabular baselines and physical constraints should be evaluated empirically and applied only within the assumptions their source literature supports \cite{shwartzZiv2022tabular,raissi2019pinn,karniadakis2021physicsinformed}.
 
-Three gaps remain. The \emph{target gap} is that the closest ML study concentrates on FSR, whereas an engineering screening workflow also needs an explicit ignition model. The \emph{validation gap} is that random cross-validation within a compiled literature table does not measure transfer to a held-out paper, apparatus, or condition regime. The \emph{integration gap} is that broad spacecraft studies establish operational relevance while wire and ML studies establish local predictive feasibility, but the evidence has not yet been organized into one traceable framework that predicts both ignition and FSR under spacecraft-relevant conditions without overstating physical completeness.
+\subsection{Research gap and data-driven motivation}
 
-The present work addresses these gaps by constructing separate classification and regression tasks from the repository database, comparing model families appropriate to mixed tabular data, and distinguishing interpolation from more demanding grouped or extrapolative evaluation. Its claims are intentionally bounded. The project predicts recorded ignition and FSR outcomes; it does not model extinction, certify flight materials, or solve the full reacting-flow problem. That boundary is not a weakness in presentation but a consequence of the available evidence. A reliable material-selection tool must make clear both what has been learned from existing tests and where a new experiment remains the only defensible next step.
+Reduced gravity changes the balance among diffusion, imposed ventilation, radiation, and solid conduction. Experiments are correspondingly expensive, and the published evidence is fragmented across materials, geometries, facilities, atmospheres, and reporting conventions. A finite qualification matrix cannot dense-sample this space, while a high-fidelity reacting-flow model requires boundary conditions and material properties that are often absent from historical reports.
+
+The research gap is therefore not simply a lack of another predictive algorithm. Three specific absences remain. The \emph{target gap} is that the closest machine-learning study concentrates on FSR, whereas an engineering screening workflow also needs an explicit ignition model. The \emph{validation gap} is that randomly splitting rows can place nearly repeated observations from one rig on both sides of the evaluation boundary, creating optimistic evidence for a material-selection question that usually concerns a new campaign. Random cross-validation within a compiled literature table does not measure transfer to a held-out paper, apparatus, or condition regime. The \emph{integration gap} is that broad spacecraft studies establish operational relevance while wire and tabular-learning studies establish local predictive feasibility, but the evidence has not yet been organized into one traceable, leakage-resistant evaluation of both ignition and FSR.
+
+A data-driven response is motivated by this fragmentation rather than by a claim that combustion physics is obsolete. What is missing is a unified database and an evaluation that asks both whether models interpolate among conditions from known campaigns and whether they transfer to a completely held-out paper. That distinction is the difference between recovering nearby points in a familiar apparatus and supporting a screening decision for a new material, geometry, or laboratory.
+
+\subsection{Research question and objectives}
+
+\begin{quote}
+\emph{To what extent can supervised models trained on a curated, multi-source
+microgravity-combustion database predict (i) whether ignition occurs and (ii)
+the flame-spread rate under spacecraft-relevant material, geometric,
+atmospheric, flow, and gravity conditions, while maintaining performance when
+entire experimental papers are withheld?}
+\end{quote}
+
+The work has four objectives:
+\begin{enumerate}
+  \item assemble a source-traceable database with consistent variables and SI
+  units from heterogeneous publications;
+  \item construct clear, reproducible classification and regression pipelines;
+  \item compare row-level interpolation with paper-grouped extrapolation; and
+  \item interpret model behavior using held-out diagnostics, permutation
+  importance, and SHAP without treating predictive associations as causal laws.
+\end{enumerate}
+
+The intended role is screening and experiment prioritization, not replacement of qualification tests or combustion physics. Only ignition and FSR are modeled. Extinction, flame length, HRR, and smoke/aerosol prediction remain future modeling tasks. This boundary preserves a clear distinction between the database's definition of flammability and the narrower scope of the validated machine-learning evidence. The project predicts recorded ignition and FSR outcomes; it does not certify flight materials or solve the full reacting-flow problem. A reliable material-selection tool must make clear both what has been learned from existing tests and where a new experiment remains the only defensible next step.
