@@ -1,124 +1,170 @@
-% il existe plusieurs classes de documents
-% pour des documents plus longs, vous pouvez utiliser
-% book ou report
-% remplacer oneside par twoside pour les documents recto-verso
+\documentclass[10pt,a4paper,oneside]{report}
 
-\documentclass[a4paper, oneside]{report}
-
-% vous pouvez changer les paramètres, voici les options dispoinibles :
-% - a4paper
-% - fancysections
-% - notitlepage ou titlepage
-% - sectionmark (pour avoir le rappel de la section dans les en-têtes)
-% - chaptermark (de même pour les chapitres)
-% - markboth (pour avoir la section et le chapitre dans les en-têtes)
-% - pagenumber
-% - enmanquedinspiration (pour des marges plus grandes)
-% en cas de doutes, pas de doutes, la documentation est sur :
-% https://gitlab.binets.fr/typographix/polytechnique/-/blob/master/source/polytechnique.pdf
-
-\usepackage[a4paper,  fancysections,  titlepage]{polytechnique}
 \usepackage[english]{babel}
 \usepackage[T1]{fontenc}
-\usepackage{blindtext}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=18mm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[numbers,sort&compress]{natbib}
 \usepackage[hidelinks]{hyperref}
-\usepackage{amsmath, amssymb}
+\usepackage[nameinlink,noabbrev]{cleveref}
 
-% nous avons défini deux commandes :
-\newcommand{\code}[1]{%
-    \mbox{\ttfamily%
-        \detokenize{#1}%
-    }%
+\definecolor{nyuviolet}{HTML}{57068C}
+\definecolor{engineeringblue}{HTML}{243B6B}
+\sisetup{
+  detect-all,
+  separate-uncertainty=true,
+  range-phrase=--,
+  per-mode=symbol
 }
+\setlist{nosep}
+\setlength{\emergencystretch}{2em}
+\linespread{0.97}
+\graphicspath{{figures/}}
 
-\newcommand{\resultat}[1]{%
-    \quad \rightsquigarrow \quad #1%
-}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Data-Driven Spacecraft Fire Safety}
+\fancyhead[R]{Manef Elimami}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+\titleformat{\chapter}[hang]
+  {\normalfont\huge\bfseries\color{engineeringblue}}
+  {\thechapter}{0.8em}{}
+\titlespacing*{\chapter}{0pt}{-12pt}{16pt}
 
-\author{Manef Elimami}
-\date{\today}
-\title{Data-Driven Material Selection For Fire-Safe Spacecraft Design}
-\subtitle{Final Report}
-
-% pour changer de logo, ajoutez l'image dans un fomat PDF
-% ou image en la glissant à droite et remplacez typographix
-% par le nom de l'image, si vous ne voulez pas de logo,
-% supprimez la ligne
-\logo{nyu_logo.png}
-
+\newcommand{\FSR}{\ensuremath{\mathrm{FSR}}}
+\newcommand{\microg}{microgravity}
+\newcommand{\dataset}{microgravity flammability database}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 
 \begin{document}
-	\maketitle 
-	
-	\tableofcontents
-	
-	\section{Ma première section}
-	
-	Un petit paragraphe introductif. On change de paragraphe en sautant deux lignes.
-	
-	Ceci est un autre paragraphe.
-	
-	
-	\subsection{Une sous section}
-	
-	\subsection*{Une section sans numéro}
-	
-	\subsection{Faire des énumérations}
-	Voici une liste :
-	\begin{itemize}
-		\item un premier élément ;
-		\item un second élément.
-	\end{itemize}
-	
-	On peut faire des listes numérotées :
-	\begin{enumerate}
-		\item de 1 ;
-		\item de 2.
-	\end{enumerate}
-	
-	\begin{description}
-		\item [Éléphant :] gros mammifère.
-        \item [Moineau :] petit oiseau.
-	\end{description}
 
-    \section{Des majuscules}
-	Pour accentuer les majuscules, vous pouvez écrire \og É \fg{} ou \og \'E \fg{}.	On peut aussi faire référence à des articles scientifiques.\cite{premier_article}
-	
-	On peut mettre des liens comme celle-ci \href{https://typographix.binets.fr}{pour le site de typographix}.
+\begin{titlepage}
+  \centering
+  \vspace*{12mm}
+  \includegraphics[width=0.8\textwidth]{nyu_logo.png}\par
+  \vspace{18mm}
+  {\color{nyuviolet}\rule{\textwidth}{1.2pt}}\par
+  \vspace{12mm}
+  {\Huge\bfseries Data-Driven Material Selection\\[2mm]
+  for Fire-Safe Spacecraft Design\par}
+  \vspace{8mm}
+  {\Large Final Report\par}
+  \vspace{12mm}
+  {\color{nyuviolet}\rule{\textwidth}{1.2pt}}\par
+  \vfill
+  {\Large Manef Elimami\par}
+  \vspace{5mm}
+  {\large New York University\par}
+  \vspace{3mm}
+  {\large August 2026\par}
+  \vfill
+  \end{titlepage}
 
- \section{Les mathématiques}
- Pour écrire des formules simples dans un paragraphe, on peut utiliser un mode \emph{inline math} : \(x^2+2x+1=0\). Pour des formules plus compliquées qui seraient toutes petites s'il fallait les mettre sur une ligne de texte normale, on peut utiliser le mode formules :
- \[
-    \code{\sum_{k=0}^n u_k = \int_0^{+\infty} f(t) \: \mathrm{d} t} \resultat{\sum_{k=0}^n u_i = \int_0^{+\infty}f(t)\:\mathrm{d}t}
- \]
+\pagenumbering{roman}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Spacecraft fire safety requires material decisions under atmospheric, flow,
+geometric, and gravitational conditions for which direct testing is expensive
+and unevenly distributed. This report consolidates the project's curated
+literature database and evaluates whether supervised machine learning can
+support two tasks: binary prediction of sustained ignition and regression of
+flame-spread rate (\FSR). The evaluation deliberately separates interpolation
+among conditions represented within known papers from extrapolation to entire
+held-out papers. After deduplication, the ignition task contains 4,487
+observations from 87 canonical papers; the \FSR{} task contains 2,531 usable
+observations from 66 papers. Preprocessing, hyperparameter search, threshold
+selection, and augmentation are confined to training partitions.
 
- Pour des mathématiques perfectionnistes quelques règles sont à observer : 
- \begin{itemize}
-    \item la plupart des signes que l'on écrit dans l'environnement mathématique sont interprétés comme des variables (et sont donc en italique) ce qui n'est pas toujours souhaitable ;
-    \item les signes comme \(+\) sont interprétés tantôt comme des opérateurs unaires ou binaires (selon le contexte), ce qui influe sur les espacements avant ou après ;
-    \item les parenthèses sont en général bien interprétées comme des symboles d'ouverture ou de fermeture, mais ce n'est généralement pas le cas pour d'autres symboles. Par exemple :
-    \begin{align*}
-        \code{ ]-a , b] \neq \mathopen] - a, b \mathclose] } & \resultat{ ]-a , b] \neq \mathopen] - a, b \mathclose] }\\
-        \code{ |\psi> = a|+> + b|-> } & \resultat{ |\psi> = a|+> + b|-> } \\
-        \code{ \mathopen|\psi \mathclose> = \dots } & \resultat{ \mathopen|\psi \mathclose> = \dots }
-    \end{align*}
-    Dans le premier exemple, on voit que le signe $-$ peut être interprété comme un opérateur binaire ($] - a$) ou unaire ($\mathopen] - a$). Le deuxième exemple montre comment une équation peut devenir illisible à cause de ces erreurs d'attention ;
-    \item les opérateurs mathématiques, comme les fonctions, doivent être définis comme tels, de manière à être affichées en romain, et à placer l'objet sur lequel il agit correctement, par exemple :
-    \begin{equation*}
-        \code{sin-x \neq \sin-x} \resultat{ sin-x \neq \sin-x }
-    \end{equation*}
-    
-    Là encore, $-$ peut être interprété comme un opérateur unaire ou binaire. Si l'opérateur n'est pas déjà défini, on peut utiliser \code{\DeclareMathOperator{\grad}{grad}}, que l'on mettra dans le préambule (c'est-à-dire avant \code{\begin{document}}) ;
-    \item les fonctions et les constantes sont en style romain : \(i\) est une variable quelconque, \(\mathrm i\) est un nombre complexe de module 1 et orthogonal à 1. De même, les $\mathrm d$ des éléments différentiels sont droits, ainsi que les constantes physiques. Cela vaut aussi pour les indices qui sont des abréviations comme l'énergie initiale \(E_{\mathrm i}\) où le $\mathrm i$ signifie initial.
-\end{itemize}
+For ignition, the selected row-level XGBoost model reaches a
+ROC--AUC of \(0.9076\pm0.0102\), whereas the selected unseen-paper XGBoost
+model reaches \(0.7183\pm0.0444\). For \FSR{}, the selected random forest
+reaches \(R^2=0.8790\pm0.0178\) and
+RMSE \(=0.0063\pm0.0005~\si{\metre\per\second}\) for row-level
+interpolation; paper-grouped evaluation falls to
+\(R^2=0.4576\pm0.2215\) and
+RMSE \(=0.0122\pm0.0041~\si{\metre\per\second}\).
+SHAP and permutation analyses identify oxygen, flow and transport quantities,
+thermal time scales, and fuel properties as important model inputs, but these
+associations are not interpreted causally. The central engineering result is
+therefore conditional: the database supports useful within-domain ranking and
+screening, but the generalization gap and source heterogeneity preclude using
+the models as stand-alone certification evidence. The models are positioned as
+traceable decision-support tools for prioritizing tests, identifying poorly
+covered regimes, and guiding database expansion.
 
-Évidemment, vous êtes libre de respecter ou pas chacune de ses règles, certaines aident à la lisibilité, d'autres relèvent plus du détail. Pensez cependant que vos documents seront bien plus beaux si vous les respectez, et certains sauront remarquer le soin que vous y avez apporté.
+\chapter*{Statement of scope and evidence}
+\addcontentsline{toc}{chapter}{Statement of scope and evidence}
+All numerical claims in this report are taken from version-controlled database
+validation files, frozen split metadata, model-selection records, and generated
+evaluation tables in the repository. The oral-defense deck is used to recover
+the intended narrative, not as the numerical source of record; it explicitly
+marks one metric page as not updated. Although the defense question mentioned
+extinction, the final repository contains completed pipelines only for ignition
+and \FSR. Consequently, no extinction model or result is claimed here.
 
-Il faut surtout retenir que \LaTeX{} est un \emph{programme}, qui doit interpréter ce que vous écrivez : le résultat sera donc bien meilleur si vous utilisez les indications d'interprétation que sont \code{\mathopen} ou \code{\sin}.
+\tableofcontents
 
-\begin{thebibliography}{}
-	\bibitem{premier_article}{Karen Sparck Jones. 1972. A Statistical Interpretation of Term Specificity and its Application in Retrieval. \emph{ Journal of Documentation.}Vol. 28 No. 1, pp. 11-21
-	}
-\end{thebibliography}
-	
+\chapter*{Nomenclature}
+\addcontentsline{toc}{chapter}{Nomenclature}
+\begin{longtable}{@{}p{0.20\textwidth}p{0.72\textwidth}@{}}
+\toprule
+Symbol or acronym & Definition\\
+\midrule
+\endhead
+\(c_p\) & Specific heat capacity, \si{\joule\per\kilogram\per\kelvin}\\
+\(g\) & Acceleration level normalized by terrestrial gravity\\
+\(k\) & Thermal conductivity, \si{\watt\per\metre\per\kelvin}\\
+\(\alpha\) & Thermal diffusivity, \si{\metre\squared\per\second}\\
+\(\rho\) & Density, \si{\kilogram\per\metre\cubed}\\
+\(\FSR\) & Flame-spread rate, \si{\metre\per\second}\\
+LOPO & Leave-one-paper-out\\
+MAE & Mean absolute error\\
+ML & Machine learning\\
+MLP & Multilayer perceptron\\
+OOD & Out of distribution\\
+PR--AUC & Area under the precision--recall curve\\
+RF & Random forest\\
+RMSE & Root-mean-square error\\
+ROC--AUC & Area under the receiver-operating-characteristic curve\\
+SHAP & Shapley additive explanations\\
+XGBoost & Extreme gradient-boosted decision trees\\
+\bottomrule
+\end{longtable}
+
+\clearpage
+\pagenumbering{arabic}
+
+\include{chapters/introduction}
+\include{chapters/literature_review}
+\include{chapters/methodology}
+\include{chapters/results}
+\include{chapters/discussion}
+\include{chapters/conclusion}
+
+\appendix
+\include{chapters/appendices}
+
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{references}
+
 \end{document}
