@@ -27,57 +27,65 @@
 \contentsline {chapter}{\numberline {3}Methodology}{10}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Assembly of the microgravity flammability database}{10}{section.3.1}%
 \contentsline {subsection}{\numberline {3.1.1}Literature screening and inclusion}{10}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Extraction strategy}{10}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.2}Extraction strategy}{11}{subsection.3.1.2}%
 \contentsline {subsection}{\numberline {3.1.3}Row structure, outputs, and quality control}{11}{subsection.3.1.3}%
 \contentsline {subsection}{\numberline {3.1.4}Source-size and class imbalance}{12}{subsection.3.1.4}%
-\contentsline {section}{\numberline {3.2}Methods common to both machine-learning pipelines}{12}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Prediction tasks and features}{12}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Training, validation, and untouched testing}{13}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}Interpolation versus extrapolation}{13}{subsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.2.4}Candidate comparison, uncertainty, and refitting}{13}{subsection.3.2.4}%
-\contentsline {section}{\numberline {3.3}Ignition-classification pipeline}{13}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Interpolation}{13}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Extrapolation}{14}{subsection.3.3.2}%
-\contentsline {section}{\numberline {3.4}Flame-spread-rate regression pipeline}{14}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}Interpolation}{14}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Extrapolation}{14}{subsection.3.4.2}%
-\contentsline {section}{\numberline {3.5}Explainability and physical interpretation}{14}{section.3.5}%
-\contentsline {chapter}{\numberline {4}Results}{16}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Ignition classification}{16}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}ROC, precision--recall, and the fire-safe operating question}{16}{subsection.4.1.1}%
-\contentsline {subsection}{\numberline {4.1.2}Interpolation and extrapolation by model family}{17}{subsection.4.1.2}%
-\contentsline {subsection}{\numberline {4.1.3}Ignition explainability}{17}{subsection.4.1.3}%
-\contentsline {section}{\numberline {4.2}Flame-spread-rate regression}{19}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Interpolation and extrapolation together}{19}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Held-out parity and error structure}{20}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}FSR explainability}{22}{subsection.4.2.3}%
-\contentsline {section}{\numberline {4.3}Synthesis}{22}{section.4.3}%
-\contentsline {chapter}{\numberline {5}Discussion}{23}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Limitations}{23}{section.5.1}%
-\contentsline {subsection}{\numberline {5.1.1}Database heterogeneity and the unit of generalization}{23}{subsection.5.1.1}%
-\contentsline {subsection}{\numberline {5.1.2}Missingness, measurement comparability, and representation}{23}{subsection.5.1.2}%
-\contentsline {subsection}{\numberline {5.1.3}Imbalance and observational sampling}{24}{subsection.5.1.3}%
-\contentsline {subsection}{\numberline {5.1.4}Threshold policies and the operating points they induce}{24}{subsection.5.1.4}%
-\contentsline {subsection}{\numberline {5.1.5}Model dependence, metrics, and uncertainty}{26}{subsection.5.1.5}%
-\contentsline {subsection}{\numberline {5.1.6}SHAP and the boundary between explanation and causation}{26}{subsection.5.1.6}%
-\contentsline {section}{\numberline {5.2}Comparison with the Literature}{26}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Rivera/Jose wire-specific machine learning}{26}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}XGBoost and the tabular-learning literature}{27}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}Physics-informed learning and combustion knowledge}{27}{subsection.5.2.3}%
-\contentsline {subsection}{\numberline {5.2.4}Spacecraft fire-safety context}{28}{subsection.5.2.4}%
-\contentsline {section}{\numberline {5.3}Real-World Applications (approximately 30\%)}{28}{section.5.3}%
-\contentsline {subsection}{\numberline {5.3.1}Screening and prioritisation}{28}{subsection.5.3.1}%
-\contentsline {subsection}{\numberline {5.3.2}Experiment design and the unexplored oxygen--pressure domain}{28}{subsection.5.3.2}%
-\contentsline {subsection}{\numberline {5.3.3}Material and design decision support}{29}{subsection.5.3.3}%
-\contentsline {subsection}{\numberline {5.3.4}Uncertainty, abstention, and out-of-distribution use}{29}{subsection.5.3.4}%
-\contentsline {subsection}{\numberline {5.3.5}No replacement for certification or qualification}{30}{subsection.5.3.5}%
-\contentsline {subsection}{\numberline {5.3.6}A staged deployment concept}{30}{subsection.5.3.6}%
-\contentsline {section}{\numberline {5.4}Future Work (approximately 10\%)}{30}{section.5.4}%
-\contentsline {chapter}{\numberline {6}Conclusion}{31}{chapter.6}%
-\contentsline {chapter}{\numberline {A}Technical Appendices}{32}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Feature dictionary}{32}{section.A.1}%
-\contentsline {section}{\numberline {A.2}Metric definitions}{33}{section.A.2}%
-\contentsline {section}{\numberline {A.3}Reproducibility workflow}{33}{section.A.3}%
-\contentsline {section}{\numberline {A.4}Traceability matrix}{34}{section.A.4}%
-\contentsline {section}{\numberline {A.5}Oral-defense reconciliation}{34}{section.A.5}%
-\contentsline {section}{\numberline {A.6}Model portfolios}{34}{section.A.6}%
+\contentsline {section}{\numberline {3.2}Methods common to both machine-learning pipelines}{13}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Benchmarking motivation and model families}{14}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Features, leakage exclusions, and preprocessing}{14}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Nested evaluation}{15}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Interpolation versus extrapolation}{15}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Paper weighting, uncertainty, and refitting}{15}{subsection.3.2.5}%
+\contentsline {section}{\numberline {3.3}Ignition-classification pipeline}{17}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Task, probabilities, and metrics}{17}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Candidate design}{17}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Pipeline architecture}{19}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}Interpolation protocol}{19}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.3.5}Extrapolation and leave-one-paper-out}{20}{subsection.3.3.5}%
+\contentsline {section}{\numberline {3.4}Flame-spread-rate regression pipeline}{20}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Task and metrics}{20}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Candidate design}{20}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Pipeline architecture}{20}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Interpolation protocol}{22}{subsection.3.4.4}%
+\contentsline {subsection}{\numberline {3.4.5}Extrapolation protocol}{22}{subsection.3.4.5}%
+\contentsline {section}{\numberline {3.5}Reproducibility and audit trail}{22}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Explainability and physical interpretation}{23}{section.3.6}%
+\contentsline {chapter}{\numberline {4}Results}{24}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Ignition classification}{24}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}ROC, precision--recall, and the fire-safe operating question}{24}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Interpolation and extrapolation by model family}{25}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Ignition explainability}{27}{subsection.4.1.3}%
+\contentsline {section}{\numberline {4.2}Flame-spread-rate regression}{27}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Interpolation and extrapolation together}{27}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Held-out parity and error structure}{28}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}FSR explainability}{29}{subsection.4.2.3}%
+\contentsline {section}{\numberline {4.3}Synthesis}{29}{section.4.3}%
+\contentsline {chapter}{\numberline {5}Discussion}{31}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Limitations}{31}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Database heterogeneity and the unit of generalization}{31}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Missingness, measurement comparability, and representation}{31}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Imbalance and observational sampling}{32}{subsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.1.4}Threshold policies and the operating points they induce}{32}{subsection.5.1.4}%
+\contentsline {subsection}{\numberline {5.1.5}Model dependence, metrics, and uncertainty}{34}{subsection.5.1.5}%
+\contentsline {subsection}{\numberline {5.1.6}SHAP and the boundary between explanation and causation}{34}{subsection.5.1.6}%
+\contentsline {section}{\numberline {5.2}Comparison with the Literature}{34}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Rivera/Jose wire-specific machine learning}{34}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}XGBoost and the tabular-learning literature}{35}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Physics-informed learning and combustion knowledge}{35}{subsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.2.4}Spacecraft fire-safety context}{36}{subsection.5.2.4}%
+\contentsline {section}{\numberline {5.3}Real-World Applications (approximately 30\%)}{36}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}Screening and prioritisation}{36}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Experiment design and the unexplored oxygen--pressure domain}{36}{subsection.5.3.2}%
+\contentsline {subsection}{\numberline {5.3.3}Material and design decision support}{37}{subsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.3.4}Uncertainty, abstention, and out-of-distribution use}{37}{subsection.5.3.4}%
+\contentsline {subsection}{\numberline {5.3.5}No replacement for certification or qualification}{38}{subsection.5.3.5}%
+\contentsline {subsection}{\numberline {5.3.6}A staged deployment concept}{38}{subsection.5.3.6}%
+\contentsline {section}{\numberline {5.4}Future Work (approximately 10\%)}{38}{section.5.4}%
+\contentsline {chapter}{\numberline {6}Conclusion}{39}{chapter.6}%
+\contentsline {chapter}{\numberline {A}Technical Appendices}{40}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Feature dictionary}{40}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Metric definitions}{41}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Reproducibility workflow}{41}{section.A.3}%
+\contentsline {section}{\numberline {A.4}Traceability matrix}{42}{section.A.4}%
+\contentsline {section}{\numberline {A.5}Oral-defense reconciliation}{42}{section.A.5}%
+\contentsline {section}{\numberline {A.6}Model portfolios}{42}{section.A.6}%
