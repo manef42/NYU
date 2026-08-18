@@ -1,18 +1,10 @@
 \chapter{Results}
 \label{chap:results}
 
-After the preprocessing described in \cref{chap:methodology}, the ignition
-cohort contains 4,487 labeled rows from 87 papers and the FSR cohort contains
-2,531 numeric observations from 66 papers. The figures below report those
-modeling tasks. Database sampling geometry that is not itself a predictive
-score---in particular oxygen--pressure coverage---is interpreted in
-\cref{sec:discussion_applications} as a map of the experimental search space
-that remains to be filled.
-
 \section{Ignition classification}
 \label{sec:results-ignition}
 
-\subsection{ROC, precision--recall, and the fire-safe operating question}
+\subsection{ROC, Precision--Recall, and the fire-safe operating question}
 \label{sec:ignition-auc}
 The ignition metrics and threshold-selection procedure are defined in
 \cref{sec:classification-method}. This section reports the held-out ROC and
@@ -27,44 +19,45 @@ decision threshold is not selected from the held-out data; thresholds are
 chosen inside nested training evaluation and then applied to the outer test
 partition.
 
-\Cref{fig:ignition-auc} shows both curves for the selected XGBoost classifier
-on a held-out partition. The ROC curve rises steeply toward the upper-left
-corner and attains AUC \(0.897\), well above the chance diagonal. That result
-says the model ranks ignitions above non-ignitions for most pairs. It does
-\emph{not} by itself say that a fire-safe call is available: a high ROC--AUC
-can coexist with many false positives when negatives are the minority class,
-because FPR is computed only among true non-ignitions.
+\Cref{fig:ignition-auc} is an illustrative example of ROC and
+precision--recall curves produced by an ignition XGBoost model on one held-out
+partition. It is included to explain how the two curves should be read; it is
+not a summary of the selected champion or of the best model in the portfolio.
 
-The PR curve is the more informative fire-safety diagnostic for exactly that
-reason. Precision remains near one up to recall of about \(0.7\), then
-declines as the threshold is lowered to recover the remaining ignitions.
-Average precision is \(0.963\), far above the prevalence baseline of \(0.74\)
-drawn as the dashed line. In operational language: there exists a high-
-precision region in which flagged cases are very likely to be true ignitions,
-and the model can recover a large majority of ignitions before precision
-collapses. Pushing recall toward one---the instinctive ``never miss a
-fire'' policy---still costs precision, which is why PR--AUC, rather than
-ROC--AUC or accuracy, is the curve that should govern a screening claim on
-this imbalanced label. ROC--AUC remains useful as a threshold-free ranking
-score for model comparison; PR--AUC is the quantity that asks whether
-positive-class decisions remain reliable.
+The ROC curve rises toward the upper-left corner and reaches ROC--AUC
+\(=0.897\) in this example. This indicates that the model generally assigns
+higher ignition probabilities to ignition observations than to no-ignition
+observations. However, ROC--AUC alone does not determine whether a useful
+screening threshold exists, because it does not show the number of false alarms
+created by a particular threshold.
+
+The PR curve shows the trade-off between precision and recall for the same
+example. Precision remains close to one until recall reaches approximately
+\(0.7\), then decreases as the threshold is lowered to identify more
+ignitions. Its average precision is \(0.963\), well above the positive-class
+prevalence baseline of \(0.74\). The figure therefore illustrates why PR--AUC
+is important for this majority-ignition dataset: it shows whether predicted
+ignitions remain credible while recall is increased.
+
+The selected interpolation and extrapolation champions are compared separately
+using repeated outer-fold results in \cref{fig:ignition-family-auc}. Their
+selection is based on the frozen nested-evaluation procedure, not on the
+single illustrative partition shown in \cref{fig:ignition-auc}.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.98\textwidth]{ignition_auc.png}
-  \caption{Held-out ROC and precision--recall curves for the ignition XGBoost
-  classifier. The ROC panel (left) plots true-positive rate against
-  false-positive rate; the shaded area is ROC--AUC \(=0.897\), against a
-  chance diagonal of \(0.5\). The PR panel (right) plots precision against
-  recall; the shaded area is average precision \(=0.963\), against a
-  no-skill baseline equal to the positive prevalence (\(0.74\)). The PR curve
-  is the more relevant fire-safety summary because ignition is the majority
-  class and because a screening call is a statement about the positive
-  class.}
+  \caption{Illustrative held-out ROC and precision--recall curves from an
+ignition XGBoost model. This figure explains the two curve types and is not a
+performance summary of the selected champion. The ROC panel plots
+true-positive rate against false-positive rate; the shaded area is
+ROC--AUC \(=0.897\), compared with the chance diagonal of \(0.5\). The PR
+panel plots precision against recall; average precision is \(0.963\), compared
+with the no-skill positive-class prevalence baseline of \(0.74\).}
   \label{fig:ignition-auc}
 \end{figure}
 
-\subsection{Interpolation and extrapolation by model family}
+\subsection{Interpolation and Extrapolation by model family}
 
 The selected interpolation classifier is the paper-weighted XGBoost recipe
 \texttt{xgb\_paper\_sqrt}. Across 15 repeated stratified outer folds it
@@ -76,30 +69,30 @@ The paper-cluster bootstrap estimate of grouped ROC--AUC is \(0.7101\) with
 95\% interval \(0.6408\)--\(0.7848\); leave-one-paper-out robustness is
 similar (\(0.7020\), \(0.6376\)--\(0.7751\)).
 
-\Cref{fig:ignition-family-auc} presents the same two questions for the best
-persisted candidate in each family, so interpolation and extrapolation are
-read together rather than as separate leaderboards. Panel (a) uses ROC--AUC;
-panel (b) uses PR--AUC. In every family the interpolation marker lies to the
-right of the extrapolation marker, with much smaller error bars. XGBoost is
-the strongest family on ROC--AUC for both protocols (interpolation
-\(0.901\pm0.002\), extrapolation \(0.718\pm0.044\) on the plotted
-representatives). SVM and MLP occupy a middle band; decision trees and
-\(k\)-nearest neighbors are weaker, and the decision-tree extrapolation bar is
-the most unstable (\(\mathrm{SD}=0.100\)).
+\Cref{fig:ignition-family-auc} compares the best persisted candidate within
+each model family. It does not show every candidate in the portfolio. For each
+family, the candidate with the strongest eligible performance under the
+corresponding protocol is plotted so that the figure compares the best
+available representative of XGBoost, SVM, MLP, decision tree, and
+\(k\)-nearest neighbours.
 
-PR--AUC preserves the same family ranking for interpolation, with XGBoost at
-\(0.966\pm0.001\). Under extrapolation the picture is slightly different: SVM
-reaches \(0.879\pm0.022\) and XGBoost \(0.877\pm0.030\), so the two families
-are indistinguishable on the positive-class ranking metric once papers are
-held out. That is consistent with the fire-safety reading of
-\cref{fig:ignition-auc}: ROC--AUC and PR--AUC can disagree about a close call
-because they answer different questions. All families remain well above the
-prevalence baseline of \(\approx 0.75\), but the drop from interpolation
-(\(\mathrm{PR}\)--\(\mathrm{AUC}\approx 0.93\)--\(0.97\)) to extrapolation
-(\(\approx 0.82\)--\(0.88\)) is the quantity that limits transfer to a new
-campaign. Tree-depth flexibility (XGBoost versus a single decision tree) and
-margin-based models (SVM) retain more of that positive-class ranking than
-memory-based KNN or an unpruned tree.
+Circles represent row-level interpolation, where rows from a paper may appear
+in both training and test data. Triangles represent paper-grouped
+extrapolation, where complete source papers are withheld. The horizontal
+distance between a circle and triangle for the same family is therefore the
+loss of performance when the model is applied to an unseen experimental source.
+
+Panel (a) reports ROC--AUC and panel (b) reports PR--AUC. In every family, the
+interpolation circle lies to the right of the extrapolation triangle, showing
+that performance decreases when complete papers are withheld. Extrapolation
+also has larger error bars, indicating that performance depends more strongly
+on which papers are held out.
+
+XGBoost is the strongest family on ROC--AUC in both protocols. For PR--AUC,
+XGBoost is strongest under interpolation, whereas the extrapolated SVM and
+XGBoost representatives are close. The important result is not only which
+family ranks first, but that every family loses performance when the evaluation
+changes from within-source interpolation to transfer across an unseen paper.
 
 \begin{figure}[htbp]
   \centering
@@ -113,37 +106,44 @@ memory-based KNN or an unpruned tree.
     \includegraphics[width=\linewidth]{ignition_pr_auc.png}
     \caption{PR--AUC for the same family representatives.}
   \end{subfigure}
-  \caption{Ignition interpolation (circles) versus paper-grouped
-  extrapolation (triangles), mean \(\pm\) standard deviation. Every family
-  loses performance when entire papers are withheld, and extrapolation
-  uncertainty is systematically larger. XGBoost leads ROC--AUC in both
-  protocols; under PR--AUC the extrapolated SVM and XGBoost candidates are
-  essentially tied. The two panels together replace a separate
-  ``generalization-gap'' ranking: the gap is the horizontal separation
-  between the two markers of each family.}
+  \caption{Ignition performance of the best eligible persisted candidate within
+each model family. Circles denote interpolation and triangles denote extrapolation. Panel (a) shows ROC--AUC and panel (b) shows
+PR--AUC; markers show mean performance and horizontal error bars show standard
+deviation across repeated outer folds. Every family performs less well, and
+with greater variability, when complete source papers are withheld.}
   \label{fig:ignition-family-auc}
 \end{figure}
 
-Probability ranking is not calibration. \Cref{fig:ignition-calibration}
-compares mean predicted probability with the observed ignition fraction. The
-interpolation champion tracks the identity line closely, especially above
-probability \(0.5\). The extrapolation champion is miscalibrated: its scores
-occupy a narrower, higher band, and high predicted probabilities overstate
-the observed ignition rate. A numerical probability from the grouped model
-therefore cannot be read as a frequentist ignition risk without a
-source-conditional calibration step.
+Probability ranking and probability calibration are different properties.
+\Cref{fig:ignition-calibration} compares the probability predicted by each
+champion with the fraction of observations that actually ignite. A perfectly
+calibrated model would follow the dashed diagonal: for example, observations
+predicted at probability \(0.8\) would ignite approximately \(80\%\) of the
+time.
+
+The interpolation champion follows the diagonal reasonably closely. Its
+probabilities can therefore be interpreted as useful estimates within the
+experimental sources represented in training.
+
+The extrapolation champion does not follow the diagonal as closely. At high
+predicted probabilities, the observed ignition fraction is lower than the
+predicted probability. In simple terms, when the model is applied to an unseen
+paper, it can be too confident that ignition will occur. Its probabilities
+remain useful for ranking cases, but they should not be interpreted directly
+as calibrated ignition risks without additional paper-aware calibration.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.72\textwidth]{ignition_calibration.png}
-  \caption{Reliability diagram for the interpolation and extrapolation
-  ignition champions. Perfect calibration is the dashed diagonal. The
-  interpolation curve follows the identity; the extrapolation curve is
-  compressed toward high scores and lies below the diagonal at the upper
-  end, indicating over-confident high-risk predictions on held-out papers.}
+  \includegraphics[width=0.52\textwidth]{ignition_calibration.png}
+  \caption{Reliability diagram for the interpolation and extrapolation ignition
+champions. The dashed diagonal represents perfect calibration. The
+interpolation champion follows the diagonal reasonably closely. The
+extrapolation champion lies below the diagonal at high predicted probabilities,
+showing that it can overestimate ignition probability on held-out papers.}
   \label{fig:ignition-calibration}
 \end{figure}
 
+\newpage
 \subsection{Ignition explainability}
 
 The held-paper XGBoost SHAP plot in \cref{fig:ignition-explainability} shows
@@ -152,9 +152,7 @@ SHAP magnitude, followed by absolute flow speed, Prandtl number, gas molar
 mass, fuel pyrolysis temperature, and ignition time. Higher oxygen values
 generally move predictions toward ignition in this fitted model. Low absolute
 flow speed produces large negative SHAP values, consistent with a quenching
-branch in which weak transport cannot sustain a flame. Long recorded ignition
-times also push the score downward, while several transport quantities show
-nonlinear or mixed patterns.
+branch in which weak transport cannot sustain a flame. Which proves the model is capturing complex and nonlinear mechanisms. Low pyrolysis temperature in blue means materials are easier to burn thus the pushing prediction towards ignition in red.
 
 Permutation importance gives a different ranking: fuel pyrolysis temperature,
 ignition time, fuel heat capacity, and thermal diffusion time produce the
@@ -169,120 +167,102 @@ observational table can support.
   \centering
   \begin{subfigure}[t]{0.49\textwidth}
     \includegraphics[width=\linewidth]{ignition_shap_beeswarm.png}
-    \caption{SHAP values for the extrapolation champion.}
+    \caption{SHAP Beeswarm figure for the extrapolation champion.}
   \end{subfigure}\hfill
   \begin{subfigure}[t]{0.49\textwidth}
     \includegraphics[width=\linewidth]{ignition_permutation.png}
-    \caption{Held-out permutation importance.}
+    \caption{Permutation importance for extrapolation champion.}
   \end{subfigure}
   \caption{Ignition explainability on held-out papers. The beeswarm retains
-  sign and feature value; the permutation bars measure the loss of ROC--AUC
-  after shuffling one original feature. Repeated oxygen, flow, and thermal
-  variables are predictive associations in the fitted function, not
-  identified mechanisms.}
+  sign and feature value: red is high feature value and blue is low, positive points push prediction towards ignition and negative towards extinction; the permutation bars measure the loss of ROC--AUC
+  after shuffling one original feature.}
   \label{fig:ignition-explainability}
 \end{figure}
 
-\section{Flame-spread-rate regression}
+\section{Flame Spread Rate regression}
 \label{sec:results-fsr}
 
-\subsection{Interpolation and extrapolation together}
-The regression metrics and their interpretation are defined in
-\cref{sec:regression-method}. This section reports the observed performance of
-the candidate portfolio under row-level interpolation and paper-grouped
-extrapolation.
 
-RMSE is the primary physical-unit error metric, while MAE describes typical
-absolute error and \(R^2\) indicates performance relative to a mean predictor.
-The interpolation and extrapolation results are reported separately because
-they answer different questions: interpolation evaluates new conditions within
-represented source papers, whereas extrapolation evaluates transfer to entirely
-unseen papers.
+\subsection{Interpolation and Extrapolation}
 
-The unaugmented random-forest baseline is selected for both protocols, with
-separately tuned configurations. Across ten repeated row holdouts it reaches
+The regression metrics are defined in \cref{sec:regression-method}. RMSE is the
+primary physical-unit error metric, MAE describes typical absolute error, and
+\(R^2\) measures performance relative to a mean predictor.
+
+Each FSR candidate is evaluated using raw training data \texttt{rd} and raw
+training data plus bootstrap-resampled copies \texttt{rd\_bt}. The copies are drawn only from the current outer-training
+partition; outer-test rows are never used. As illustrated in
+\cref{fig:app-fsr-bootstrap-distribution}, augmentation changes the frequency
+of existing observations during fitting but does not create new FSR values,
+materials, rigs, or physical regimes.
+
+Interpolation evaluates new rows from source papers that may otherwise be
+represented in training. Extrapolation evaluates transfer to entirely unseen
+source papers.
+
+The selected model for both protocols is the raw-data random-forest baseline,
+\texttt{rf\_baseline [rd]}. Across ten repeated row-level holdouts, it reaches
 \(R^2=0.8790\pm0.0178\),
-RMSE \(0.006263\pm0.000472~\si{\metre\per\second}\), and
-MAE \(0.002103\pm0.000173~\si{\metre\per\second}\). Across ten paper-grouped
-holdouts the same family reaches
-\(R^2=0.4576\pm0.2215\),
-RMSE \(0.012205\pm0.004115~\si{\metre\per\second}\), and
-MAE \(0.004819\pm0.001144~\si{\metre\per\second}\). Grouped RMSE is 1.95 times
-the interpolation value; the paper-cluster 95\% interval for grouped RMSE is
-\(0.006525\)--\(0.017839~\si{\metre\per\second}\). Bootstrap-augmented XGBoost
-has a numerically slightly lower interpolation RMSE
-(\(0.006236~\si{\metre\per\second}\)) but falls within the 2\% tie band and
-has greater fold variability, so the declared tie policy favors the
-unaugmented random forest.
+RMSE \(=0.006263\pm0.000472~\si{\metre\per\second}\), and
+MAE \(=0.002103\pm0.000173~\si{\metre\per\second}\). Across ten
+paper-grouped holdouts, it reaches \(R^2=0.4576\pm0.2215\),
+RMSE \(=0.012205\pm0.004115~\si{\metre\per\second}\), and
+MAE \(=0.004819\pm0.001144~\si{\metre\per\second}\).
 
-\Cref{fig:fsr-model-comparison} shows every persisted candidate under both
-protocols and both training conditions (real data versus bootstrap-augmented
-training). Interpolation bars (blue) are consistently lower than grouped bars
-(orange). Tree ensembles occupy the left-hand, low-RMSE group; KNN occupies a
-middle band; SVR and MLP occupy the right-hand, high-error group, with
-grouped error bars that can exceed \(0.03~\si{\metre\per\second}\).
-Augmentation does not close the protocol gap: the dark and light bars of a
-given protocol remain close relative to the blue--orange separation. The
-figure therefore answers interpolation and extrapolation in one comparison:
-family identity and evaluation protocol dominate recipe-level tweaks.
+The augmentation condition does not provide a consistent improvement. For
+example, augmented XGBoost reaches an interpolation RMSE of
+\(0.006236~\si{\metre\per\second}\), but this is within the declared
+\(2\%\) tie band and has greater fold-to-fold variability than the selected
+raw-data random forest. Repeating existing rows therefore does not address the
+main challenge: transfer to an unseen experimental source.
+
+\Cref{fig:fsr-model-comparison} compares every persisted candidate under both
+evaluation protocols and both training conditions. Blue bars represent
+row-level interpolation and orange bars represent paper-grouped extrapolation.
+For each candidate, the raw-data and augmentation bars are generally close
+together. Their difference is small compared with the substantially larger
+difference between interpolation and extrapolation. Tree ensembles occupy the
+low-RMSE group, KNN occupies an intermediate group, and SVR and MLP candidates
+occupy the higher-error group.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{fsr_model_comparison.png}
-  \caption{FSR outer-fold RMSE for all persisted candidates. Blue bars are
-  row-level interpolation; orange bars are paper-grouped extrapolation;
-  paler and darker shades distinguish real versus bootstrap-augmented
-  training. Tree ensembles form a leading cluster; KNN, SVR, and MLP form
-  successively weaker clusters. The interpolation--extrapolation gap is
-  larger than the gap among leading tree recipes.}
+  \caption{FSR outer-fold RMSE for all persisted candidates. Blue bars denote
+  row-level interpolation and orange bars denote paper-grouped extrapolation.
+  Within each protocol, the two shades compare raw-data training
+  (\texttt{rd}) with raw data plus bootstrap augmentation
+  (\texttt{rd\_bt}). Augmentation produces only small within-protocol changes,
+  whereas holding out complete source papers produces a much larger increase
+  in RMSE.}
   \label{fig:fsr-model-comparison}
 \end{figure}
 
-\Cref{fig:fsr-tradeoff} makes the two ranking metrics explicit. Each point is
-a candidate; the horizontal axis is mean \(R^2\) (higher is better) and the
-vertical axis is mean RMSE (lower is better), so the desirable corner is the
-bottom right. A dashed line separates grouped extrapolation (left, purple)
-from random interpolation (right, blue). Three facts follow immediately.
+\Cref{fig:fsr-tradeoff} compares mean \(R^2\) and mean RMSE for every
+candidate. Higher \(R^2\) and lower RMSE are desirable, so stronger candidates
+lie toward the bottom-right of each panel. The left panel shows paper-grouped
+extrapolation and the right panel shows row-level interpolation.
 
-First, the two metrics largely agree inside each protocol: points fall along
-a descending cloud, so improving \(R^2\) generally reduces RMSE. There are
-nevertheless two legitimate ways to rank models. RMSE is the quantity to
-quote for a physical error budget; \(R^2\) is the quantity to quote when
-asking whether the model beat a mean predictor on that fold's target spread.
-A candidate can look competitive on one axis and less so on the other if its
-errors concentrate on high-variance papers.
-
-Second, model families are visually separated in both panels. Random forest
-and XGBoost occupy the lower-right cluster of each protocol; KNN occupies an
-intermediate cluster; SVR and MLP occupy the upper-left cluster. Family
-identity is therefore a stronger organizing principle than individual
-hyperparameter variants. The highlighted random-forest baseline
-(\(R^2=0.879\), RMSE \(=0.00626~\si{\metre\per\second}\) in interpolation;
-\(R^2=0.458\), RMSE \(=0.01221~\si{\metre\per\second}\) in extrapolation) sits
-at the front of the tree cluster in both tasks.
-
-Third, the protocol shift is a translation of the entire family structure,
-not a reordering. The same relative ranking survives paper hold-out, but the
-absolute location moves from \(R^2\approx 0.4\)--\(0.9\) to
-\(R^2\approx 0.05\)--\(0.46\) and from RMSE \(\approx 0.006\)--\(0.015\) to
-RMSE \(\approx 0.012\)--\(0.016~\si{\metre\per\second}\). Interpolation
-competence does not imply transfer; family ranking, however, is stable enough
-that a screening tool can prefer tree ensembles without pretending that
-within-paper \(R^2=0.88\) is available for a new campaign.
+Random forest and XGBoost form the leading lower-error cluster in both
+protocols. KNN occupies an intermediate region, whereas SVR and MLP candidates
+generally have lower \(R^2\) and higher RMSE. The highlighted random-forest
+baseline is selected under both protocols:
+\(R^2=0.879\) and RMSE \(=0.00626~\si{\metre\per\second}\) for interpolation,
+and \(R^2=0.458\) and RMSE \(=0.01221~\si{\metre\per\second}\) for
+extrapolation. The portfolio shifts toward lower \(R^2\) and higher RMSE when
+complete papers are withheld.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\textwidth]{fsr_tradeoff.png}
   \caption{Accuracy--error trade-off for FSR candidates. Mean \(R^2\)
-  increases to the right and mean RMSE decreases downward, so better models
-  lie toward the bottom-right of each panel. Colour denotes model family.
-  Grouped extrapolation (left) and random interpolation (right) show the
-  same family separation---random forest and XGBoost, then KNN, then SVR and
-  MLP---shifted by the protocol. The highlighted points are the selected
-  random-forest baseline.}
+  increases to the right and mean RMSE decreases downward. Colour denotes
+  model family. Paper-grouped extrapolation is shown on the left and row-level
+  interpolation on the right. The highlighted points are the selected
+  raw-data random-forest baseline.}
   \label{fig:fsr-tradeoff}
 \end{figure}
-
+\newpage
 \subsection{Held-out parity and error structure}
 
 The two panels of \cref{fig:fsr-parity-error} diagnose where the grouped
@@ -361,7 +341,7 @@ their use as hypotheses and coverage priorities, not as causal coefficients.
   most increases RMSE.}
   \label{fig:fsr-explainability}
 \end{figure}
-
+\newpage
 \section{Synthesis}
 
 The figures establish one common result across two targets and different model

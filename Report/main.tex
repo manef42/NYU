@@ -26,12 +26,14 @@
 
 \definecolor{nyuviolet}{HTML}{57068C}
 \definecolor{engineeringblue}{HTML}{243B6B}
+
 \sisetup{
   detect-all,
   separate-uncertainty=true,
   range-phrase=--,
   per-mode=symbol
 }
+
 \setlist{nosep}
 \setlength{\emergencystretch}{2em}
 \linespread{0.97}
@@ -43,11 +45,14 @@
 \fancyhead[R]{Manef Elimami}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
+
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{2}
+
 \titleformat{\chapter}[hang]
   {\normalfont\huge\bfseries\color{engineeringblue}}
   {\thechapter}{0.8em}{}
+
 \titlespacing*{\chapter}{0pt}{-12pt}{16pt}
 
 \newcommand{\FSR}{\ensuremath{\mathrm{FSR}}}
@@ -59,29 +64,47 @@
 
 \begin{titlepage}
   \centering
-  \vspace*{12mm}
-  \includegraphics[width=0.8\textwidth]{nyu_logo.png}\par
-  \vspace{18mm}
+  \vspace*{10mm}
+
+  \includegraphics[width=0.5\textwidth]{polytechnique-logohori}\par
+  \vspace{5mm}
+  \includegraphics[width=0.62\textwidth]{nyu_logo.png}\par
+
+  \vspace{15mm}
   {\color{nyuviolet}\rule{\textwidth}{1.2pt}}\par
   \vspace{12mm}
+
   {\Huge\bfseries Data-Driven Material Selection\\[2mm]
   for Fire-Safe Spacecraft Design\par}
+
   \vspace{8mm}
   {\Large Final Report\par}
+
   \vspace{12mm}
   {\color{nyuviolet}\rule{\textwidth}{1.2pt}}\par
+
   \vfill
+
   {\Large Manef Elimami\par}
   \vspace{5mm}
+
   {\large New York University\par}
-  \vspace{3mm}
+  \vspace{2mm}
+  {\large Internship conducted at IgNYte Lab\par}
+  \vspace{2mm}
+  {\large Under the supervision of Prof.\ Augustin Guibaud\par}
+
+  \vspace{6mm}
   {\large August 2026\par}
+
   \vfill
-  \end{titlepage}
+\end{titlepage}
 
 \pagenumbering{roman}
+
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
+
 Spacecraft fire safety requires material decisions under atmospheric, flow,
 geometric, and gravitational conditions for which direct testing is expensive
 and unevenly distributed. This report consolidates the project's curated
@@ -106,32 +129,23 @@ SHAP and permutation analyses identify oxygen, flow and transport quantities,
 thermal time scales, and fuel properties as important model inputs, but these
 associations are not interpreted causally. The central engineering result is
 therefore conditional: the database supports useful within-domain ranking and
-screening, but the generalization gap and source heterogeneity preclude using
+screening, but the generalisation gap and source heterogeneity preclude using
 the models as stand-alone certification evidence. The models are positioned as
-traceable decision-support tools for prioritizing tests, identifying poorly
+traceable decision-support tools for prioritising tests, identifying poorly
 covered regimes, and guiding database expansion.
-
-\chapter*{Statement of scope and evidence}
-\addcontentsline{toc}{chapter}{Statement of scope and evidence}
-All numerical claims in this report are taken from version-controlled database
-validation files, frozen split metadata, model-selection records, and generated
-evaluation tables. The oral-defense deck is used to recover the intended
-narrative, not as the numerical source of record; it explicitly marks one
-metric page as not updated. Although the defense question mentioned
-extinction, completed pipelines exist only for ignition and \FSR.
-Consequently, no extinction model or result is claimed here.
 
 \tableofcontents
 
 \chapter*{Nomenclature}
 \addcontentsline{toc}{chapter}{Nomenclature}
+
 \begin{longtable}{@{}p{0.20\textwidth}p{0.72\textwidth}@{}}
 \toprule
 Symbol or acronym & Definition\\
 \midrule
 \endhead
 \(c_p\) & Specific heat capacity, \si{\joule\per\kilogram\per\kelvin}\\
-\(g\) & Acceleration level normalized by terrestrial gravity\\
+\(g\) & Acceleration level normalised by terrestrial gravity\\
 \(k\) & Thermal conductivity, \si{\watt\per\metre\per\kelvin}\\
 \(\alpha\) & Thermal diffusivity, \si{\metre\squared\per\second}\\
 \(\rho\) & Density, \si{\kilogram\per\metre\cubed}\\

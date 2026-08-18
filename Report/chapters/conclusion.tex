@@ -1,16 +1,96 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-This research asked whether heterogeneous literature data can support reliable machine-learning prediction of material ignition and flame spread rate for fire-safe spacecraft design, especially when prediction is required for an experimental source that the model has not previously seen. The precise answer is conditional. The database supports strong interpolation among rows from represented papers, but only moderate and substantially less stable generalisation to held-out papers. It is therefore suitable as the basis of a traceable screening and research-prioritisation tool, but it does not yet support universal prediction, causal claims, or replacement of qualification and certification testing.
+This work investigated whether a heterogeneous literature-derived database can
+support machine-learning prediction of ignition and flame-spread rate for
+spacecraft fire-safety applications. The answer is conditional. The database
+contains useful predictive signal, but the strength of that signal depends on
+the evaluation question. Models perform well when predicting new rows from
+experimental campaigns already represented in training, but their performance
+drops substantially when complete source papers are withheld.
 
-For FSR regression, 2,531 usable observations from 66 canonical papers were evaluated with frozen random-row and paper-grouped holdouts. The selected random-forest baseline achieved \(R^2=0.879\pm0.018\), RMSE \(=0.00626\pm0.00047~\mathrm{m\,s^{-1}}\), and MAE \(=0.00210\pm0.00017~\mathrm{m\,s^{-1}}\) under random-row interpolation. When complete papers were withheld, the same model achieved \(R^2=0.458\pm0.222\), RMSE \(=0.01221\pm0.00412~\mathrm{m\,s^{-1}}\), and MAE \(=0.00482\pm0.00114~\mathrm{m\,s^{-1}}\). For ignition classification, 4,487 deduplicated observations from 87 papers were evaluated. The paper-square-root-weighted XGBoost interpolation champion achieved ROC--AUC \(=0.908\pm0.010\) and PR--AUC \(=0.969\pm0.004\); the unweighted XGBoost grouped champion achieved ROC--AUC \(=0.718\pm0.044\), PR--AUC \(=0.877\pm0.030\), and Brier score \(=0.179\pm0.017\).
+The research developed two separate pipelines. The ignition pipeline used 4,487
+deduplicated labelled observations from 87 canonical papers. The FSR pipeline
+used 2,531 observations with numeric flame-spread-rate values from 66 canonical
+papers. Both pipelines used frozen outer splits, nested hyperparameter search,
+training-fold-only preprocessing, source-aware evaluation, and persisted
+prediction records. This design separates model selection from final testing
+and makes each reported result traceable to its source observations and split
+assignments.
 
-The gap between these protocols is the primary result. Random cross-validation answers whether a model can recover nearby conditions in campaigns it has partly observed. Paper-grouped validation asks whether it can transfer across a publication boundary that bundles apparatus, laboratory practice, sampled regime, and reporting convention. The latter is the more relevant internal evidence for a new campaign, although it is not a substitute for external validation. Quoting only the random-split scores would materially overstate readiness.
+For ignition, the paper-square-root-weighted XGBoost candidate was selected for
+row-level interpolation. It achieved ROC--AUC
+\(=0.908\pm0.010\) and PR--AUC \(=0.969\pm0.004\). For paper-grouped
+extrapolation, the unweighted XGBoost baseline was selected and achieved
+ROC--AUC \(=0.718\pm0.044\), PR--AUC \(=0.877\pm0.030\), and Brier score
+\(=0.179\pm0.017\). XGBoost was therefore the strongest ignition family in
+the evaluated portfolio, but its grouped performance does not justify treating
+a predicted probability as a universal fire-safety decision.
 
-The model comparison also answers the algorithmic part of the question. Tree ensembles are well matched to these mixed, sparse, nonlinear tabular data. XGBoost led ignition prediction, while random forest was selected for FSR; KNN, SVM/SVR, decision-tree, and MLP candidates supplied useful baselines but did not displace the grouped champions. This is consistent with tabular-learning literature, while also demonstrating that XGBoost is not universally best \cite{shwartzZiv2022tabular}. The wire-specific \(R^2>0.9\) findings of Rivera/Jose and colleagues remain compatible with the present results because they concern random cross-validation within a narrower electrical-wire database, not paper-disjoint transfer \cite{riveraWireML}.
+For FSR, the random-forest baseline was selected under both protocols. Under
+row-level interpolation, it achieved
+\(R^2=0.879\pm0.018\),
+RMSE \(=0.00626\pm0.00047~\si{\metre\per\second}\), and
+MAE \(=0.00210\pm0.00017~\si{\metre\per\second}\). When complete papers were
+withheld, performance decreased to
+\(R^2=0.458\pm0.222\),
+RMSE \(=0.01221\pm0.00412~\si{\metre\per\second}\), and
+MAE \(=0.00482\pm0.00114~\si{\metre\per\second}\). XGBoost remained
+competitive for FSR, but the random-forest baseline provided the preferred
+accuracy--stability trade-off within the persisted candidate pool.
 
-Feature attributions identified physically plausible variables, including oxygen, flow, thermal diffusion time, fuel pyrolysis temperature, ignition time, and gas or material properties. These findings are diagnostic rather than causal. SHAP decomposes the fitted model; it does not identify the effect of an intervention. Correlated derived variables, uneven missingness, and campaign confounding prevent causal interpretation.
+The difference between interpolation and extrapolation is the central result.
+Random row splits can place nearby observations from the same paper, rig, or
+campaign on both sides of the evaluation boundary. Paper-grouped splits remove
+that direct source overlap and test transfer to an unseen publication. The
+resulting decline in ignition and FSR performance shows that experimental-source
+information remains partly encoded in the database through rig, protocol,
+material-preparation, measurement, and reporting characteristics that are not
+fully represented by the current physical feature set.
 
-Accordingly, the practical contribution is a reproducible decision-support framework. It freezes splits, isolates tuning within outer training data, verifies paper disjointness, records data fingerprints and feature manifests, reports repeated-fold and paper-level uncertainty, and distinguishes unbiased evaluation from full-data refitting. Within a documented applicability domain, its predictions can rank candidate tests, identify poorly covered regimes, and focus expert attention. They must be accompanied by uncertainty, out-of-distribution checks, threshold rationale, and explicit abstention.
+This finding has two practical consequences. First, threshold operating points
+for ignition cannot be transferred automatically from known campaigns to a new
+source. A high-recall threshold may be appropriate for a conservative alarm,
+but paper-grouped evidence shows that it can also produce an almost-always-
+positive rule. Threshold selection must therefore remain an explicit safety
+decision based on the relative cost of a missed ignition and a false alarm.
+Second, a numerical prediction should be treated as screening evidence rather
+than qualification evidence. It can rank candidate tests and identify regions
+requiring attention, but it cannot replace testing, engineering judgement, or
+certification.
 
-The work therefore establishes a useful but bounded capability: literature-scale machine learning can extract transferable signal for spacecraft fire-safety screening, yet database heterogeneity and source shift remain the dominant obstacles. The path to stronger evidence is not a larger headline score on mixed rows. It is prospective external validation, targeted partial-gravity experiments, a harmonised ontology, uncertainty-aware abstention, and physically constrained models evaluated against genuinely new sources. Until those steps are completed, the system should inform experiments and engineering judgement, never replace them.
+The database is also useful as an experimental roadmap. Oxygen--pressure
+coverage shows that some spacecraft-relevant conditions remain sparse,
+including oxygen concentrations just above the terrestrial value and pressures
+just below standard atmospheric pressure. These regions should be prioritised
+for future experiments, especially when combined with representative materials,
+geometries, flow directions, and gravity conditions. The objective is not
+simply to increase the number of rows, but to add measurements that reduce
+important gaps in the joint experimental design space.
+
+A more complete ontology is essential for the next stage of this work.
+Experimental-rig, facility, diagnostic, specimen-preparation, protocol, and
+data-reduction metadata must be represented consistently so that physical
+conditions can be distinguished from source fingerprints. The ontology work
+initiated with Prof.~Guibaud and collaborators at ZARM in Bremen provides a
+path toward this richer representation. It could support more rigorous
+facility-held-out or rig-class-held-out validation in future databases.
+
+The principal modelling extension is to introduce physical constraints for FSR
+regression. The present models use physics-related features but are not required
+to satisfy a flame-spread relation. For counterflow, or opposed flow, thermally
+thin and thermally thick materials follow different governing FSR relations.
+Future work should use a physically justified discriminator, supported by the
+\texttt{thermal\_diffusion\_time} feature, to identify the applicable thermal
+regime and impose the corresponding relation as a physical loss. A comparable
+equation is still needed for concurrent-flow, or co-flow, configurations in
+which the gas flow and flame spread travel in the same direction.
+
+The final conclusion is therefore bounded but useful. Literature-scale machine
+learning can organise microgravity flammability evidence and provide meaningful
+screening support for ignition and FSR. However, the principal challenge is not
+finding a higher score on mixed random rows. It is improving transfer to new
+experimental sources through better ontology and metadata, targeted data
+collection, source-aware validation, threshold-aware deployment, and
+physically constrained FSR models. Until those steps are completed, the system
+should guide experiments and support expert judgement rather than replace them.
