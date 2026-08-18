@@ -4,7 +4,7 @@
 \section{Ignition classification}
 \label{sec:results-ignition}
 
-\subsection{ROC, Precision--Recall, and the fire-safe operating question}
+\subsection{ROC, precision--recall, and the fire-safety operating question}
 \label{sec:ignition-auc}
 The ignition metrics and threshold-selection procedure are defined in
 \cref{sec:classification-method}. This section reports the held-out ROC and
@@ -57,7 +57,7 @@ with the no-skill positive-class prevalence baseline of \(0.74\).}
   \label{fig:ignition-auc}
 \end{figure}
 
-\subsection{Interpolation and Extrapolation by model family}
+\subsection{Interpolation and extrapolation by model family}
 
 The selected interpolation classifier is the paper-weighted XGBoost recipe
 \texttt{xgb\_paper\_sqrt}. Across 15 repeated stratified outer folds it
@@ -151,8 +151,11 @@ both contribution direction and feature value. Oxygen has the largest global
 SHAP magnitude, followed by absolute flow speed, Prandtl number, gas molar
 mass, fuel pyrolysis temperature, and ignition time. Higher oxygen values
 generally move predictions toward ignition in this fitted model. Low absolute
-flow speed produces large negative SHAP values, consistent with a quenching
-branch in which weak transport cannot sustain a flame. Which proves the model is capturing complex and nonlinear mechanisms. Low pyrolysis temperature in blue means materials are easier to burn thus the pushing prediction towards ignition in red.
+flow speed produces large negative SHAP values, a pattern consistent with a
+quenching branch in which weak transport cannot sustain a flame. Low fuel
+pyrolysis temperatures also tend to push the model toward ignition. These
+patterns show that the fitted model represents nonlinear associations, but they
+do not prove that it has recovered the underlying combustion mechanisms.
 
 Permutation importance gives a different ranking: fuel pyrolysis temperature,
 ignition time, fuel heat capacity, and thermal diffusion time produce the
@@ -167,31 +170,34 @@ observational table can support.
   \centering
   \begin{subfigure}[t]{0.49\textwidth}
     \includegraphics[width=\linewidth]{ignition_shap_beeswarm.png}
-    \caption{SHAP Beeswarm figure for the extrapolation champion.}
+    \caption{SHAP beeswarm for the extrapolation champion.}
   \end{subfigure}\hfill
   \begin{subfigure}[t]{0.49\textwidth}
     \includegraphics[width=\linewidth]{ignition_permutation.png}
-    \caption{Permutation importance for extrapolation champion.}
+    \caption{Permutation importance for the extrapolation champion.}
   \end{subfigure}
   \caption{Ignition explainability on held-out papers. The beeswarm retains
-  sign and feature value: red is high feature value and blue is low, positive points push prediction towards ignition and negative towards extinction; the permutation bars measure the loss of ROC--AUC
-  after shuffling one original feature.}
+  sign and feature value: red denotes a high feature value and blue a low one;
+  positive points push the prediction toward ignition and negative points toward
+  no ignition. The permutation bars measure the loss of ROC--AUC after shuffling
+  one original feature.}
   \label{fig:ignition-explainability}
 \end{figure}
 
-\section{Flame Spread Rate regression}
+\section{Flame-spread-rate regression}
 \label{sec:results-fsr}
 
 
-\subsection{Interpolation and Extrapolation}
+\subsection{Interpolation and extrapolation}
 
 The regression metrics are defined in \cref{sec:regression-method}. RMSE is the
 primary physical-unit error metric, MAE describes typical absolute error, and
 \(R^2\) measures performance relative to a mean predictor.
 
 Each FSR candidate is evaluated using raw training data \texttt{rd} and raw
-training data plus bootstrap-resampled copies \texttt{rd\_bt}. The copies are drawn only from the current outer-training
-partition; outer-test rows are never used. As illustrated in
+training data plus bootstrap-resampled copies \texttt{rd\_bt}. The copies are
+drawn only from the current outer-training partition; outer-test rows are never
+used. As illustrated in
 \cref{fig:app-fsr-bootstrap-distribution}, augmentation changes the frequency
 of existing observations during fitting but does not create new FSR values,
 materials, rigs, or physical regimes.
@@ -353,9 +359,9 @@ from approximately \(0.91\) to \(0.72\), and PR--AUC from \(0.97\) to
 protocols. These protocol effects are larger than the differences among the
 leading tree recipes.
 
-PR--AUC, not ROC--AUC, is the ignition summary that matches a fire-safe
-screening call, because the label is majority-positive and the operational
-question concerns the ignition class. For FSR, RMSE and \(R^2\) are two
+PR--AUC complements ROC--AUC for ignition screening because it reports the
+precision cost of increasing ignition recall against the majority-positive
+prevalence baseline. For FSR, RMSE and \(R^2\) are two
 legitimate ranking axes that largely agree, while the residual plot shows
 that pooled scores hide underprediction of the high-spread tail. The
 defensible result is a screening tool with explicit domain and uncertainty

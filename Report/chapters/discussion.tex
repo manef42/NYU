@@ -1,9 +1,12 @@
 \chapter{Discussion}
 \label{chap:discussion}
 
-The central result of this study is not that one algorithm ``solves'' material fire safety, but that the apparent predictive difficulty depends strongly on what is held out. When rows were divided at random, experiments from the same publication could occur in both training and test sets. Under that interpolation question, the flame-spread-rate (FSR) random-forest champion reached \(R^2=0.879\pm0.018\) with an RMSE of \(0.00626\pm0.00047~\mathrm{m\,s^{-1}}\), while the ignition XGBoost champion reached a ROC--AUC of \(0.908\pm0.010\). When complete papers were held out, the corresponding results fell to \(R^2=0.458\pm0.222\) and RMSE \(0.01221\pm0.00412~\mathrm{m\,s^{-1}}\) for FSR, and ROC--AUC \(0.718\pm0.044\) for ignition. The FSR error approximately doubled, and the ignition ROC--AUC decreased by about \(0.19\). This consistent row-versus-paper generalization collapse is the most consequential scientific finding. It indicates that models can interpolate effectively among conditions resembling a campaign already represented in training, but only partially transfer to an unseen publication, apparatus, laboratory practice, or sampled regime.
+The central result of this study is not that one algorithm ``solves'' material fire safety, but that the apparent predictive difficulty depends strongly on what is held out. When rows were divided at random, experiments from the same publication could occur in both training and test sets. Under that interpolation question, the flame-spread-rate (FSR) random-forest champion reached \(R^2=0.879\pm0.018\) with an RMSE of \(0.00626\pm0.00047~\mathrm{m\,s^{-1}}\), while the ignition XGBoost champion reached a ROC--AUC of \(0.908\pm0.010\). When complete papers were held out, the corresponding results fell to \(R^2=0.458\pm0.222\) and RMSE \(0.01221\pm0.00412~\mathrm{m\,s^{-1}}\) for FSR, and ROC--AUC \(0.718\pm0.044\) for ignition. The FSR error approximately doubled, and the ignition ROC--AUC decreased by about \(0.19\). This consistent row-versus-paper generalisation collapse is the most consequential scientific finding. It indicates that models can interpolate effectively among conditions resembling a campaign already represented in training, but only partially transfer to an unseen publication, apparatus, laboratory practice, or sampled regime.
 
-This chapter interprets that finding under four deliberately visible allocations: limitations, comparison with the literature, real-world applications, and future work. These reflect the practical importance of defining what the models do not establish and translating them into a cautious decision-support role.
+The following sections interpret that finding through four practical lenses:
+limitations, comparison with the literature, real-world applications, and
+future work. This structure makes explicit both what the models do not establish
+and how they can nevertheless support cautious engineering decisions.
 \section{Limitations}
 \label{sec:discussion_limitations}
 
@@ -55,8 +58,8 @@ interpolation and paper-grouped extrapolation may arise from experimental-rig
 fingerprints rather than from the intended physical predictors alone.
 
 A structured ontology is needed to separate physical conditions from the
-experimental systems that produced the measurements. The ontology work we started
-developping with Prof.~Guibaud and collaborators at ZARM in Bremen provides a
+experimental systems that produced the measurements. The ontology work initiated with Prof.~Guibaud and collaborators at ZARM in
+Bremen provides a
 framework for representing experimental setup, sample properties, imposed
 conditions, diagnostics, data reduction, and reported outcomes in a consistent
 form. This is a parallel research activity, but it is directly relevant to the
@@ -71,11 +74,11 @@ or rig classes.
 \caption{Draft ontology for reproducible flammability experiments. The
 structure separates the experimental system, test article, imposed operating
 conditions, experimental protocol, diagnostics, data reduction, and reported
-results. Zooming in is possible and encouraged.}
+results.}
 \label{fig:discussion-ontology}
 \end{figure}
 
-\section{Comparison with the Literature}
+\section{Comparison with the literature}
 \label{sec:discussion_literature}
 
 \subsection{Benchmarking against Rivera et al.}
@@ -131,7 +134,6 @@ tables. Second, a high random-cross-validation score does not establish
 transfer to an unseen publication, rig, or campaign. The difference between
 the present interpolation and paper-grouped results makes the validation unit
 part of the scientific claim rather than a technical detail.
-```
 
 \subsection{Tabular database findings}
 
@@ -149,7 +151,7 @@ Tree ensembles are therefore useful benchmark models for this database, but
 their reported performance remains conditional on the represented experimental
 sources and evaluation protocol.
 
-\section{Real-World Applications}
+\section{Real-world applications}
 \label{sec:discussion_applications}
 
 The most immediate practical use of the database is to identify regions of the
@@ -187,7 +189,7 @@ they can be treated as well-supported screening conditions.}
 \end{figure}
 
 \newpage
-\section{Future Work}
+\section{Future work}
 \label{sec:discussion_future}
 
 The main next step for FSR regression is to introduce physical constraints.

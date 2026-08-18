@@ -1,96 +1,57 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-This work investigated whether a heterogeneous literature-derived database can
-support machine-learning prediction of ignition and flame-spread rate for
-spacecraft fire-safety applications. The answer is conditional. The database
-contains useful predictive signal, but the strength of that signal depends on
-the evaluation question. Models perform well when predicting new rows from
-experimental campaigns already represented in training, but their performance
-drops substantially when complete source papers are withheld.
+This study asked whether supervised models trained on a heterogeneous,
+literature-derived database can support spacecraft material screening for two
+outcomes: ignition and flame-spread rate (FSR). The answer is qualified but
+useful. The database contains enough structure for strong interpolation within
+experimental campaigns, yet substantially less evidence for transfer to an
+unseen source. The unit held out during evaluation therefore changes the
+scientific meaning of the reported performance.
 
-The research developed two separate pipelines. The ignition pipeline used 4,487
-deduplicated labelled observations from 87 canonical papers. The FSR pipeline
-used 2,531 observations with numeric flame-spread-rate values from 66 canonical
-papers. Both pipelines used frozen outer splits, nested hyperparameter search,
-training-fold-only preprocessing, source-aware evaluation, and persisted
-prediction records. This design separates model selection from final testing
-and makes each reported result traceable to its source observations and split
-assignments.
+This conclusion rests on 4,487 ignition observations from 87 canonical papers
+and 2,531 FSR observations from 66 papers. With row-level holdouts, the selected
+XGBoost ignition model achieved ROC--AUC \(0.908\pm0.010\), and the selected
+random-forest FSR model achieved \(R^2=0.879\pm0.018\) with RMSE
+\(0.00626\pm0.00047~\si{\metre\per\second}\). When complete papers were
+withheld, ignition ROC--AUC decreased to \(0.718\pm0.044\), while FSR
+performance decreased to \(R^2=0.458\pm0.222\) and RMSE increased to
+\(0.01221\pm0.00412~\si{\metre\per\second}\). The consistency of this gap
+across both targets is more consequential than the comparatively small
+differences among the leading tree-based candidates.
 
-For ignition, the paper-square-root-weighted XGBoost candidate was selected for
-row-level interpolation. It achieved ROC--AUC
-\(=0.908\pm0.010\) and PR--AUC \(=0.969\pm0.004\). For paper-grouped
-extrapolation, the unweighted XGBoost baseline was selected and achieved
-ROC--AUC \(=0.718\pm0.044\), PR--AUC \(=0.877\pm0.030\), and Brier score
-\(=0.179\pm0.017\). XGBoost was therefore the strongest ignition family in
-the evaluated portfolio, but its grouped performance does not justify treating
-a predicted probability as a universal fire-safety decision.
+The held-paper diagnostics also define the models' present limits. Ignition
+probabilities are less well calibrated on unseen papers, so a threshold chosen
+from known campaigns cannot be treated as a universal operating point. The FSR
+regressor systematically underpredicts the sparse high-spread tail, which is a
+non-conservative failure mode for fire-safety use. Feature-attribution analyses
+repeatedly identify oxygen, flow, and thermal-transport variables, but these are
+predictive associations in an observational database rather than causal laws.
+Together, these findings rule out using either model as stand-alone
+qualification or certification evidence.
 
-For FSR, the random-forest baseline was selected under both protocols. Under
-row-level interpolation, it achieved
-\(R^2=0.879\pm0.018\),
-RMSE \(=0.00626\pm0.00047~\si{\metre\per\second}\), and
-MAE \(=0.00210\pm0.00017~\si{\metre\per\second}\). When complete papers were
-withheld, performance decreased to
-\(R^2=0.458\pm0.222\),
-RMSE \(=0.01221\pm0.00412~\si{\metre\per\second}\), and
-MAE \(=0.00482\pm0.00114~\si{\metre\per\second}\). XGBoost remained
-competitive for FSR, but the random-forest baseline provided the preferred
-accuracy--stability trade-off within the persisted candidate pool.
+The appropriate near-term role is decision support. Predictions can rank
+conditions for review, expose weakly covered combinations of atmosphere,
+material, geometry, flow, and gravity, and help allocate scarce reduced-gravity
+tests. A useful screening output should therefore accompany every prediction
+with its evaluation protocol, domain-coverage information, and an uncertainty
+or out-of-distribution warning. Where coverage is poor---notably in sparse
+spacecraft-relevant oxygen--pressure combinations or the high-FSR tail---the
+model should trigger an experiment rather than substitute for one.
 
-The difference between interpolation and extrapolation is the central result.
-Random row splits can place nearby observations from the same paper, rig, or
-campaign on both sides of the evaluation boundary. Paper-grouped splits remove
-that direct source overlap and test transfer to an unseen publication. The
-resulting decline in ignition and FSR performance shows that experimental-source
-information remains partly encoded in the database through rig, protocol,
-material-preparation, measurement, and reporting characteristics that are not
-fully represented by the current physical feature set.
+Improving transfer requires better evidence, not merely a more complex learner.
+The next database release should represent rig, facility, diagnostic,
+specimen-preparation, and data-reduction metadata through the developing
+ontology; target experiments that fill joint coverage gaps; and evaluate models
+with paper-, rig-, and facility-level holdouts. For FSR, future models should
+also enforce non-negativity and test regime-appropriate physical constraints for
+opposed and concurrent spread, while retaining the same source-aware validation.
+For ignition, probability calibration and operating thresholds should be
+validated prospectively on new campaigns.
 
-This finding has two practical consequences. First, threshold operating points
-for ignition cannot be transferred automatically from known campaigns to a new
-source. A high-recall threshold may be appropriate for a conservative alarm,
-but paper-grouped evidence shows that it can also produce an almost-always-
-positive rule. Threshold selection must therefore remain an explicit safety
-decision based on the relative cost of a missed ignition and a false alarm.
-Second, a numerical prediction should be treated as screening evidence rather
-than qualification evidence. It can rank candidate tests and identify regions
-requiring attention, but it cannot replace testing, engineering judgement, or
-certification.
-
-The database is also useful as an experimental roadmap. Oxygen--pressure
-coverage shows that some spacecraft-relevant conditions remain sparse,
-including oxygen concentrations just above the terrestrial value and pressures
-just below standard atmospheric pressure. These regions should be prioritised
-for future experiments, especially when combined with representative materials,
-geometries, flow directions, and gravity conditions. The objective is not
-simply to increase the number of rows, but to add measurements that reduce
-important gaps in the joint experimental design space.
-
-A more complete ontology is essential for the next stage of this work.
-Experimental-rig, facility, diagnostic, specimen-preparation, protocol, and
-data-reduction metadata must be represented consistently so that physical
-conditions can be distinguished from source fingerprints. The ontology work
-initiated with Prof.~Guibaud and collaborators at ZARM in Bremen provides a
-path toward this richer representation. It could support more rigorous
-facility-held-out or rig-class-held-out validation in future databases.
-
-The principal modelling extension is to introduce physical constraints for FSR
-regression. The present models use physics-related features but are not required
-to satisfy a flame-spread relation. For counterflow, or opposed flow, thermally
-thin and thermally thick materials follow different governing FSR relations.
-Future work should use a physically justified discriminator, supported by the
-\texttt{thermal\_diffusion\_time} feature, to identify the applicable thermal
-regime and impose the corresponding relation as a physical loss. A comparable
-equation is still needed for concurrent-flow, or co-flow, configurations in
-which the gas flow and flame spread travel in the same direction.
-
-The final conclusion is therefore bounded but useful. Literature-scale machine
-learning can organise microgravity flammability evidence and provide meaningful
-screening support for ignition and FSR. However, the principal challenge is not
-finding a higher score on mixed random rows. It is improving transfer to new
-experimental sources through better ontology and metadata, targeted data
-collection, source-aware validation, threshold-aware deployment, and
-physically constrained FSR models. Until those steps are completed, the system
-should guide experiments and support expert judgement rather than replace them.
+The principal outcome of this work is thus a reproducible boundary between what
+the current literature can support and what still requires measurement.
+Machine learning can organise the assembled microgravity flammability evidence
+and make experimental planning more systematic. It should guide expert
+judgement and test prioritisation, not replace qualification testing or a
+spacecraft-level fire-safety case.

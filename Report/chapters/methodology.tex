@@ -19,9 +19,9 @@ candidate configuration, and fitted model.
 The database was assembled before either machine-learning pipeline was designed.
 Approximately 130 experimental papers and technical reports published from 1966
 onward were screened for solid-fuel combustion under microgravity,
-partial-gravity, or spacecraft-relevant atmospheric and flow conditions. About
-87 publications provided sufficiently resolved information to map ignition or
-flame-spread rate (FSR) measurements to individual database rows.
+partial-gravity, or spacecraft-relevant atmospheric and flow conditions.
+Eighty-seven publications provided sufficiently resolved information to map
+ignition or flame-spread-rate (FSR) measurements to individual database rows.
 
 A source was included for modelling only when the experiment, specimen,
 environment, and reported outcome could be linked at row level. A qualitative
@@ -39,7 +39,7 @@ traceable to the original source.
   \caption{Overview of the assembled microgravity flammability table before
   task-specific cleaning. The corpus contains 5,057 rows from 87 papers
   (median 32 rows per paper). Ignition is the majority outcome (76.6\%).
-  Numeric FSR is available for 2,590 raw rows. Operating envelopes span
+  Numeric FSR is available for 2,605 raw rows. Operating envelopes span
   oxygen mole fraction \(0.002\)--\(1\), pressure from a few kilopascals to
   several megapascals, gravity from microgravity to several \(g\), and a
   wide fuel-property range. Modelling later uses SI flame-spread units of
@@ -547,17 +547,14 @@ they store different evaluation outputs.
 
 \begin{description}
   \item[Ignition classification.]
-  Each candidate and protocol produces one held-out ROC--AUC, PR--AUC, and
-  Brier score per outer fold. The bootstrap resamples these fold-level metric
-  values with replacement and calculates their mean for each replicate. The
-  \(95\%\) interval is the range from the 2.5th to the 97.5th percentile of
-  the 2,000 bootstrap means.
-
-  This procedure is the same for interpolation and extrapolation. It quantifies
-  variation among repeated outer-fold scores; it does not resample individual
-  rows or complete paper clusters. Threshold-dependent ignition metrics are
-  reported, but they do not receive bootstrap intervals in the current
-  implementation.
+  Predictions for observations that appear in more than one repeated outer split
+  are first averaged, leaving one measured label and one mean predicted
+  probability per observation. Interpolation intervals resample these unique
+  observations with replacement; extrapolation and leave-one-paper-out intervals
+  resample complete canonical-paper clusters. ROC--AUC, PR--AUC, and Brier score
+  are recalculated for each of 2,000 replicates, and the \(95\%\) interval spans
+  the 2.5th to the 97.5th percentile. Threshold-dependent ignition metrics are
+  reported without bootstrap intervals in the current implementation.
 
   \item[FSR regression.]
   The FSR pipeline stores measured and predicted FSR values for every outer-test
@@ -1139,7 +1136,7 @@ kernels under the same paper-weighting policies.
 
 Hyperparameters that are not part of a candidate's scientific identity are
 selected within each outer training partition. Inner configurations are ranked
-by mean RMSE, then MAE, then higher \(R^2\).
+by lower mean RMSE, then lower MAE, then higher \(R^2\).
 
 \begin{table}[htbp]
   \centering
