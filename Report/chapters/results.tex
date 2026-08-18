@@ -14,80 +14,18 @@ that remains to be filled.
 
 \subsection{ROC, precision--recall, and the fire-safe operating question}
 \label{sec:ignition-auc}
+The ignition metrics and threshold-selection procedure are defined in
+\cref{sec:classification-method}. This section reports the held-out ROC and
+precision--recall behaviour of the selected XGBoost classifier and interprets
+their implications for a fire-safety screening use case.
 
-A binary ignition model does not output a physical yes/no switch. It outputs a
-score \(\widehat p\in[0,1]\), interpreted as an estimated probability of
-ignition. Converting that score into a decision requires a threshold
-\(\tau\):
-\begin{equation}
-  \widehat y(\tau)=
-  \begin{cases}
-    1,& \widehat p\geq\tau,\\
-    0,& \widehat p<\tau.
-  \end{cases}
-\end{equation}
-Each \(\tau\) produces a confusion-matrix count of true positives (TP), false
-positives (FP), true negatives (TN), and false negatives (FN). The elementary
-rates used throughout this section are
-\begin{align}
-  \mathrm{TPR}
-  =\mathrm{sensitivity}
-  =\mathrm{recall}
-  &=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}},\\
-  \mathrm{FPR}
-  &=1-\mathrm{specificity}
-  =\frac{\mathrm{FP}}{\mathrm{FP}+\mathrm{TN}},\\
-  \mathrm{precision}
-  &=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}.
-\end{align}
-Recall is the fraction of true ignitions that are caught. Precision is the
-fraction of predicted ignitions that actually ignite. Specificity is the
-fraction of true non-ignitions that are left unlabeled. No single rate is a
-complete account of a fire-safety call: missing an ignition (false negative)
-is the safety-critical error, while flooding a test queue with false alarms
-(false positives) makes the screener unusable.
-
-Two threshold-independent curves summarize the whole family of operating
-points. The receiver-operating-characteristic (ROC) curve plots TPR against
-FPR as \(\tau\) varies. A no-skill classifier that ranks at random traces the
-diagonal, with area \(1/2\). The area under the ROC curve (ROC--AUC) equals
-the probability that a randomly chosen ignition receives a higher score than a
-randomly chosen non-ignition. It is a ranking metric: it does not select
-\(\tau\), and it weights the two classes symmetrically through TPR and FPR.
-
-The precision--recall (PR) curve plots precision against recall. Its no-skill
-baseline is not \(1/2\); it is the positive prevalence
-\(\pi=P(y=1)\). In this database \(\pi\approx 0.74\)--\(0.75\), so an
-always-ignite rule already attains precision equal to that prevalence and
-recall equal to one. The area under the PR curve (PR--AUC, equivalently
-average precision in \cref{fig:ignition-auc}) therefore measures how much
-ranking quality exists \emph{above} that naive majority policy.
-
-A convenient single-threshold summary of the PR trade-off is the F1 score, the
-harmonic mean of precision and recall,
-\begin{equation}
-  \mathrm{F1}
-  =\frac{2\,\mathrm{precision}\cdot\mathrm{recall}}
-        {\mathrm{precision}+\mathrm{recall}}.
-\end{equation}
-Because a harmonic mean is dominated by the smaller of its two arguments, F1
-is large only when both precision and recall are large. It does not, however,
-use true negatives, so a majority-positive task can reward a low \(\tau\) that
-labels almost everything as ignition. Complementary summaries that do use the
-full confusion matrix are balanced accuracy
-\((\mathrm{sensitivity}+\mathrm{specificity})/2\), Youden's
-\(J=\mathrm{sensitivity}+\mathrm{specificity}-1\), and the Matthews
-correlation
-\begin{equation}
-  \mathrm{MCC}
-  =\frac{\mathrm{TP}\,\mathrm{TN}-\mathrm{FP}\,\mathrm{FN}}
-        {\sqrt{(\mathrm{TP}+\mathrm{FP})(\mathrm{TP}+\mathrm{FN})
-        (\mathrm{TN}+\mathrm{FP})(\mathrm{TN}+\mathrm{FN})}}.
-\end{equation}
-Thresholds that maximize these criteria are selected inside training folds and
-are interpreted as operational limitations in
-\cref{sec:discussion_limitations}; they are not used to claim a unique
-``best'' fire-safety setting.
+ROC--AUC summarizes whether the classifier ranks ignition observations above
+no-ignition observations across all possible thresholds. PR--AUC is especially
+important here because ignition is the majority label: it measures whether
+positive predictions remain reliable above the prevalence baseline. A fixed
+decision threshold is not selected from the held-out data; thresholds are
+chosen inside nested training evaluation and then applied to the outer test
+partition.
 
 \Cref{fig:ignition-auc} shows both curves for the selected XGBoost classifier
 on a held-out partition. The ROC curve rises steeply toward the upper-left
@@ -249,28 +187,17 @@ observational table can support.
 \label{sec:results-fsr}
 
 \subsection{Interpolation and extrapolation together}
+The regression metrics and their interpretation are defined in
+\cref{sec:regression-method}. This section reports the observed performance of
+the candidate portfolio under row-level interpolation and paper-grouped
+extrapolation.
 
-Regression has no classification threshold: the model predicts a continuous
-FSR in \si{\metre\per\second}, and quality is measured in those units. Two
-summaries are used throughout. RMSE is the root-mean-square error
-\begin{equation}
-  \mathrm{RMSE}
-  =\sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i-\widehat y_i)^2},
-\end{equation}
-which penalizes large misses and remains dimensionally an FSR. The coefficient
-of determination
-\begin{equation}
-  R^2
-  =1-\frac{\sum_{i=1}^{n}(y_i-\widehat y_i)^2}
-          {\sum_{i=1}^{n}(y_i-\bar y)^2}
-\end{equation}
-compares residual variance with a mean predictor; \(R^2=1\) is a perfect fit
-and \(R^2=0\) is no better than predicting \(\bar y\). The two metrics are
-not interchangeable. RMSE is the engineering error in physical units; \(R^2\)
-is a scale-free statement about explained variance and is sensitive to the
-target spread of the held-out papers. Ranking models by RMSE can therefore
-disagree with ranking them by \(R^2\) when folds differ in variance, which is
-why both axes appear below.
+RMSE is the primary physical-unit error metric, while MAE describes typical
+absolute error and \(R^2\) indicates performance relative to a mean predictor.
+The interpolation and extrapolation results are reported separately because
+they answer different questions: interpolation evaluates new conditions within
+represented source papers, whereas extrapolation evaluates transfer to entirely
+unseen papers.
 
 The unaugmented random-forest baseline is selected for both protocols, with
 separately tuned configurations. Across ten repeated row holdouts it reaches
