@@ -1,382 +1,1238 @@
-\chapter{Results}
-\label{chap:results}
+\chapter{Methodology}
+\label{chap:methodology}
 
-After the preprocessing described in \cref{chap:methodology}, the ignition
-cohort contains 4,487 labeled rows from 87 papers and the FSR cohort contains
-2,531 numeric observations from 66 papers. The figures below report those
-modeling tasks. Database sampling geometry that is not itself a predictive
-score---in particular oxygen--pressure coverage---is interpreted in
-\cref{sec:discussion_applications} as a map of the experimental search space
-that remains to be filled.
+This chapter specifies the complete chain from literature evidence to held-out
+predictions. The unit recorded in the database is an experimental condition,
+but the unit of scientific transfer is a publication: rows from one paper share
+apparatus, materials, measurement practice, and often a common experimental
+campaign. The research therefore treats row-level interpolation and
+paper-level extrapolation as distinct estimands, confines every data-adaptive
+operation to training partitions, and preserves a machine-readable audit trail
+from each reported score to its source rows, split assignment, candidate
+configuration, and fitted model. These principles were fixed before comparing
+candidate performance.
 
-\section{Ignition classification}
-\label{sec:results-ignition}
+\section{Assembly of the microgravity flammability database}
+\label{sec:database-assembly}
 
-\subsection{ROC, precision--recall, and the fire-safe operating question}
-\label{sec:ignition-auc}
-The ignition metrics and threshold-selection procedure are defined in
-\cref{sec:classification-method}. This section reports the held-out ROC and
-precision--recall behaviour of the selected XGBoost classifier and interprets
-their implications for a fire-safety screening use case.
+\subsection{Literature screening and inclusion}
 
-ROC--AUC summarizes whether the classifier ranks ignition observations above
-no-ignition observations across all possible thresholds. PR--AUC is especially
-important here because ignition is the majority label: it measures whether
-positive predictions remain reliable above the prevalence baseline. A fixed
-decision threshold is not selected from the held-out data; thresholds are
-chosen inside nested training evaluation and then applied to the outer test
-partition.
+The database was assembled before either machine-learning pipeline was designed.
+Approximately 130 experimental papers and technical reports published from 1966
+onward were screened for solid-fuel combustion under microgravity,
+partial-gravity, or spacecraft-relevant atmospheric and flow conditions. Only
+about 87 publications exposed sufficiently resolved observations to map ignition
+or flame-spread rate (FSR) into individual database rows. A paper is useful for
+modeling only when the experiment, specimen, environment, and measured outcome
+could be connected at row level; a qualitative conclusion without recoverable
+conditions could support the literature review but not supervised learning.
 
-\Cref{fig:ignition-auc} shows both curves for the selected XGBoost classifier
-on a held-out partition. The ROC curve rises steeply toward the upper-left
-corner and attains AUC \(0.897\), well above the chance diagonal. That result
-says the model ranks ignitions above non-ignitions for most pairs. It does
-\emph{not} by itself say that a fire-safe call is available: a high ROC--AUC
-can coexist with many false positives when negatives are the minority class,
-because FPR is computed only among true non-ignitions.
-
-The PR curve is the more informative fire-safety diagnostic for exactly that
-reason. Precision remains near one up to recall of about \(0.7\), then
-declines as the threshold is lowered to recover the remaining ignitions.
-Average precision is \(0.963\), far above the prevalence baseline of \(0.74\)
-drawn as the dashed line. In operational language: there exists a high-
-precision region in which flagged cases are very likely to be true ignitions,
-and the model can recover a large majority of ignitions before precision
-collapses. Pushing recall toward one---the instinctive ``never miss a
-fire'' policy---still costs precision, which is why PR--AUC, rather than
-ROC--AUC or accuracy, is the curve that should govern a screening claim on
-this imbalanced label. ROC--AUC remains useful as a threshold-free ranking
-score for model comparison; PR--AUC is the quantity that asks whether
-positive-class decisions remain reliable.
+Each row retains a full human-readable  Article (MLA), Authors, and DOI when available.
+That provenance is essential because observations from one publication are
+clustered and because ambiguous values must be checked against the source rather
+than treated as anonymous numbers.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.98\textwidth]{ignition_auc.png}
-  \caption{Held-out ROC and precision--recall curves for the ignition XGBoost
-  classifier. The ROC panel (left) plots true-positive rate against
-  false-positive rate; the shaded area is ROC--AUC \(=0.897\), against a
-  chance diagonal of \(0.5\). The PR panel (right) plots precision against
-  recall; the shaded area is average precision \(=0.963\), against a
-  no-skill baseline equal to the positive prevalence (\(0.74\)). The PR curve
-  is the more relevant fire-safety summary because ignition is the majority
-  class and because a screening call is a statement about the positive
-  class.}
-  \label{fig:ignition-auc}
+  \includegraphics[width=0.92\textwidth]{database_overview.png}
+  \caption{Overview of the assembled microgravity flammability table before
+  task-specific cleaning. The corpus contains 5,057 rows from 87 papers
+  (median 32 rows per paper). Ignition is the majority outcome (76.6\%).
+  Numeric FSR is available for 2,590 raw rows. Operating envelopes span
+  oxygen mole fraction \(0.002\)--\(1\), pressure from a few kilopascals to
+  several megapascals, gravity from microgravity to several \(g\), and a
+  wide fuel-property range. Modeling later uses SI flame-spread units of
+  \si{\metre\per\second}; the overview card reports the exploratory FSR
+  range in millimetres per second.}
+  \label{fig:method-overview}
 \end{figure}
 
-\subsection{Interpolation and extrapolation by model family}
+The overview is not a balanced design. A median of 32 rows per
+paper coexists with campaigns that contribute several hundred nearby
+conditions from a single rig. That source-size structure is why a random
+row split is optimistic: conditions from a large paper can appear on both
+sides of an interpolation split, whereas holding out that paper removes a
+large, internally correlated block. The same card also shows why two
+supervised tasks, not five, are feasible: ignition labels are essentially
+complete, numeric FSR covers about half the table, and the remaining
+flammability outputs are too sparse to train.
 
-The selected interpolation classifier is the paper-weighted XGBoost recipe
-\texttt{xgb\_paper\_sqrt}. Across 15 repeated stratified outer folds it
-reaches ROC--AUC \(0.9076\pm0.0102\), PR--AUC \(0.9687\pm0.0039\), and mean
-Brier score \(0.1063\). The selected extrapolation classifier is the
-unweighted \texttt{xgb\_baseline}. Its paper-grouped ROC--AUC is
-\(0.7183\pm0.0444\), PR--AUC \(0.8767\pm0.0298\), and Brier score \(0.1791\).
-The paper-cluster bootstrap estimate of grouped ROC--AUC is \(0.7101\) with
-95\% interval \(0.6408\)--\(0.7848\); leave-one-paper-out robustness is
-similar (\(0.7020\), \(0.6376\)--\(0.7751\)).
+\subsection{Extraction strategy}
 
-\Cref{fig:ignition-family-auc} presents the same two questions for the best
-persisted candidate in each family, so interpolation and extrapolation are
-read together rather than as separate leaderboards. Panel (a) uses ROC--AUC;
-panel (b) uses PR--AUC. In every family the interpolation marker lies to the
-right of the extrapolation marker, with much smaller error bars. XGBoost is
-the strongest family on ROC--AUC for both protocols (interpolation
-\(0.901\pm0.002\), extrapolation \(0.718\pm0.044\) on the plotted
-representatives). SVM and MLP occupy a middle band; decision trees and
-\(k\)-nearest neighbors are weaker, and the decision-tree extrapolation bar is
-the most unstable (\(\mathrm{SD}=0.100\)).
+The first attempted extraction workflow was a conventional optical character
+recognition (OCR) pipeline. It was not viable for this corpus. The sources range
+from old scanned papers to long NASA memoranda; notation, units, table
+structures, and page layouts differ; scans and plotted markers can be blurred;
+and many results appear only in graphs rather than machine-readable text.
+Generic OCR also confuses subscripts and symbols, separates values from their
+headers, and cannot reliably infer which experimental condition belongs to a
+plotted point. Applying it at scale would have created a large table with an
+unacceptably hidden transcription error rate.
 
-PR--AUC preserves the same family ranking for interpolation, with XGBoost at
-\(0.966\pm0.001\). Under extrapolation the picture is slightly different: SVM
-reaches \(0.879\pm0.022\) and XGBoost \(0.877\pm0.030\), so the two families
-are indistinguishable on the positive-class ranking metric once papers are
-held out. That is consistent with the fire-safety reading of
-\cref{fig:ignition-auc}: ROC--AUC and PR--AUC can disagree about a close call
-because they answer different questions. All families remain well above the
-prevalence baseline of \(\approx 0.75\), but the drop from interpolation
-(\(\mathrm{PR}\)--\(\mathrm{AUC}\approx 0.93\)--\(0.97\)) to extrapolation
-(\(\approx 0.82\)--\(0.88\)) is the quantity that limits transfer to a new
-campaign. Tree-depth flexibility (XGBoost versus a single decision tree) and
-margin-based models (SVM) retain more of that positive-class ranking than
-memory-based KNN or an unpruned tree.
+The adopted workflow was therefore AI-assisted and human-verified:
+\begin{enumerate}
+  \item the source was read to identify the experiment, sample, controlled
+  conditions, reported outputs, and units;
+  \item an AI extraction pass was used to recover as much structured information
+  as possible for each experimental row;
+  \item every extracted row was then checked against the paper by the database
+  curator, and missing or incorrectly associated values were completed or
+  corrected manually;
+  \item units and categorical names were standardized while the original
+  citation and explanatory notes were retained for traceability.
+\end{enumerate}
+
+AI was used as an extraction accelerator, not as an authority. This distinction
+is important for scientific data: a fluent transcription can still attach a
+correct number to the wrong series, silently flatten a logarithmic axis, or
+invent precision that the graph does not contain. Manual review remained the
+acceptance step. Values read from plots were stored only to the precision
+supported by marker size and axis resolution; visually inferred trailing digits
+were not treated as measured information. Ambiguous series assignments or units
+were resolved from captions and surrounding text, or left missing when the
+source did not support a defensible interpretation.
+
+For dense plots, the points were digitized with WebPlotDigitizer
+\cite{webplotdigitizer}. Axis calibration was set from the published ticks,
+including explicit log-axis selection where required; each color or marker
+series was traced separately; overlapping points were inspected at high zoom;
+and the exported coordinates were checked against axis limits and values quoted
+in the text. This procedure was preferred to AI-internal OCR because exact point
+coordinates, logarithmic scaling, and overlapping markers were otherwise
+unreliable.
+
+\subsection{Row structure, outputs, and quality control}
+
+The final schema groups fields into citation, specimen, flow, apparatus,
+outputs, and notes. Inputs cover geometry, dimensions, fuel and core
+thermophysical properties, oxygen concentration, diluent, gas properties,
+pressure, flow, dimensionless transport groups, gravity, facility, and ignition
+conditions. Flammability is documented through the five outputs introduced in
+\cref{tab:flammability-variables}: ignition, flame length, FSR, heat-release
+rate, and smoke/aerosols. Not every paper reports every output.
+
+The raw table uses a category banner as its first row and field names as its
+second. Values were standardized to SI units wherever the source supported a
+defensible conversion: length in metres, pressure in pascals, velocity in
+\si{\metre\per\second}, power in watts, time in seconds, density in
+\si{\kilogram\per\metre\cubed}, conductivity in
+\si{\watt\per\metre\per\kelvin}, heat capacity in
+\si{\joule\per\kilogram\per\kelvin}, and FSR in
+\si{\metre\per\second}. Values whose physical dimension did not match a target
+field were not coerced merely to fill a cell.
+
+{\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{longtable}{@{}p{0.12\textwidth}p{0.34\textwidth}p{0.18\textwidth}r p{0.20\textwidth}@{}}
+\caption{Complete field dictionary of the database. Completeness is the
+fraction of the 5,057 assembled rows with a non-empty cell. Modeling roles
+state whether the field is a predictor, a target, a grouping key, or is
+excluded from supervised inputs.}
+\label{tab:database-schema}\\
+\toprule
+Group & Excel field & Units & Compl.\ (\%)& Modeling role \\
+\midrule
+\endfirsthead
+\caption[]{Complete field dictionary of the Excel database (continued).}\\
+\toprule
+Group & Excel field & Units & Compl.\ (\%)& Modeling role \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+Citation & Article (MLA) & --- & 100.0 & grouping / excluded \\
+Citation & Authors & --- & 100.0 & grouping / excluded \\
+Citation & DOI & --- & 93.2 & grouping / excluded \\
+Sample & Geometry of Sample & categorical & 100.0 & predictor \\
+Sample & Dimensions of sample & m (geometry-specific) & 100.0 & parsed into length scales \\
+Sample & \texttt{half\_thickness} & m & 100.0 & predictor \\
+Sample & \texttt{characteristic\_length\_m} & m & 100.0 & predictor \\
+Sample & Material of sample & free text & 100.0 & excluded \\
+Sample & \texttt{fuel\_density\_kg\_m3} & \si{\kilogram\per\metre\cubed} & 100.0 & predictor \\
+Sample & \texttt{fuel\_k\_W\_mK} & \si{\watt\per\metre\per\kelvin} & 100.0 & predictor \\
+Sample & \texttt{fuel\_cp\_J\_kgK} & \si{\joule\per\kilogram\per\kelvin} & 100.0 & predictor \\
+Sample & \texttt{fuel\_pyrolysis\_T\_K} & K & 100.0 & predictor \\
+Sample & \texttt{fuel\_alpha\_m2\_s} & \si{\metre\squared\per\second} & 100.0 & derived predictor \\
+Sample & \texttt{fuel\_volumetric\_heat\_capacity\_J\_m3K} & \si{\joule\per\metre\cubed\per\kelvin} & 100.0 & derived predictor \\
+Sample & \texttt{core\_density\_kg\_m3} & \si{\kilogram\per\metre\cubed} & 100.0 & predictor \\
+Sample & \texttt{core\_k\_W\_mK} & \si{\watt\per\metre\per\kelvin} & 100.0 & predictor \\
+Sample & \texttt{core\_cp\_J\_kgK} & \si{\joule\per\kilogram\per\kelvin} & 100.0 & predictor \\
+Sample & \texttt{core\_volumetric\_heat\_capacity\_J\_m3K} & \si{\joule\per\metre\cubed\per\kelvin} & 100.0 & derived predictor \\
+Flow & Oxygen Concentration & mole fraction & 100.0 & predictor \\
+Flow & diluent & categorical & 100.0 & predictor \\
+Flow & \texttt{gas\_M} & \si{\kilogram\per\mole} & 100.0 & predictor \\
+Flow & \texttt{gas\_cp\_mass} & \si{\joule\per\kilogram\per\kelvin} & 100.0 & predictor \\
+Flow & \texttt{gas\_k} & \si{\watt\per\metre\per\kelvin} & 100.0 & predictor \\
+Flow & \texttt{gas\_density\_kg\_m3} & \si{\kilogram\per\metre\cubed} & 98.9 & predictor \\
+Flow & \texttt{gas\_alpha\_m2\_s} & \si{\metre\squared\per\second} & 98.9 & derived predictor \\
+Flow & \texttt{gas\_nu\_m2\_s} & \si{\metre\squared\per\second} & 98.9 & derived predictor \\
+Flow & Reynolds & --- & 98.9 & derived predictor \\
+Flow & Peclet & --- & 98.9 & derived predictor \\
+Flow & Prandtl & --- & 98.9 & derived predictor \\
+Flow & \texttt{thermal\_diffusion\_time} & s & 100.0 & derived predictor \\
+Flow & Pressure (Pa) & Pa & 98.9 & predictor \\
+Flow & Flow Velocity (m/s) & \si{\metre\per\second} & 79.5 & predictor \\
+Flow & Rig Name & free text & 76.6 & excluded apparatus \\
+Flow & Internal Geometry & free text & 86.9 & excluded apparatus \\
+Flow & Internal Dimensions & m & 90.3 & excluded apparatus \\
+Flow & Gravity & \(g/g_{\mathrm{earth}}\) & 98.9 & predictor \\
+Extra & Facility & categorical & 98.9 & excluded apparatus \\
+Extra & Ignition Method & categorical & 98.6 & predictor \\
+Extra & Ignition Power (W) & W & 18.8 & predictor (sparse) \\
+Extra & Ignition Time (s) & s & 45.6 & predictor (sparse) \\
+Outputs & Ignition & Yes/No & 100.0 & classification target \\
+Outputs & Flame Length & m & 4.3 & post-outcome; excluded \\
+Outputs & FSR (m/s) & \si{\metre\per\second} & 51.5 & regression target \\
+Outputs & HRR & W & 1.1 & post-outcome; excluded \\
+Outputs & Smoke/Aerosols & --- & 1.8 & post-outcome; excluded \\
+Info & Info & free text & 25.5 & notes; excluded \\
+\end{longtable}
+}
+
+Ignition labels, fuel thermophysical properties, oxygen, and diluent are
+essentially complete. Geometry, gravity, pressure, and ignition method remain
+above 98\%. Flow velocity drops to 79.5\%. Numeric FSR is present in only
+51.5\% of the raw rows, which is why the regression cohort is smaller than
+the ignition cohort. Flame length (4.3\%), heat-release rate (1.1\%), and
+smoke/aerosols (1.8\%) are too sparse to support a third supervised task.
+Ignition power (18.8\%) and ignition time (45.6\%) are retained as predictors
+where reported, with fold-local imputation for the remainder. Apparatus
+names, facility labels, free-text material names, and notes are excluded from
+model inputs because they fingerprint a laboratory without encoding
+physics. The schema therefore justifies both the two-task scope and the
+need for fold-local imputation: missingness is a property of what
+laboratories reported, not a random mask.
+
+Quality control is applied in the code : empty rows and
+columns removed, target labels normalized, exact modeling duplicates removed,
+and unparseable values recorded as missing rather than guessed. Physical-domain
+checks rejected impossible concentrations, non-positive pressures or FSR; conversions were performed before duplicate detection so that
+equivalent observations expressed in different units could not survive as
+independent rows. Canonical paper identity is a citation. This produces identifiers of the form \texttt{citation::<normalized-citation>}.
+Dataset shape,
+column roles, target prevalence, paper counts, and a content fingerprint are
+written to validation records and checked again when frozen splits are loaded.
+
+The two tasks use different valid subsets. After feature/target
+standardization and deduplication, ignition classification contains 4,487 rows
+from 87 canonical papers (3,383 ignition and 1,104 no ignition). FSR regression
+contains 2,531 rows with a numeric FSR from 66 papers. The FSR papers contribute
+between 1 and 193 rows, with median 22.5. Dataset fingerprints are persisted with
+the splits and evaluations so that a result cannot silently refer to a changed
+database.
+
+\subsection{Sampling Bias \& Class Bias}
+\label{sec:method-imbalance}
+
+The assembled literature table is not balanced. Two
+imbalances dominate every subsequent modeling choice.
+
+The first is source-size imbalance. Publications contribute very different
+numbers of points from a single rig or campaign.
+\Cref{fig:method-overview} already shows that the median paper is modest
+while a handful of campaigns dominate the row count; the Pareto curve in
+\cref{fig:method-imbalance}(a)
+makes the cumulative effect explicit. After sorting papers from largest to
+smallest contribution, 36 of 87 papers account for more than 80\% of all rows.
+The remaining long tail contributes the last 20\%. A loss that treats every row
+as an independent draw therefore over-represents densely sampled campaigns and
+under-represents sparse but physically distinct sources. Paper weighting,
+paper-grouped evaluation, and paper-cluster bootstrap intervals are the
+methodological response to this right-skewed structure.\footnote{A right-skewed distribution is a distribution with a long tail toward larger values, indicating that most observations are concentrated at lower values while a smaller number of observations take substantially larger values.}
+
+The second is class imbalance on the ignition label. In the raw assembled
+table of 5,057 rows, 3,875 observations (76.6\%) are ignition and 1,182
+(23.4\%) are no ignition (\cref{fig:method-imbalance}(b)). After cleaning the modeling dataset remains majority-positive: 3,383
+ignition versus 1,104 no ignition. A classifier that always predicts ignition
+would therefore already achieve about three-quarters accuracy and a
+precision--recall baseline equal to the positive prevalence. Accuracy is not a
+defensible selection metric. The ignition pipeline instead compares models with
+ROC--AUC, PR--AUC, and Brier score, and it reports thresholded sensitivity,
+specificity, precision, F1, balanced accuracy, and Matthews correlation. Class
+weights and paper weights are tested as candidate recipes rather than assumed
+to correct the imbalance automatically.
 
 \begin{figure}[htbp]
   \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{ignition_roc_auc.png}
-    \caption{ROC--AUC for the best candidate in each family.}
+  \begin{subfigure}[t]{0.61\textwidth}
+    \includegraphics[width=\linewidth]{database_pareto.png}
+    \caption{Cumulative data share after sorting papers by contribution.
+    Thirty-six papers supply more than 80\% of the rows.}
   \end{subfigure}\hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{ignition_pr_auc.png}
-    \caption{PR--AUC for the same family representatives.}
+  \begin{subfigure}[t]{0.36\textwidth}
+    \includegraphics[width=\linewidth]{database_ignition_balance.png}
+    \caption{Raw ignition outcome composition: 76.6\% ignition versus
+    23.4\% no ignition.}
   \end{subfigure}
-  \caption{Ignition interpolation (circles) versus paper-grouped
-  extrapolation (triangles), mean \(\pm\) standard deviation. Every family
-  loses performance when entire papers are withheld, and extrapolation
-  uncertainty is systematically larger. XGBoost leads ROC--AUC in both
-  protocols; under PR--AUC the extrapolated SVM and XGBoost candidates are
-  essentially tied. The two panels together replace a separate
-  ``generalization-gap'' ranking: the gap is the horizontal separation
-  between the two markers of each family.}
-  \label{fig:ignition-family-auc}
+  \caption{Two sampling imbalances in the assembled database. Panel (a) shows
+  that a minority of publications dominate the row count; panel (b) shows that
+  ignition is the majority class. Both motivate grouped evaluation and
+  prevalence-aware classification metrics.}
+  \label{fig:method-imbalance}
 \end{figure}
 
-Probability ranking is not calibration. \Cref{fig:ignition-calibration}
-compares mean predicted probability with the observed ignition fraction. The
-interpolation champion tracks the identity line closely, especially above
-probability \(0.5\). The extrapolation champion is miscalibrated: its scores
-occupy a narrower, higher band, and high predicted probabilities overstate
-the observed ignition rate. A numerical probability from the grouped model
-therefore cannot be read as a frequentist ignition risk without a
-source-conditional calibration step.
+\section{Methods common to both machine-learning pipelines}
+\label{sec:common-pipeline}
+
+The two pipelines share a scientific design even though one classifies
+ignition and the other regresses flame-spread rate. Both estimate a mapping
+from measured physical inputs \(\mathbf{x}\) to an observed target \(y\): the
+classifier estimates \(\widehat p=P(y_{\mathrm{ign}}=1\mid\mathbf{x})\); the
+regressor estimates \(\widehat v_{\mathrm{FSR}}\). Both freeze splits before
+any model is compared, nest hyperparameter search inside outer training
+partitions, and report interpolation and extrapolation as different questions.
+
+The repeated splits estimate performance for the empirical mixture of
+conditions and papers represented by the database. They do not constitute
+an external validation set and paper-grouped performance should
+not be interpreted as guaranteed transfer beyond the measured feature envelope.
+The subsections below explain why the model families were chosen, how nested
+evaluation is enforced, and which preprocessing and weighting choices are
+common to both tasks.
+
+\subsection{Benchmarking motivation and model families}
+
+The closest prior machine-learning study of flame spread is Jose Rivera et al. \cite{riveraWireML}. They compiled approximately 1,200 electrical-wire observations and
+compared linear regression, elastic net, stochastic gradient descent, Bayesian
+ridge, kernel ridge, decision trees, \(k\)-nearest neighbours, gradient
+boosting, support-vector regression, and a multilayer perceptron under random
+10-fold cross-validation. That paper is the explicit
+benchmark for family choice in this report. Nonlinear models were competitive
+there; linear and shrinkage families lagged. The present work therefore
+retains the families that were scientifically informative in that study,
+upgrades gradient boosting to XGBoost, and adds random forest as a bagging
+control for FSR. Linear, elastic-net, SGD, Bayesian-ridge, and kernel-ridge
+regressors are not re-run: Jose already showed that they are a weak hypothesis
+for heterogeneous flame-spread tables, and repeating them would inflate the
+portfolio without a new physical question.
+
+XGBoost is the primary tabular learner because Shwartz-Ziv and Armon found
+gradient-boosted trees to be a strong, readily tuned baseline on heterogeneous
+tables, including settings where deep models did not dominate
+\cite{shwartzZiv2022tabular,chenGuestrin2016}. That prior is a starting point,
+not a result. Decision trees remain as a transparent nonlinear baseline from
+Jose. \(k\)-NN tests whether nearby experimental conditions are locally
+predictive. SVM/SVR tests linear versus radial kernels in the engineered
+physics space. MLPs test whether a smooth universal approximator helps once
+the same nested, leakage-controlled protocol is imposed. Random forest is the
+one family Rivera et al. did not include; it isolates bagging from boosting on the FSR
+task.
+
+\subsection{Features, leakage exclusions, and preprocessing}
+
+The two pipelines use measurements available before the outcome is known. The
+ignition pipeline predicts whether ignition occurs; the FSR pipeline predicts
+the measured flame-spread rate. Each task therefore uses a different valid
+subset of the database and a task-specific feature manifest.
+
+Both pipelines use physical descriptors of the specimen, gas, operating
+environment, and ignition conditions. These include:
+
+\begin{itemize}
+  \item sample geometry and characteristic dimensions;
+  \item fuel and core density, conductivity, heat capacity, pyrolysis
+  temperature, thermal diffusivity, and volumetric heat capacity;
+  \item oxygen concentration, diluent, gas properties, and dimensionless
+  transport quantities;
+  \item pressure, flow velocity, gravity, ignition method, ignition power, and
+  ignition duration where available;
+  \item derived physical quantities, including Reynolds number, Peclet number,
+  Prandtl number, and thermal diffusion time.
+\end{itemize}
+
+The ignition pipeline uses a fixed manifest of 32 numeric and five categorical
+features. The FSR pipeline detects the available numeric and categorical fields
+from the same cleaned schema and excludes fields that are unavailable or
+inappropriate for FSR prediction.
+
+Several fields are deliberately excluded from both pipelines:
+
+\begin{itemize}
+  \item Paper identifiers, citation fields, DOI, author names, facility names,
+  rig names, internal apparatus descriptions, free-text material labels, and
+  notes are excluded because they can identify an experimental source without
+  representing a transferable physical mechanism.
+
+  \item Flame length, heat-release rate, smoke/aerosols, extinction indicators,
+  and duplicate target columns are excluded because they are outcomes,
+  post-outcome measurements, or direct alternatives to the target being
+  predicted.
+
+  \item The ignition label is the classification target and is not used as an
+  FSR predictor. Similarly, numeric FSR is the regression target and is never
+  used as an ignition predictor.
+\end{itemize}
+
+All cleaning and preprocessing operations are fitted using training data only.
+The outer test partition is not used to calculate a median, scale a feature,
+define a category vocabulary, estimate a sample weight, choose a threshold, or
+select a hyperparameter.
+
+The preprocessing sequence within each training partition is:
+
+\begin{enumerate}
+  \item Numeric values are parsed, converted to consistent SI units where
+  appropriate, and checked for physically invalid values. Invalid or
+  unparseable values are recorded as missing rather than guessed.
+
+  \item Exact duplicate modelling rows are removed after standardisation, so
+  equivalent measurements expressed in different units are not counted as
+  independent observations.
+
+  \item For model families that require complete numeric inputs, missing numeric
+  values are replaced with the median calculated from the current training
+  partition. XGBoost retains native numeric missing values.
+
+  \item Missing categorical values are assigned an explicit \texttt{Unknown}
+  category. Categorical variables are one-hot encoded using categories observed
+  in the training partition. A category first encountered in the test partition
+  does not create a new fitted column.
+
+  \item Distance-based, margin-based, and neural-network models standardise
+  numeric variables using statistics calculated from the current training
+  partition. Tree-based models do not require this scaling.
+
+  \item Paper weights, class weights, bootstrap-augmentation draws, and
+  threshold-selection rules are calculated only after the outer training
+  partition has been defined.
+\end{enumerate}
+
+This procedure prevents information from the outer test partition from
+influencing the fitted representation. It also ensures that any performance
+difference between candidates is caused by their modelling choices rather than
+by a preprocessing step that has seen the test data.
+\subsection{Nested evaluation}
+
+Nested evaluation separates model fitting, model selection, and final
+performance measurement. This separation is necessary to obtain a fair
+estimate of how well a model is expected to perform on new data.
+
+\begin{description}
+  \item[Training data] are used to fit the model parameters. For example,
+  this includes learning tree splits, regression coefficients, or neural
+  network weights.
+
+  \item[Validation data] are used to compare model choices and
+  hyperparameter settings. Examples include tree depth, regularization
+  strength, and the number of neighbours.
+
+  \item[Test data] are kept completely separate until the final evaluation.
+  They are not used to train a model or choose its settings.
+\end{description}
+
+The nested evaluation procedure used in this research follows these steps:
+
+\begin{enumerate}
+  \item The data are divided into an outer training partition and an outer
+  test partition.
+
+  \item Only the outer training partition is used during model development.
+  The outer test partition remains untouched.
+
+  \item Within the outer training partition, inner cross-validation compares
+  candidate models and their hyperparameter settings.
+
+  \item The candidate and setting with the best average inner-validation score
+  are selected.
+
+  \item The selected configuration is retrained using all observations in the
+  outer training partition.
+
+  \item The retrained model is evaluated once on the untouched outer test
+  partition. This score is used as the performance estimate for that outer
+  split.
+\end{enumerate}
+
+All preprocessing steps, including transformations and feature selection when
+applicable, are performed separately within the training portion of each
+split. This prevents information from the validation or test data from
+influencing model selection.
+
+The same outer splits are used for all candidate models so that their results
+can be compared under identical data partitions. Repeating the outer split
+also measures how sensitive the results are to the particular division of the
+data.
+
+\subsection{Interpolation versus extrapolation}
+
+Both pipelines answer two different questions :
+\begin{itemize}
+  \item \textbf{Interpolation} holds out rows while allowing other rows from
+  the same paper to remain in training. It asks whether the model predicts new
+  conditions inside campaigns it partly knows.
+  \item \textbf{Extrapolation} holds out complete papers. It asks
+  whether the procedure transfers to a new publication, rig, or campaign and is
+  the primary generalization test.
+\end{itemize}
+
+The distinction prevents paper-specific sampling and apparatus signatures from
+being mistaken for broad physical transfer. Rivera et al.\ themselves describe
+random cross-validation as robustness within a compiled table rather than
+strict held-source transfer \cite{riveraWireML}. The present design makes that
+caveat operational: all candidates within a task share the same frozen outer
+assignments, and grouped protocols assert zero paper overlap.
+
+\subsection{Paper weighting, uncertainty, and refitting}
+
+During training, a model makes a prediction for each row and is penalized when
+that prediction differs from the observed value. This penalty is called the
+\emph{loss}. A smaller loss means a better prediction: a loss of zero would
+mean a perfect prediction for that row.
+
+The model-training objective combines these row-level losses into one value.
+This value, called the \emph{empirical risk}, is simply the average loss over
+the rows in the training partition. Training aims to find a model with low
+empirical risk.
+
+In this dataset, as some papers contribute many more rows than others, without weighting, a paper with many rows contributes more losses to the
+average and can therefore have more influence on the fitted model. Paper
+weighting changes how much each paper contributes to the training objective.
+It is tested as a modeling choice rather than assumed to improve performance.
+
+For a model \(f\), row \(i\), observed outcome \(y_i\), and prediction
+\(f(\mathbf{x}_i)\), the loss
+\(\ell\!\left(y_i,f(\mathbf{x}_i)\right)\) measures the prediction error for
+that row. Let \(p(i)\) denote the paper associated with row \(i\), let \(n_p\)
+be the number of training rows from paper \(p\), and let \(w_{p(i)}\) be the
+weight assigned to that paper. The weighted empirical risk is
+
+\[
+  \widehat R_w(f)=\frac{\sum_{i\in\mathcal T}w_{p(i)}
+  \ell\!\left(y_i,f(\mathbf{x}_i)\right)}
+  {\sum_{i\in\mathcal T}w_{p(i)}}.
+\]
+
+In this equation, each row-level loss is multiplied by the weight of its
+source paper before the losses are averaged. A larger paper weight gives that
+paper more influence during training. The denominator divides by the total
+weight, so the result remains an average loss that can be compared across
+training folds.
+
+Both pipelines compare three weighting strategies
+(\cref{fig:method-paper-weights}):
+
+\begin{description}
+  \item[Unweighted training: \(w_p=1\).]
+  Every row has the same weight. A paper with more rows contributes more total
+  loss and therefore has more influence on the fitted model.
+
+  \item[Square-root weighting: \(w_p=n_p^{-1/2}\).]
+  Large papers still have more influence than small papers, but their
+  advantage is reduced.
+
+  \item[Inverse weighting: \(w_p=n_p^{-1}\).]
+  Each paper has approximately the same total influence, regardless of its
+  number of rows.
+\end{description}
+
+Weights and paper counts are calculated using only the current training
+partition. For model families that do not directly accept sample weights, the
+training data are resampled using a deterministic probability-proportional
+procedure. This ensures that the selected weighting strategy is applied
+consistently to every candidate model.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.72\textwidth]{ignition_calibration.png}
-  \caption{Reliability diagram for the interpolation and extrapolation
-  ignition champions. Perfect calibration is the dashed diagonal. The
-  interpolation curve follows the identity; the extrapolation curve is
-  compressed toward high scores and lies below the diagonal at the upper
-  end, indicating over-confident high-risk predictions on held-out papers.}
-  \label{fig:ignition-calibration}
+  \includegraphics[width=0.98\textwidth]{method_paper_weights.pdf}
+  \caption{Paper-weighting strategies shared by ignition and FSR candidates.
+  \(n_p\) is the number of training rows from paper \(p\). The preferred
+  strategy is selected empirically from nested scores, not assumed a priori.}
+  \label{fig:method-paper-weights}
 \end{figure}
+\paragraph{Uncertainty of reported performance.}
 
-\subsection{Ignition explainability}
+Outer-fold means and standard deviations show how much model performance
+changes across different data partitions. The \(95\%\) percentile intervals are
+calculated with 2,000 bootstrap replicates. The ignition-classification and FSR
+regression pipelines use different bootstrap procedures because they store and
+evaluate different types of outputs.
+\newpage
+\begin{description}
+  \item[Ignition classification :]
+  For each candidate and evaluation protocol, every outer fold produces one
+  held-out ROC-AUC, PR-AUC, and Brier score. The bootstrap resamples these
+  outer-fold metric values with replacement and calculates their mean for each
+  replicate. The \(95\%\) interval is the range from the 2.5th to the 97.5th
+  percentile of the 2,000 bootstrap means.
 
-The held-paper XGBoost SHAP plot in \cref{fig:ignition-explainability} shows
-both contribution direction and feature value. Oxygen has the largest global
-SHAP magnitude, followed by absolute flow speed, Prandtl number, gas molar
-mass, fuel pyrolysis temperature, and ignition time. Higher oxygen values
-generally move predictions toward ignition in this fitted model. Low absolute
-flow speed produces large negative SHAP values, consistent with a quenching
-branch in which weak transport cannot sustain a flame. Long recorded ignition
-times also push the score downward, while several transport quantities show
-nonlinear or mixed patterns.
+  This classifier procedure is the same for interpolation and extrapolation:
+  it measures variation among repeated outer-fold scores. It does not resample
+  individual observations or complete paper clusters. Threshold-dependent
+  metrics, such as MCC, F1 score, balanced accuracy, sensitivity, specificity,
+  and precision, are calculated with the thresholds selected during nested
+  evaluation, but bootstrap intervals are not reported for those metrics.
 
-Permutation importance gives a different ranking: fuel pyrolysis temperature,
-ignition time, fuel heat capacity, and thermal diffusion time produce the
-largest positive held-out ROC--AUC losses when shuffled. Oxygen has high SHAP
-magnitude but is not the leading permutation feature in this held-out sample.
-The disagreement is evidence of correlated and substitutable predictors, not a
-contradiction and not a causal ranking. Oxygen, flow, and thermal time scales
-nonetheless recur across both views, which is the level of interpretation the
-observational table can support.
+  \item[FSR regression :]
+  The FSR pipeline stores the measured and predicted flame spread rate for
+  every outer-test observation. When the same observation is evaluated in more
+  than one repeated outer split, its predictions are averaged first. This
+  produces one paired measured and predicted FSR value for each observation.
+
+  For interpolation, the bootstrap resamples these unique observations with
+  replacement. RMSE, MAE, and \(R^2\) are recalculated from the resampled
+  measured--predicted pairs for each replicate.
+
+  For extrapolation, the bootstrap resamples complete canonical-paper clusters
+  with replacement. When a paper is selected, all observations from that paper
+  are included in the replicate. If the same paper is selected more than once,
+  all of its observations are repeated accordingly. RMSE, MAE, and \(R^2\)
+  are then recalculated from the resulting paper-cluster sample.
+
+  The \(95\%\) FSR interval is defined by the 2.5th and 97.5th percentiles of
+  the 2,000 bootstrap values for each metric.
+\end{description}
+
+The classifier intervals quantify variation among repeated outer-fold scores.
+The FSR intervals quantify resampling uncertainty in the stored out-of-sample
+prediction pairs. Neither procedure includes uncertainty from literature
+selection, data transcription, or experimental measurement.
+
+\paragraph{Final refitting and champion selection.}
+
+After model selection is complete, the chosen configuration is refitted using
+all labeled rows. This full-data model is the final inference artifact and can
+be used for prediction.
+
+Its training performance is not used as evidence that the model generalizes to
+new data. Generalization claims are based only on the nested evaluation
+results obtained before refitting.
+
+A model can be called a champion only when it appears in the saved selection
+evidence. In particular:
+
+\begin{itemize}
+  \item The merged FSR comparison includes 25 of the 34 configured
+  candidates.
+
+  \item The formal ignition selection record does not include the available
+  MLP shards.
+\end{itemize}
+
+Therefore, a configured candidate cannot become the reported champion unless
+it was fully evaluated and included in the persisted comparison record.
+\subsection{Reproducibility and audit trail}
+\label{sec:method-reproducibility}
+
+Reproducibility is enforced through persisted artifacts rather than relying only
+on narrative descriptions of the analysis. Each cleaned task-specific dataset is
+fingerprinted before split generation. Outer and inner split assignments are
+created from declared seeds, stored with canonical paper identifiers, and reused
+by every candidate.
+
+For every candidate and outer split, the pipeline records:
+
+\begin{itemize}
+  \item the candidate identity, feature manifest, paper-weighting policy, and
+  augmentation condition;
+  \item the selected hyperparameters and inner-validation history;
+  \item fold-level metrics and row-level outer-test predictions;
+  \item paper-level metrics where applicable;
+  \item integrity checks, including expected-fold completion, finite metrics,
+  valid classifier probabilities, and zero paper overlap for grouped splits.
+\end{itemize}
+
+Candidate selection reads these persisted evaluation artifacts without fitting a
+new model. Candidates with incomplete folds, invalid predictions, or failed
+integrity checks are excluded from the corresponding comparison. Only after
+selection is complete is the chosen configuration refitted on all labelled rows
+to create an inference artifact.
+
+The evaluation artifacts and refitted artifacts have different roles.
+Outer-fold predictions are the comparison evidence because they are generated
+on untouched test partitions. The final refitted model is trained on all
+labelled rows and is used for inference, but its training fit is not used as
+evidence of generalisation.
+
+\subsection{Explainability and physical interpretation}
+\label{sec:method-explainability}
+
+Explainability is performed after model selection. It does not influence model
+ranking, candidate selection, hyperparameter optimisation, or threshold
+selection. Its purpose is to examine how a fitted model uses the available
+features and to identify hypotheses for future experiments.
+
+Three complementary methods are used:
+
+\begin{description}
+  \item[Tree feature importance.]
+  Tree importance measures how often and how effectively a feature is used to
+  split observations within a fitted tree ensemble. It provides a fast
+  model-specific ranking, but it can favour variables with many possible split
+  points or variables correlated with source-specific structure.
+
+  \item[Permutation importance.]
+  Permutation importance measures the loss of held-out performance after one
+  original feature is shuffled while all other features remain unchanged. For
+  ignition, the loss is measured using held-out ROC--AUC. For FSR, it is
+  measured using the increase in held-out RMSE. A large performance loss means
+  that the fitted model relied on that feature for the evaluated data.
+
+  \item[SHAP values.]
+  SHAP decomposes a fitted prediction into a baseline value and additive
+  feature contributions:
+  \[
+  f(\mathbf{x}_i)
+  =
+  \phi_0+\sum_{j=1}^{p}\phi_{ij},
+  \]
+  where \(f(\mathbf{x}_i)\) is the prediction for observation \(i\),
+  \(\phi_0\) is the model baseline, and \(\phi_{ij}\) is the contribution of
+  feature \(j\) to that prediction.
+\end{description}
+
+The global mean absolute SHAP importance of feature \(j\) is
+
+\[
+I^{\mathrm{SHAP}}_j
+=
+\frac{1}{n}\sum_{i=1}^{n}|\phi_{ij}|.
+\]
+
+A large value of \(I^{\mathrm{SHAP}}_j\) means that the feature changes model
+predictions strongly on average. It does not indicate whether the feature
+increases or decreases the prediction.
+
+SHAP beeswarm plots retain this missing information. Each point represents one
+observation. Its horizontal position is the SHAP value: positive values push a
+prediction upward, while negative values push it downward. For ignition,
+positive values push the predicted probability toward ignition and negative
+values push it toward no ignition. For FSR, positive values push the predicted
+flame-spread rate upward and negative values push it downward. Point colour
+shows the original feature value: red indicates a high feature value and blue
+indicates a low feature value.
+
+These methods explain the fitted predictive function; they do not establish
+causal combustion mechanisms. Correlated raw and derived variables can
+substitute for one another, missingness can encode source structure, and a
+physically plausible feature ranking does not prove that changing that feature
+would cause the predicted outcome to change. Explainability results are
+therefore interpreted as model-specific hypotheses and experimental
+priorities, not as universal causal rankings.
+\section{Ignition-classification pipeline}
+\label{sec:classification-method}
+\subsection{Task, probabilities, and metrics}
+
+Ignition is a binary target: each observation is labelled ignition
+(\(y=1\)) or no ignition (\(y=0\)). The classifier does not directly return a
+physical yes/no switch. Instead, it returns an estimated ignition probability
+\(\widehat p\in[0,1]\).
+
+A decision threshold \(\tau\) converts this probability into a binary
+prediction:
+\[
+\widehat y(\tau)=
+\begin{cases}
+1, & \widehat p\geq\tau,\\
+0, & \widehat p<\tau.
+\end{cases}
+\]
+
+A lower threshold identifies more possible ignitions, but usually produces more
+false alarms. A higher threshold reduces false alarms, but increases the risk
+of missing true ignitions. Each threshold therefore produces a different
+combination of true positives (TP), false positives (FP), true negatives (TN),
+and false negatives (FN).
+
+The principal threshold-dependent quantities are:
+
+\begin{description}
+  \item[Sensitivity or recall.]
+  The fraction of true ignitions correctly identified:
+  \[
+  \mathrm{sensitivity}
+  =\mathrm{recall}
+  =\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}.
+  \]
+
+  \item[Specificity.]
+  The fraction of true non-ignitions correctly identified:
+  \[
+  \mathrm{specificity}
+  =\frac{\mathrm{TN}}{\mathrm{TN}+\mathrm{FP}}.
+  \]
+
+  \item[False-positive rate.]
+  The fraction of true non-ignitions incorrectly classified as ignition:
+  \[
+  \mathrm{FPR}
+  =1-\mathrm{specificity}
+  =\frac{\mathrm{FP}}{\mathrm{FP}+\mathrm{TN}}.
+  \]
+
+  \item[Precision.]
+  The fraction of predicted ignitions that actually ignite:
+  \[
+  \mathrm{precision}
+  =\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}.
+  \]
+\end{description}
+
+Because the assembled ignition dataset is majority-positive, accuracy is not a
+defensible selection metric. A model that predicts ignition for every
+observation would already achieve a high accuracy while providing no useful
+discrimination between ignition and no-ignition conditions.
+
+Model comparison therefore begins with threshold-independent metrics:
+
+\begin{description}
+  \item[ROC--AUC.]
+  The receiver-operating-characteristic curve plots sensitivity against the
+  false-positive rate across all possible thresholds. ROC--AUC is the
+  probability that a randomly selected ignition receives a higher predicted
+  probability than a randomly selected non-ignition. A no-skill ranking model
+  has ROC--AUC equal to \(0.5\).
+
+  \item[PR--AUC.]
+  The precision--recall curve plots precision against recall across all
+  thresholds. Its no-skill baseline is the positive-class prevalence rather
+  than \(0.5\). Since ignition is the majority label in this database,
+  PR--AUC measures whether the model provides useful positive-class ranking
+  beyond an always-ignite policy.
+
+  \item[Brier score.]
+  The Brier score measures squared probability error:
+  \[
+  \mathrm{BS}
+  =\frac{1}{n}\sum_{i=1}^{n}
+  \left(\widehat p_i-y_i\right)^2.
+  \]
+  Lower values indicate predicted probabilities that are closer to the
+  observed labels.
+\end{description}
+
+Four threshold-selection objectives are also evaluated:
+
+\begin{description}
+  \item[F1 score.]
+  The harmonic mean of precision and recall:
+  \[
+  \mathrm{F1}
+  =\frac{2\,\mathrm{precision}\cdot\mathrm{recall}}
+  {\mathrm{precision}+\mathrm{recall}}.
+  \]
+
+  \item[Balanced accuracy.]
+  The average of sensitivity and specificity:
+  \[
+  \mathrm{balanced\ accuracy}
+  =\frac{\mathrm{sensitivity}+\mathrm{specificity}}{2}.
+  \]
+
+  \item[Youden's \(J\).]
+  The difference between sensitivity and false-positive rate:
+  \[
+  J=\mathrm{sensitivity}+\mathrm{specificity}-1.
+  \]
+
+  \item[Matthews correlation coefficient (MCC).]
+  A balanced summary based on all four confusion-matrix counts:
+  \[
+  \mathrm{MCC}
+  =\frac{\mathrm{TP}\,\mathrm{TN}-\mathrm{FP}\,\mathrm{FN}}
+  {\sqrt{(\mathrm{TP}+\mathrm{FP})(\mathrm{TP}+\mathrm{FN})
+  (\mathrm{TN}+\mathrm{FP})(\mathrm{TN}+\mathrm{FN})}}.
+  \]
+\end{description}
+
+ROC--AUC, PR--AUC, and Brier score are used for candidate comparison because
+they do not depend on a single operating threshold. Within each outer training
+partition, four thresholds are selected from inner out-of-fold predictions:
+the thresholds that maximize MCC, F1, balanced accuracy, and Youden's \(J\).
+These thresholds are then frozen and applied once to the untouched outer test
+partition. Outer-test labels are never used to choose a threshold.
+
+Thresholded metrics are reported to describe possible operating points, not to
+claim a single universally optimal fire-safety threshold. The preferred
+operating point depends on the relative consequences of missing an ignition and
+raising a false alarm.
+
+\subsection{Candidate design}
+
+The ignition portfolio contains 26 candidates across five families
+(\cref{fig:method-ignition-xgb} and  \cref{fig:method-ignition-portfolio}). The design is an ablation of
+how a family is trained, not a search over dozens of unrelated
+architectures. Every family includes an unweighted baseline. XGBoost, as the
+primary model, receives the full imbalance grid; the other families act as benchmarks.
+
+Two imbalance mechanisms are treated as orthogonal. Paper weighting corrects
+sampling bias from large campaigns. Class weighting rescales the loss by label
+frequency. Focal loss \cite{lin2017focal} down-weights easy, confident
+examples dynamically and is therefore an alternative class-imbalance
+mechanism, not a third knob to stack on class weights. Focal candidates use
+\(\gamma=2\) and \texttt{class\_weight:false} to avoid double-correcting the
+majority class. Paper weighting is retained with focal loss because it
+corrects a different bias.
 
 \begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{ignition_shap_beeswarm.png}
-    \caption{SHAP values for the extrapolation champion.}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{ignition_permutation.png}
-    \caption{Held-out permutation importance.}
-  \end{subfigure}
-  \caption{Ignition explainability on held-out papers. The beeswarm retains
-  sign and feature value; the permutation bars measure the loss of ROC--AUC
-  after shuffling one original feature. Repeated oxygen, flow, and thermal
-  variables are predictive associations in the fitted function, not
-  identified mechanisms.}
-  \label{fig:ignition-explainability}
+\centering
+\includegraphics[width=0.9\textwidth]{ignition_xgb.png}
+\caption{The primary XGBoost
+family tests paper weighting, class weighting, and focal loss as separate
+responses to paper-size and class imbalance. Total is 8 candidates}
+\label{fig:method-ignition-xgb}
 \end{figure}
 
-\section{Flame-spread-rate regression}
-\label{sec:results-fsr}
-
-\subsection{Interpolation and extrapolation together}
-The regression metrics and their interpretation are defined in
-\cref{sec:regression-method}. This section reports the observed performance of
-the candidate portfolio under row-level interpolation and paper-grouped
-extrapolation.
-
-RMSE is the primary physical-unit error metric, while MAE describes typical
-absolute error and \(R^2\) indicates performance relative to a mean predictor.
-The interpolation and extrapolation results are reported separately because
-they answer different questions: interpolation evaluates new conditions within
-represented source papers, whereas extrapolation evaluates transfer to entirely
-unseen papers.
-
-The unaugmented random-forest baseline is selected for both protocols, with
-separately tuned configurations. Across ten repeated row holdouts it reaches
-\(R^2=0.8790\pm0.0178\),
-RMSE \(0.006263\pm0.000472~\si{\metre\per\second}\), and
-MAE \(0.002103\pm0.000173~\si{\metre\per\second}\). Across ten paper-grouped
-holdouts the same family reaches
-\(R^2=0.4576\pm0.2215\),
-RMSE \(0.012205\pm0.004115~\si{\metre\per\second}\), and
-MAE \(0.004819\pm0.001144~\si{\metre\per\second}\). Grouped RMSE is 1.95 times
-the interpolation value; the paper-cluster 95\% interval for grouped RMSE is
-\(0.006525\)--\(0.017839~\si{\metre\per\second}\). Bootstrap-augmented XGBoost
-has a numerically slightly lower interpolation RMSE
-(\(0.006236~\si{\metre\per\second}\)) but falls within the 2\% tie band and
-has greater fold variability, so the declared tie policy favors the
-unaugmented random forest.
-
-\Cref{fig:fsr-model-comparison} shows every persisted candidate under both
-protocols and both training conditions (real data versus bootstrap-augmented
-training). Interpolation bars (blue) are consistently lower than grouped bars
-(orange). Tree ensembles occupy the left-hand, low-RMSE group; KNN occupies a
-middle band; SVR and MLP occupy the right-hand, high-error group, with
-grouped error bars that can exceed \(0.03~\si{\metre\per\second}\).
-Augmentation does not close the protocol gap: the dark and light bars of a
-given protocol remain close relative to the blue--orange separation. The
-figure therefore answers interpolation and extrapolation in one comparison:
-family identity and evaluation protocol dominate recipe-level tweaks.
+The remaining 18 candidates test one structural hypothesis per family
+(\cref{fig:method-ignition-portfolio}). Decision-tree depth, leaf size, and
+split criterion are already inner-search hyperparameters, so no extra
+``pruned tree'' candidate is added. Distance-weighted \(k\)-NN lets closer
+experimental neighbours vote more strongly. Linear SVM tests whether the
+ignition boundary is linearly separable in the physics feature space, which is
+plausible if oxygen and pressure thresholds dominate. MLP focal variants
+mirror the XGBoost focal logic at reduced scale.
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{fsr_model_comparison.png}
-  \caption{FSR outer-fold RMSE for all persisted candidates. Blue bars are
-  row-level interpolation; orange bars are paper-grouped extrapolation;
-  paler and darker shades distinguish real versus bootstrap-augmented
-  training. Tree ensembles form a leading cluster; KNN, SVR, and MLP form
-  successively weaker clusters. The interpolation--extrapolation gap is
-  larger than the gap among leading tree recipes.}
-  \label{fig:fsr-model-comparison}
+\centering
+\includegraphics[width=0.86\textwidth]{ignition_portfolio.png}
+\caption{Other ignition candidate portfolio. Decision tree, \(k\)-NN, MLP, and SVM
+candidates provide structured comparison families. Total is 18 candidates.}
+\label{fig:method-ignition-portfolio}
 \end{figure}
 
-\Cref{fig:fsr-tradeoff} makes the two ranking metrics explicit. Each point is
-a candidate; the horizontal axis is mean \(R^2\) (higher is better) and the
-vertical axis is mean RMSE (lower is better), so the desirable corner is the
-bottom right. A dashed line separates grouped extrapolation (left, purple)
-from random interpolation (right, blue). Three facts follow immediately.
+Hyperparameters that are not part of a candidate identity are sampled
+inside each outer training partition (\cref{tab:ignition-search}). Inner
+ranking uses mean ROC--AUC, then PR--AUC, then lower Brier score.
 
-First, the two metrics largely agree inside each protocol: points fall along
-a descending cloud, so improving \(R^2\) generally reduces RMSE. There are
-nevertheless two legitimate ways to rank models. RMSE is the quantity to
-quote for a physical error budget; \(R^2\) is the quantity to quote when
-asking whether the model beat a mean predictor on that fold's target spread.
-A candidate can look competitive on one axis and less so on the other if its
-errors concentrate on high-variance papers.
+\begin{table}[htbp]
+\centering
+\small
+\caption{Inner-search spaces for ignition families}
+\label{tab:ignition-search}
+\begin{tabular}{@{}lp{0.72\textwidth}@{}}
+\toprule
+Family & Sampled hyperparameters \\
+\midrule
+XGBoost & \(n_{\mathrm{estimators}}\in\{200,400,600,800\}\); learning rate
+\(\{0.01,0.03,0.05,0.1\}\); depth \(\{2,\ldots,6\}\); min-child-weight,
+subsample, column sample, \(\ell_1/\ell_2\) regularisation, gamma. \\
+Decision tree & depth \(\{3,5,7,10,\infty\}\); min-leaf
+\(\{1,2,5,10,20\}\); split criterion gini, entropy, or log-loss. \\
+\(k\)-NN & \(k\in\{5,9,15,25,40,60\}\); uniform or distance weights unless
+fixed; Minkowski \(p\in\{1,2\}\); leaf size. \\
+MLP & hidden widths \((32)\), \((64)\), \((128,64)\), \((128,64,32)\); \(\ell_2\)
+and learning-rate grid; ReLU; batch size 32 or 128. \\
+SVM & \(C\in\{0.1,0.3,1,3,10,30\}\); RBF \(\gamma\) grid or linear kernel when
+fixed; shrinking on/off. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\subsection{Pipeline procedure}
 
-Second, model families are visually separated in both panels. Random forest
-and XGBoost occupy the lower-right cluster of each protocol; KNN occupies an
-intermediate cluster; SVR and MLP occupy the upper-left cluster. Family
-identity is therefore a stronger organizing principle than individual
-hyperparameter variants. The highlighted random-forest baseline
-(\(R^2=0.879\), RMSE \(=0.00626~\si{\metre\per\second}\) in interpolation;
-\(R^2=0.458\), RMSE \(=0.01221~\si{\metre\per\second}\) in extrapolation) sits
-at the front of the tree cluster in both tasks.
+The ignition pipeline follows the same ordered procedure for every candidate:
 
-Third, the protocol shift is a translation of the entire family structure,
-not a reordering. The same relative ranking survives paper hold-out, but the
-absolute location moves from \(R^2\approx 0.4\)--\(0.9\) to
-\(R^2\approx 0.05\)--\(0.46\) and from RMSE \(\approx 0.006\)--\(0.015\) to
-RMSE \(\approx 0.012\)--\(0.016~\si{\metre\per\second}\). Interpolation
-competence does not imply transfer; family ranking, however, is stable enough
-that a screening tool can prefer tree ensembles without pretending that
-within-paper \(R^2=0.88\) is available for a new campaign.
+\begin{enumerate}
+  \item The cleaned ignition dataset and fixed feature manifest are loaded.
+  Paper identity is retained only for grouping, weighting, and integrity
+  checks; it is not used as a predictor.
+
+  \item Outer evaluation assignments are frozen before candidate comparison.
+  Four protocols are stored:
+  \begin{itemize}
+    \item repeated five-fold stratified interpolation cross-validation;
+    \item a stratified 80/20 holdout used only as a consistency check;
+    \item repeated five-fold paper-grouped extrapolation;
+    \item leave-one-paper-out (LOPO) evaluation used as a robustness analysis
+    for the extrapolation champion.
+  \end{itemize}
+
+  \item For one candidate and one outer split, only the outer training
+  partition is used to fit preprocessing and evaluate hyperparameter
+  configurations through inner cross-validation.
+
+  \item Inner out-of-fold predicted probabilities are used to select four
+  threshold policies: maximum MCC, maximum F1, maximum balanced accuracy, and
+  maximum Youden's \(J\). The selected thresholds are frozen before the outer
+  test partition is accessed.
+
+  \item The selected hyperparameter configuration is refitted using the full
+  outer training partition. It then produces probabilities for the untouched
+  outer test partition.
+
+  \item Threshold-independent metrics, including ROC--AUC, PR--AUC, and Brier
+  score, are calculated from the outer-test probabilities. Threshold-dependent
+  metrics are calculated using the thresholds selected within training.
+
+  \item Outer-fold predictions, metrics, selected hyperparameters, threshold
+  values, and integrity checks are persisted.
+
+  \item After all eligible candidates are evaluated, the selection policy
+  chooses separate interpolation and extrapolation champions. Only those
+  selected configurations are refitted on all labelled ignition rows for
+  inference.
+\end{enumerate}
+
+\subsection{Interpolation protocol}
+
+Ignition interpolation uses five-fold stratified cross-validation repeated for
+seeds 42--44, giving 15 outer folds. Stratification keeps the ignition/no-
+ignition proportion similar in each fold while rows are assigned independently,
+so papers may appear on both sides. Within each outer training partition,
+stratified inner folds search the family space. A separate stratified 80/20
+holdout for each seed is a quick consistency check, not the primary selection
+protocol.
+
+Interpolation selection requires valid probabilities, complete folds, passed
+integrity checks, and ROC--AUC fold standard deviation no greater than 0.15.
+Candidates within 0.01 of the best ROC--AUC are resolved by higher PR--AUC,
+lower uncertainty, and a declared simplicity order (decision tree, \(k\)-NN,
+SVM, XGBoost, MLP). The resulting champion is refitted on all
+ignition-labeled rows for within-domain inference.
+
+\subsection{Extrapolation and leave-one-paper-out}
+
+Ignition extrapolation uses \texttt{StratifiedGroupKFold}: all rows from one
+paper stay together while each fold retains both classes where feasible. Five
+paper-grouped folds repeated across three seeds again produce 15 outer tests.
+The inner search is also paper-disjoint, so a paper held out for inner
+validation cannot appear in the corresponding inner training fold.
+
+The primary metric remains ROC--AUC, but eligibility additionally requires a
+successful LOPO analysis. Each of the 87 papers is held out once. A
+single-class paper cannot define its own ROC--AUC, so LOPO is interpreted
+through pooled predictions, calibration, and the subset of papers for which a
+metric is defined. The selected extrapolation model and its thresholds are
+refitted on the full labeled cohort only after this paper-disjoint comparison
+is frozen.
+
+\section{Flame-spread-rate regression pipeline}
+\label{sec:regression-method}
+\subsection{Task and metrics}
+
+The FSR pipeline predicts a continuous flame spread rate in
+\si{\metre\per\second}. Unlike ignition classification, regression does not
+require a probability threshold: each prediction is compared directly with the
+measured FSR value.
+
+For observation \(i\), let \(y_i\) denote the measured FSR and
+\(\widehat y_i\) the predicted FSR. The residual is
+
+\[
+e_i=\widehat y_i-y_i.
+\]
+
+A positive residual indicates overprediction, whereas a negative residual
+indicates underprediction. The pipeline reports several complementary metrics:
+
+\begin{description}
+  \item[Root-mean-square error (RMSE).]
+  \[
+  \mathrm{RMSE}
+  =\sqrt{\frac{1}{n}\sum_{i=1}^{n}
+  \left(y_i-\widehat y_i\right)^2}.
+  \]
+  RMSE is expressed in \si{\metre\per\second} and penalizes large prediction
+  errors more strongly than small errors. It is the primary model-selection
+  metric because it directly represents the physical size of the prediction
+  error.
+
+  \item[Mean absolute error (MAE).]
+  \[
+  \mathrm{MAE}
+  =\frac{1}{n}\sum_{i=1}^{n}
+  \left|y_i-\widehat y_i\right|.
+  \]
+  MAE is also expressed in \si{\metre\per\second}. It represents the typical
+  absolute prediction error and is less sensitive than RMSE to a small number
+  of large misses.
+
+  \item[Coefficient of determination (\(R^2\)).]
+  \[
+  R^2
+  =1-\frac{\sum_{i=1}^{n}(y_i-\widehat y_i)^2}
+  {\sum_{i=1}^{n}(y_i-\bar y)^2}.
+  \]
+  \(R^2\) compares the model with a predictor that always returns the mean
+  target value. A value of \(R^2=1\) is a perfect fit, whereas \(R^2=0\)
+  performs no better than the mean predictor. Because \(R^2\) depends on the
+  target variance in the evaluated fold, it can differ substantially across
+  held-out paper groups even when absolute errors are similar.
+
+\end{description}
+
+All predictions are transformed back to the original FSR scale before scoring.
+This includes candidates trained with the signed-log target transformation.
+Consequently, every reported RMSE and MAE values remains interpretable in
+physical FSR units.
+
+RMSE and \(R^2\) answer complementary questions. RMSE is the preferred metric
+for an engineering error budget because it is reported in
+\si{\metre\per\second}. \(R^2\) indicates whether the model explains
+variation beyond a mean predictor, but it is sensitive to the target spread of
+the held-out observations. The two metrics should therefore be interpreted
+together rather than treated as interchangeable.
+
+Interpolation and paper-grouped extrapolation also answer different questions.
+Interpolation measures performance on new rows from papers that may otherwise
+appear in training. Paper-grouped extrapolation measures transfer to entirely
+unseen publications or campaigns. These scores must not be averaged or
+substituted for one another; the paper-grouped result is the primary evidence
+for transfer beyond represented source papers.
+
+Jose's headline \(R^2>0.9\) values were obtained on a narrower wire dataset
+under random ten-fold cross-validation \cite{riveraWireML}. The present
+pipeline reports an analogous interpolation result for comparison, but its
+scientific generalization claim is based on the paper-grouped evaluation.
+
+\subsection{Candidate design}
+
+The FSR portfolio contains 34 candidates across five families
+(\cref{fig:method-fsr-xgb} and \cref{fig:method-fsr-portfolio} ). Each candidate tests one hypothesis:
+does paper weighting improve transfer; does a robust loss help with
+experimental outliers; does compressing a skewed target help optimization;
+is local similarity enough; is the physics feature space already linear?
+Jose's linear families are omitted. Random forest is added as the bagging
+counterpart to XGBoost so that any later preference for trees is not
+confounded with boosting.
+
+XGBoost (10 candidates) is again the most granular family. Three objectives
+are compared under square-root and inverse paper weights: squared error,
+absolute error, and pseudo-Huber. Absolute error reduces sensitivity to large
+residuals. Pseudo-Huber is smooth near zero and linear in the tails. Two
+further candidates predict \(\mathrm{sign}(y)\log(1+|y|)\) and invert the
+transform at inference, testing whether compressing the heavy FSR tail
+improves optimization. One paper-bagging candidate averages ten XGBoost
+models trained on paper-level bootstrap samples, reducing dependence on any
+single campaign.
+
+Random forest (7) mirrors the scientifically interesting XGBoost knobs without
+boosting: baseline, sqrt/inverse paper weights, absolute-error split
+criterion, and signed-log targets. \(k\)-NN (6) crosses uniform versus
+distance neighbours with none/sqrt/inverse paper weights. MLP (5) includes
+baseline and paper-weighted models plus two signed-log networks, because
+neural optimization is often more stable on compressed targets when the
+response spans orders of magnitude. SVR (6) crosses linear versus RBF kernels
+with the same three paper weights: a strong linear kernel would imply that
+feature engineering already captured most of the spread physics.
+
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.92\textwidth]{fsr_tradeoff.png}
-  \caption{Accuracy--error trade-off for FSR candidates. Mean \(R^2\)
-  increases to the right and mean RMSE decreases downward, so better models
-  lie toward the bottom-right of each panel. Colour denotes model family.
-  Grouped extrapolation (left) and random interpolation (right) show the
-  same family separation---random forest and XGBoost, then KNN, then SVR and
-  MLP---shifted by the protocol. The highlighted points are the selected
-  random-forest baseline.}
-  \label{fig:fsr-tradeoff}
+\centering
+\includegraphics[width=0.78\textwidth]{fsr_xgb.png}
+\caption{XGBoost FSR candidate-design ablations. The XGBoost family tests
+paper weighting, robust objectives, signed-log targets, and paper-level
+bagging as distinct modelling hypotheses. Total is 10 candidates.}
+\label{fig:method-fsr-xgb}
 \end{figure}
 
-\subsection{Held-out parity and error structure}
-
-The two panels of \cref{fig:fsr-parity-error} diagnose where the grouped
-random forest succeeds and where it fails. Panel (a) is the extrapolation
-parity plot: predicted versus experimental FSR, with the one-to-one line as
-the reference. The pooled snapshot on that figure is \(R^2=0.425\) and
-RMSE \(=0.0129~\si{\metre\per\second}\), consistent with the repeated-holdout
-mean \(R^2=0.458\pm0.222\). Dense low-FSR observations lie near the diagonal.
-Above about \(0.05~\si{\metre\per\second}\) the cloud peels away below the
-line: experimental values continue to \(0.21~\si{\metre\per\second}\) while
-predictions rarely exceed \(0.08~\si{\metre\per\second}\). The model
-regresses toward the densely sampled low-spread mean.
-
-Panel (b) plots the same predictions as error (predicted minus experimental)
-against true FSR. At near-zero spread the errors are small and slightly
-positive: the model overpredicts the slowest flames. As experimental FSR
-increases, the error trend is a descending line that reaches almost
-\(-0.20~\si{\metre\per\second}\) at the fastest observations, meaning a
-high-spread event is predicted near zero. Error variance also widens with
-true FSR (heteroscedasticity). For a fire-safety regressor this pattern is
-the opposite of a conservative bias: the dangerous tail is underpredicted.
-The hardest held-out paper reaches RMSE
-\(0.1331~\si{\metre\per\second}\), whereas many papers remain below
-\(0.003~\si{\metre\per\second}\). A single pooled \(R^2\) therefore conceals
-campaign-level failure modes that the error plot makes visible.
 
 \begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{fsr_pred_vs_true.png}
-    \caption{Predicted versus experimental FSR on held-out papers.
-    Points below the dashed one-to-one line are underpredictions.}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{fsr_error_vs_true.png}
-    \caption{Error (predicted minus experimental) versus true FSR.
-    The descending trend is systematic underprediction of fast spread.}
-  \end{subfigure}
-  \caption{Grouped random-forest diagnostics. Panel (a) is the extrapolation
-  \(R^2\) view: low-FSR points hug the identity, while high-FSR points fall
-  below it. Panel (b) is the corresponding residual view. Together they show
-  regression toward the low-spread majority and growing error in the sparse
-  high-FSR tail.}
-  \label{fig:fsr-parity-error}
+\centering
+\includegraphics[width=0.86\textwidth]{fsr_portfolio.png}
+\caption{Complete FSR candidate portfolio across Random Forest,
+\(k\)-NN, MLP, and SVR. Candidate variants test weighting, robustness, target
+representation, local similarity, bagging, and kernel assumptions. Total is 24 candidates.}
+\label{fig:method-fsr-portfolio}
 \end{figure}
 
-\subsection{FSR explainability}
+Inner search again samples family hyperparameters rather than candidate
+identity (\cref{tab:fsr-search}). Configurations are ranked by mean inner RMSE,
+then MAE, then higher \(R^2\).
 
-The FSR random forest relies most strongly on thermal diffusion time, oxygen,
-gas thermal conductivity, and flow velocity in its SHAP summary
-(\cref{fig:fsr-explainability}). The beeswarm adds direction: high oxygen
-generally pushes FSR upward, while large thermal diffusion times---a thick or
-thermally inertial solid---push FSR downward. Held-out permutation importance
-independently identifies oxygen, flow velocity, gas conductivity, and thermal
-diffusion time as the largest positive RMSE degradations.
+\begin{table}[htbp]
+\centering
+\small
+\caption{Inner-search spaces for FSR families.}
+\label{tab:fsr-search}
+\begin{tabular}{@{}lp{0.72\textwidth}@{}}
+\toprule
+Family & Sampled hyperparameters \\
+\midrule
+XGBoost & \(n_{\mathrm{estimators}}\in\{100,200,300,500,800\}\); learning rate
+\(\{0.01,0.02,0.05,0.1,0.2\}\); depth \(\{2,\ldots,6\}\); min-child-weight,
+subsample, column sample, \(\ell_1/\ell_2\), gamma. \\
+Random forest & 100--500 trees; depth 4--12 or unlimited; split
+and leaf minima; \texttt{max\_features} in \(\{\sqrt{\,},\,\log_2,0.5,0.8,1\}\). \\
+\(k\)-NN & \(k\in\{3,5,7,9,11,15,21,31\}\); uniform or distance unless fixed;
+\(p\in\{1,2\}\). \\
+MLP & widths including \((100)\), \((128,64)\), \((256,128)\); ReLU or tanh;
+\(\ell_2\) and learning-rate grid; batch size 32--128. \\
+SVR & \(C\in\{0.1,\ldots,100\}\); \(\varepsilon\in\{0.01,\ldots,0.5\}\); RBF
+\(\gamma\) grid or linear kernel when fixed. \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-Several correlated material variables have negative permutation importance in
-the realized held-out sample. That means shuffling happened to reduce error;
-it does not imply a physically protective effect. The repeated appearance of
-oxygen, flow, and thermal transport across two explanation methods supports
-their use as hypotheses and coverage priorities, not as causal coefficients.
+\subsection{Pipeline procedure}
 
-\begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{fsr_shap_beeswarm.png}
-    \caption{Random-forest SHAP values on unseen papers.}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{fsr_permutation.png}
-    \caption{Held-out permutation importance.}
-  \end{subfigure}
-  \caption{FSR explainability on unseen papers. Thermal diffusion time and
-  oxygen dominate SHAP; permutation importance recovers oxygen, flow, gas
-  conductivity, and thermal diffusion time as the features whose shuffling
-  most increases RMSE.}
-  \label{fig:fsr-explainability}
-\end{figure}
+The FSR pipeline evaluates every candidate under two training-data conditions:
+raw data only (\texttt{rd}) and raw data plus bootstrap augmentation
+(\texttt{rd\_bt}). The procedure is:
 
-\section{Synthesis}
+\begin{enumerate}
+  \item The cleaned FSR dataset is loaded. Only rows with a numeric FSR target
+  are retained. The target is measured and reported in
+  \si{\metre\per\second}.
 
-The figures establish one common result across two targets and different model
-families: within-paper interpolation is strong, while transfer to an unseen
-paper is moderate and substantially more uncertain. Ignition ROC--AUC falls
-from approximately \(0.91\) to \(0.72\), and PR--AUC from \(0.97\) to
-\(0.88\); FSR RMSE approximately doubles and \(R^2\) falls from \(0.879\) to
-\(0.458\). Family identity is stable: tree ensembles lead both tasks on both
-protocols. These protocol effects are larger than the differences among the
-leading tree recipes.
+  \item Outer evaluation assignments are frozen before candidate comparison.
+  Interpolation uses repeated approximately 80/20 row-level holdouts. Where
+  feasible, FSR values are binned into six target quantiles during split
+  construction so that the strongly right-skewed target distribution is
+  represented in both partitions.
 
-PR--AUC, not ROC--AUC, is the ignition summary that matches a fire-safe
-screening call, because the label is majority-positive and the operational
-question concerns the ignition class. For FSR, RMSE and \(R^2\) are two
-legitimate ranking axes that largely agree, while the residual plot shows
-that pooled scores hide underprediction of the high-spread tail. The
-defensible result is a screening tool with explicit domain and uncertainty
-limits, not a universal flammability law.
+  \item Extrapolation also uses repeated approximately 80/20 holdouts, but the
+  assignment unit is the complete canonical paper. For each repeat, candidate
+  paper-disjoint partitions are generated and the most target-balanced
+  partition is retained. No paper can appear in both the corresponding
+  training and test partitions.
+
+  \item For each candidate and outer split, hyperparameters are selected using
+  only the outer training partition. Interpolation uses shuffled inner folds;
+  extrapolation uses paper-disjoint inner folds.
+
+  \item The \texttt{rd} condition fits the selected configuration using the
+  raw outer-training rows. The \texttt{rd\_bt} condition appends 1,000 rows
+  sampled with replacement from those same training rows. Each copied row keeps
+  its original predictors, FSR target, and source-paper identity. Test rows are
+  never augmented.
+
+  \item Each fitted model predicts the untouched outer test partition. RMSE,
+  MAE, \(R^2\), mean bias error, and other diagnostic metrics are calculated
+  after predictions are converted back to the original FSR scale.
+
+  \item The pipeline persists outer-test predictions, fold metrics, selected
+  hyperparameters, inner-search histories, and integrity records for every
+  eligible candidate, protocol, and augmentation condition.
+
+  \item Candidate shards are merged after evaluation. Selection first
+  prioritises low mean RMSE, then MAE, higher \(R^2\), uncertainty, preference
+  for raw data when candidates are tied, and the declared model-simplicity
+  order. The selected interpolation and extrapolation configurations are then
+  refitted on all labelled FSR rows for inference.
+\end{enumerate}
+
+\subsection{Interpolation protocol}
+
+FSR interpolation uses ten repeated, approximately 80/20 row holdouts with
+seeds 42--51. Target values are binned into six quantiles where feasible so
+that each split represents the strongly skewed FSR distribution. Papers may
+occur on both sides. Inside each outer training partition, shuffled \(K\)-fold
+validation compares hyperparameters. The selected recipe is fitted on all
+2,024 training rows and tested on the 507 untouched rows for that repeat.
+
+The selection policy rejects incomplete or non-finite evaluations, RMSE
+coefficient of variation above 0.45, and mean \(R^2<-0.25\). Candidates within
+2\% of the lowest RMSE form a tie band resolved by higher \(R^2\), lower
+uncertainty, preference for real data over bootstrap copies, simpler family
+(random forest, \(k\)-NN, SVR, XGBoost, MLP), and fewer features where the
+feature sets differ.
+
+\subsection{Extrapolation protocol}
+
+FSR extrapolation also uses ten repeated 80/20 holdouts, but the unit assigned
+to train or test is the paper. For each repeat, 50 candidate
+\texttt{GroupShuffleSplit} partitions are generated and the most
+target-balanced paper-disjoint split is retained. Each test contains 14 papers
+and each training partition 52; row counts vary with paper size. Balance
+screening reduces avoidable target-range changes without relaxing paper
+separation. Because the screening criterion uses only target-distribution
+summaries to choose among pre-generated paper partitions, it is treated as part
+of split construction and is frozen before any candidate is evaluated. The
+result remains a transfer estimate for this balance-screened split policy,
+not for an arbitrary future collection of papers.
+
+Inner tuning uses \texttt{GroupKFold} by paper. Extrapolation tie-breaks add
+the interpolation--extrapolation gap so that a recipe is not favoured solely
+for excellent within-paper fit. Cluster bootstrap intervals resample papers
+rather than thousands of correlated rows. The winning
+\((\mathrm{candidate},\,\mathrm{augmentation})\) pair is refitted on all
+2,531 FSR rows and stored separately from the outer-fold evidence.
